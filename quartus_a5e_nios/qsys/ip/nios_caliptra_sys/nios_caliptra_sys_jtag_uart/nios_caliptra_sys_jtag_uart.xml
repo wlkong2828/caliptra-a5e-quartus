@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <deploy
- date="2026.11.02.05:57:41"
- outputDirectory="/workspace/caliptra-c10gx-1x/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_jtag_uart/">
+ date="2026.11.10.16:22:35"
+ outputDirectory="/workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_jtag_uart/">
  <perimeter>
   <parameter
      name="AUTO_GENERATION_ID"
@@ -164,17 +164,17 @@
   <parameter name="AUTO_DEVICE_SPEEDGRADE" value="6" />
   <generatedFiles>
    <file
-       path="/workspace/caliptra-c10gx-1x/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_jtag_uart/synth/nios_caliptra_sys_jtag_uart.v"
+       path="/workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_jtag_uart/synth/nios_caliptra_sys_jtag_uart.v"
        attributes="CONTAINS_INLINE_CONFIGURATION" />
   </generatedFiles>
   <childGeneratedFiles>
    <file
-       path="/workspace/caliptra-c10gx-1x/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_jtag_uart/synth/nios_caliptra_sys_jtag_uart.v"
+       path="/workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_jtag_uart/synth/nios_caliptra_sys_jtag_uart.v"
        attributes="CONTAINS_INLINE_CONFIGURATION" />
   </childGeneratedFiles>
   <sourceFiles>
    <file
-       path="/workspace/caliptra-c10gx-1x/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_jtag_uart.ip" />
+       path="/workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_jtag_uart.ip" />
   </sourceFiles>
   <childSourceFiles>
    <file
@@ -215,42 +215,42 @@
   <parameter name="legacySignalAllow" value="false" />
   <generatedFiles>
    <file
-       path="/workspace/caliptra-c10gx-1x/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_jtag_uart/altera_avalon_jtag_uart_1931/synth/altera_avalon_jtag_uart.sv"
+       path="/workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_jtag_uart/altera_avalon_jtag_uart_1931/synth/altera_avalon_jtag_uart.sv"
        attributes="TOP_LEVEL_FILE" />
    <file
-       path="/workspace/caliptra-c10gx-1x/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_jtag_uart/altera_avalon_jtag_uart_1931/synth/altera_avalon_jtag_uart_log_module.sv"
+       path="/workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_jtag_uart/altera_avalon_jtag_uart_1931/synth/altera_avalon_jtag_uart_log_module.sv"
        attributes="" />
    <file
-       path="/workspace/caliptra-c10gx-1x/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_jtag_uart/altera_avalon_jtag_uart_1931/synth/altera_avalon_jtag_uart_scfifo_r.sv"
+       path="/workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_jtag_uart/altera_avalon_jtag_uart_1931/synth/altera_avalon_jtag_uart_scfifo_r.sv"
        attributes="" />
    <file
-       path="/workspace/caliptra-c10gx-1x/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_jtag_uart/altera_avalon_jtag_uart_1931/synth/altera_avalon_jtag_uart_scfifo_w.sv"
+       path="/workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_jtag_uart/altera_avalon_jtag_uart_1931/synth/altera_avalon_jtag_uart_scfifo_w.sv"
        attributes="" />
    <file
-       path="/workspace/caliptra-c10gx-1x/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_jtag_uart/altera_avalon_jtag_uart_1931/synth/altera_avalon_jtag_uart_sim_scfifo_r.sv"
+       path="/workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_jtag_uart/altera_avalon_jtag_uart_1931/synth/altera_avalon_jtag_uart_sim_scfifo_r.sv"
        attributes="" />
    <file
-       path="/workspace/caliptra-c10gx-1x/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_jtag_uart/altera_avalon_jtag_uart_1931/synth/altera_avalon_jtag_uart_sim_scfifo_w.sv"
+       path="/workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_jtag_uart/altera_avalon_jtag_uart_1931/synth/altera_avalon_jtag_uart_sim_scfifo_w.sv"
        attributes="" />
   </generatedFiles>
   <childGeneratedFiles>
    <file
-       path="/workspace/caliptra-c10gx-1x/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_jtag_uart/altera_avalon_jtag_uart_1931/synth/altera_avalon_jtag_uart.sv"
+       path="/workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_jtag_uart/altera_avalon_jtag_uart_1931/synth/altera_avalon_jtag_uart.sv"
        attributes="TOP_LEVEL_FILE" />
    <file
-       path="/workspace/caliptra-c10gx-1x/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_jtag_uart/altera_avalon_jtag_uart_1931/synth/altera_avalon_jtag_uart_log_module.sv"
+       path="/workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_jtag_uart/altera_avalon_jtag_uart_1931/synth/altera_avalon_jtag_uart_log_module.sv"
        attributes="" />
    <file
-       path="/workspace/caliptra-c10gx-1x/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_jtag_uart/altera_avalon_jtag_uart_1931/synth/altera_avalon_jtag_uart_scfifo_r.sv"
+       path="/workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_jtag_uart/altera_avalon_jtag_uart_1931/synth/altera_avalon_jtag_uart_scfifo_r.sv"
        attributes="" />
    <file
-       path="/workspace/caliptra-c10gx-1x/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_jtag_uart/altera_avalon_jtag_uart_1931/synth/altera_avalon_jtag_uart_scfifo_w.sv"
+       path="/workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_jtag_uart/altera_avalon_jtag_uart_1931/synth/altera_avalon_jtag_uart_scfifo_w.sv"
        attributes="" />
    <file
-       path="/workspace/caliptra-c10gx-1x/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_jtag_uart/altera_avalon_jtag_uart_1931/synth/altera_avalon_jtag_uart_sim_scfifo_r.sv"
+       path="/workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_jtag_uart/altera_avalon_jtag_uart_1931/synth/altera_avalon_jtag_uart_sim_scfifo_r.sv"
        attributes="" />
    <file
-       path="/workspace/caliptra-c10gx-1x/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_jtag_uart/altera_avalon_jtag_uart_1931/synth/altera_avalon_jtag_uart_sim_scfifo_w.sv"
+       path="/workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_jtag_uart/altera_avalon_jtag_uart_1931/synth/altera_avalon_jtag_uart_sim_scfifo_w.sv"
        attributes="" />
   </childGeneratedFiles>
   <sourceFiles>

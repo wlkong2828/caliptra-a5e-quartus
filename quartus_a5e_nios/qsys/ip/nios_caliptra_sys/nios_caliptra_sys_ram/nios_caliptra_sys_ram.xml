@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <deploy
- date="2026.11.02.05:57:42"
- outputDirectory="/workspace/caliptra-c10gx-1x/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_ram/">
+ date="2026.11.10.16:22:36"
+ outputDirectory="/workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_ram/">
  <perimeter>
   <parameter
      name="AUTO_GENERATION_ID"
@@ -153,17 +153,17 @@
   <parameter name="AUTO_CLK1_CLOCK_RATE" value="-1" />
   <generatedFiles>
    <file
-       path="/workspace/caliptra-c10gx-1x/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_ram/synth/nios_caliptra_sys_ram.v"
+       path="/workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_ram/synth/nios_caliptra_sys_ram.v"
        attributes="CONTAINS_INLINE_CONFIGURATION" />
   </generatedFiles>
   <childGeneratedFiles>
    <file
-       path="/workspace/caliptra-c10gx-1x/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_ram/synth/nios_caliptra_sys_ram.v"
+       path="/workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_ram/synth/nios_caliptra_sys_ram.v"
        attributes="CONTAINS_INLINE_CONFIGURATION" />
   </childGeneratedFiles>
   <sourceFiles>
    <file
-       path="/workspace/caliptra-c10gx-1x/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_ram.ip" />
+       path="/workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_ram.ip" />
   </sourceFiles>
   <childSourceFiles>
    <file
@@ -235,12 +235,12 @@
   <parameter name="abs_path" value="false" />
   <generatedFiles>
    <file
-       path="/workspace/caliptra-c10gx-1x/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_ram/intel_onchip_memory_1410/synth/nios_caliptra_sys_ram_intel_onchip_memory_1410_niokfky.sv"
+       path="/workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_ram/intel_onchip_memory_1410/synth/nios_caliptra_sys_ram_intel_onchip_memory_1410_niokfky.sv"
        attributes="" />
   </generatedFiles>
   <childGeneratedFiles>
    <file
-       path="/workspace/caliptra-c10gx-1x/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_ram/intel_onchip_memory_1410/synth/nios_caliptra_sys_ram_intel_onchip_memory_1410_niokfky.sv"
+       path="/workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_ram/intel_onchip_memory_1410/synth/nios_caliptra_sys_ram_intel_onchip_memory_1410_niokfky.sv"
        attributes="" />
   </childGeneratedFiles>
   <sourceFiles>

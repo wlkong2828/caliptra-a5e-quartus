@@ -1,0 +1,173 @@
+Flow report for nios_caliptra_a5e
+Tue Nov 10 16:30:00 2026
+Quartus Prime Version 25.3.0 Build 109 09/24/2025 SC Pro Edition
+
+
+---------------------
+; Table of Contents ;
+---------------------
+  1. Flow Summary
+  2. Flow Settings
+  3. Flow Non-Default Global Settings
+  4. Flow Elapsed Time
+  5. Flow OS Summary
+  6. Flow Log
+  7. Legal Notice
+
+
+
++-----------------------------------------------------+
+; Flow Summary                                        ;
++-------------+---------------------------------------+
+; Flow Status ; Successful - Tue Nov 10 16:30:00 2026 ;
++-------------+---------------------------------------+
+
+
++-----------------------------------------+
+; Flow Settings                           ;
++-------------------+---------------------+
+; Option            ; Setting             ;
++-------------------+---------------------+
+; Start date & time ; 11/10/2026 16:22:44 ;
+; Main task         ; Compilation         ;
+; Revision Name     ; nios_caliptra_a5e   ;
++-------------------+---------------------+
+
+
++---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+; Flow Non-Default Global Settings                                                                                                                                                                                                            ;
++-----------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------+-------------------+-------------+------------+
+; Assignment Name             ; Value                                                                                                                                                          ; Default Value     ; Entity Name ; Section Id ;
++-----------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------+-------------------+-------------+------------+
+; COMPILER_SIGNATURE_ID       ; 143122138774736.179432776400001                                                                                                                                ; --                ; --          ; --         ;
+; MISC_FILE                   ; /workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/dni/sandboxes/grok-bot-vm-358808298_1_0/sld/ipgen/alt_sld_fab_0/alt_sld_fab_0.cmp                ; --                ; --          ; --         ;
+; MISC_FILE                   ; /workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/dni/sandboxes/grok-bot-vm-358808298_1_0/sld/ipgen/alt_sld_fab_0.ip                               ; --                ; --          ; --         ;
+; MISC_FILE                   ; /workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/ip/rst_release/rst_release.cmp                                                                   ; --                ; --          ; --         ;
+; MISC_FILE                   ; /workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/ip/rst_release.ip                                                                                ; --                ; --          ; --         ;
+; MISC_FILE                   ; /workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_caliptra_win/nios_caliptra_sys_caliptra_win.cmp      ; --                ; --          ; --         ;
+; MISC_FILE                   ; /workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_caliptra_win.ip                                      ; --                ; --          ; --         ;
+; MISC_FILE                   ; /workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_clk/nios_caliptra_sys_clk.cmp                        ; --                ; --          ; --         ;
+; MISC_FILE                   ; /workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_clk.ip                                               ; --                ; --          ; --         ;
+; MISC_FILE                   ; /workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_cpu/nios_caliptra_sys_cpu.cmp                        ; --                ; --          ; --         ;
+; MISC_FILE                   ; /workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_cpu.ip                                               ; --                ; --          ; --         ;
+; MISC_FILE                   ; /workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_ctrl_pio/nios_caliptra_sys_ctrl_pio.cmp              ; --                ; --          ; --         ;
+; MISC_FILE                   ; /workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_ctrl_pio.ip                                          ; --                ; --          ; --         ;
+; MISC_FILE                   ; /workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_jtag_uart/nios_caliptra_sys_jtag_uart.cmp            ; --                ; --          ; --         ;
+; MISC_FILE                   ; /workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_jtag_uart.ip                                         ; --                ; --          ; --         ;
+; MISC_FILE                   ; /workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_magic_pio/nios_caliptra_sys_magic_pio.cmp            ; --                ; --          ; --         ;
+; MISC_FILE                   ; /workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_magic_pio.ip                                         ; --                ; --          ; --         ;
+; MISC_FILE                   ; /workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_ram/nios_caliptra_sys_ram.cmp                        ; --                ; --          ; --         ;
+; MISC_FILE                   ; /workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_ram.ip                                               ; --                ; --          ; --         ;
+; MISC_FILE                   ; /workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_status_pio/nios_caliptra_sys_status_pio.cmp          ; --                ; --          ; --         ;
+; MISC_FILE                   ; /workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_status_pio.ip                                        ; --                ; --          ; --         ;
+; MISC_FILE                   ; /workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/qsys/nios_caliptra_sys/nios_caliptra_sys.cmp                                                     ; --                ; --          ; --         ;
+; MISC_FILE                   ; /workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/qsys/nios_caliptra_sys.qsys                                                                      ; --                ; --          ; --         ;
+; PROJECT_OUTPUT_DIRECTORY    ; /workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/output_files                                                                                     ; --                ; --          ; --         ;
+; SEARCH_PATH                 ; ../caliptra-rtl/src/keyvault/rtl                                                                                                                               ; --                ; --          ; --         ;
+; SEARCH_PATH                 ; ../caliptra-rtl/src/doe/rtl                                                                                                                                    ; --                ; --          ; --         ;
+; SEARCH_PATH                 ; ../caliptra-rtl/src/integration/asserts                                                                                                                        ; --                ; --          ; --         ;
+; SEARCH_PATH                 ; ../caliptra-rtl/src/integration/rtl                                                                                                                            ; --                ; --          ; --         ;
+; SEARCH_PATH                 ; ../caliptra-rtl/src/libs/rtl                                                                                                                                   ; --                ; --          ; --         ;
+; SEARCH_PATH                 ; ../caliptra-rtl/src/caliptra_prim/rtl                                                                                                                          ; --                ; --          ; --         ;
+; SEARCH_PATH                 ; ../caliptra-rtl/src/lc_ctrl/rtl                                                                                                                                ; --                ; --          ; --         ;
+; SEARCH_PATH                 ; ../caliptra-rtl/src/spi_host/rtl                                                                                                                               ; --                ; --          ; --         ;
+; SEARCH_PATH                 ; ../caliptra-rtl/src/spi_host/tb                                                                                                                                ; --                ; --          ; --         ;
+; SEARCH_PATH                 ; ../caliptra-rtl/src/pcrvault/rtl                                                                                                                               ; --                ; --          ; --         ;
+; SEARCH_PATH                 ; ../caliptra-rtl/src/datavault/rtl                                                                                                                              ; --                ; --          ; --         ;
+; SEARCH_PATH                 ; ../caliptra-rtl/src/soc_ifc/rtl                                                                                                                                ; --                ; --          ; --         ;
+; SEARCH_PATH                 ; ../caliptra-rtl/src/riscv_core/veer_el2/rtl                                                                                                                    ; --                ; --          ; --         ;
+; SEARCH_PATH                 ; ../caliptra-rtl/src/entropy_src/rtl                                                                                                                            ; --                ; --          ; --         ;
+; SEARCH_PATH                 ; ../caliptra-rtl/src/entropy_src/tb                                                                                                                             ; --                ; --          ; --         ;
+; SEARCH_PATH                 ; ../caliptra-rtl/src/csrng/rtl                                                                                                                                  ; --                ; --          ; --         ;
+; SEARCH_PATH                 ; ../caliptra-rtl/src/uart/rtl                                                                                                                                   ; --                ; --          ; --         ;
+; SEARCH_PATH                 ; ../caliptra-rtl/src/sha512/coverage                                                                                                                            ; --                ; --          ; --         ;
+; SEARCH_PATH                 ; ../caliptra-rtl/src/sha256/coverage                                                                                                                            ; --                ; --          ; --         ;
+; SEARCH_PATH                 ; ../caliptra-rtl/src/hmac/coverage                                                                                                                              ; --                ; --          ; --         ;
+; SEARCH_PATH                 ; ../caliptra-rtl/src/ecc/coverage                                                                                                                               ; --                ; --          ; --         ;
+; SEARCH_PATH                 ; ../caliptra-rtl/src/soc_ifc/coverage                                                                                                                           ; --                ; --          ; --         ;
+; SEARCH_PATH                 ; ../caliptra-rtl/src/pcrvault/coverage                                                                                                                          ; --                ; --          ; --         ;
+; SEARCH_PATH                 ; ../caliptra-rtl/src/keyvault/coverage                                                                                                                          ; --                ; --          ; --         ;
+; SEARCH_PATH                 ; ../caliptra-rtl/src/integration/tb                                                                                                                             ; --                ; --          ; --         ;
+; SEARCH_PATH                 ; ../caliptra-rtl/src/integration/coverage                                                                                                                       ; --                ; --          ; --         ;
+; SEARCH_PATH                 ; ../caliptra-rtl/src/caliptra_prim_generic/rtl                                                                                                                  ; --                ; --          ; --         ;
+; SEARCH_PATH                 ; ../caliptra-rtl/src/ahb_lite_bus/rtl                                                                                                                           ; --                ; --          ; --         ;
+; SEARCH_PATH                 ; ../caliptra-rtl/src/sha512/rtl                                                                                                                                 ; --                ; --          ; --         ;
+; SEARCH_PATH                 ; ../caliptra-rtl/src/sha256/rtl                                                                                                                                 ; --                ; --          ; --         ;
+; SEARCH_PATH                 ; ../caliptra-rtl/src/sha512_masked/rtl                                                                                                                          ; --                ; --          ; --         ;
+; SEARCH_PATH                 ; ../caliptra-rtl/src/hmac/rtl                                                                                                                                   ; --                ; --          ; --         ;
+; SEARCH_PATH                 ; ../caliptra-rtl/src/hmac_drbg/rtl                                                                                                                              ; --                ; --          ; --         ;
+; SEARCH_PATH                 ; ../caliptra-rtl/src/ecc/rtl                                                                                                                                    ; --                ; --          ; --         ;
+; SEARCH_PATH                 ; ../caliptra-rtl/src/kmac/rtl                                                                                                                                   ; --                ; --          ; --         ;
+; SEARCH_PATH                 ; ../caliptra-rtl/src/edn/rtl                                                                                                                                    ; --                ; --          ; --         ;
+; SEARCH_PATH                 ; ../caliptra-rtl/src/aes/rtl                                                                                                                                    ; --                ; --          ; --         ;
+; SLD_FILE                    ; /workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_ctrl_pio/nios_caliptra_sys_ctrl_pio.regmap           ; --                ; --          ; --         ;
+; SLD_FILE                    ; /workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_jtag_uart/nios_caliptra_sys_jtag_uart.regmap         ; --                ; --          ; --         ;
+; SLD_FILE                    ; /workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_magic_pio/nios_caliptra_sys_magic_pio.regmap         ; --                ; --          ; --         ;
+; SLD_FILE                    ; /workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_status_pio/nios_caliptra_sys_status_pio.regmap       ; --                ; --          ; --         ;
+; SLD_FILE                    ; /workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/qsys/nios_caliptra_sys/nios_caliptra_sys.regmap                                                  ; --                ; --          ; --         ;
+; SOPCINFO_FILE               ; /workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/dni/sandboxes/grok-bot-vm-358808298_1_0/sld/ipgen/alt_sld_fab_0/alt_sld_fab_0.sopcinfo           ; --                ; --          ; --         ;
+; SOPCINFO_FILE               ; /workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/ip/rst_release/rst_release.sopcinfo                                                              ; --                ; --          ; --         ;
+; SOPCINFO_FILE               ; /workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_caliptra_win/nios_caliptra_sys_caliptra_win.sopcinfo ; --                ; --          ; --         ;
+; SOPCINFO_FILE               ; /workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_clk/nios_caliptra_sys_clk.sopcinfo                   ; --                ; --          ; --         ;
+; SOPCINFO_FILE               ; /workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_cpu/nios_caliptra_sys_cpu.sopcinfo                   ; --                ; --          ; --         ;
+; SOPCINFO_FILE               ; /workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_ctrl_pio/nios_caliptra_sys_ctrl_pio.sopcinfo         ; --                ; --          ; --         ;
+; SOPCINFO_FILE               ; /workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_jtag_uart/nios_caliptra_sys_jtag_uart.sopcinfo       ; --                ; --          ; --         ;
+; SOPCINFO_FILE               ; /workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_magic_pio/nios_caliptra_sys_magic_pio.sopcinfo       ; --                ; --          ; --         ;
+; SOPCINFO_FILE               ; /workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_ram/nios_caliptra_sys_ram.sopcinfo                   ; --                ; --          ; --         ;
+; SOPCINFO_FILE               ; /workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_status_pio/nios_caliptra_sys_status_pio.sopcinfo     ; --                ; --          ; --         ;
+; SOPCINFO_FILE               ; /workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/qsys/nios_caliptra_sys/nios_caliptra_sys.sopcinfo                                                ; --                ; --          ; --         ;
+; TOP_LEVEL_ENTITY            ; nios_caliptra_top                                                                                                                                              ; nios_caliptra_a5e ; --          ; --         ;
+; VERILOG_CONSTANT_LOOP_LIMIT ; 65536                                                                                                                                                          ; 5000              ; --          ; --         ;
+; VERILOG_CU_MODE             ; MFCU                                                                                                                                                           ; SFCU              ; --          ; --         ;
+; VERILOG_INPUT_VERSION       ; SystemVerilog_2005                                                                                                                                             ; Verilog_2001      ; --          ; --         ;
+; VERILOG_MACRO               ; SYNTHESIS=1                                                                                                                                                    ; --                ; --          ; --         ;
+; VERILOG_MACRO               ; FPGA_SYN=1                                                                                                                                                     ; --                ; --          ; --         ;
++-----------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------+-------------------+-------------+------------+
+
+
++--------------------------------------------------+
+; Flow Elapsed Time                                ;
++-------------+--------------+---------------------+
+; Module Name ; Elapsed Time ; Peak Virtual Memory ;
++-------------+--------------+---------------------+
+; Synthesis   ; 00:07:17     ; 3986 MB             ;
+; Total       ; 00:07:17     ; --                  ;
++-------------+--------------+---------------------+
+
+
++-----------------------------------------------------------------------------+
+; Flow OS Summary                                                             ;
++-------------+-----------------------+---------+------------+----------------+
+; Module Name ; Machine Hostname      ; OS Name ; OS Version ; Processor type ;
++-------------+-----------------------+---------+------------+----------------+
+; Synthesis   ; grok-bot-vm-358808298 ; Ubuntu  ; 24         ; x86_64         ;
++-------------+-----------------------+---------+------------+----------------+
+
+
+------------
+; Flow Log ;
+------------
+quartus_syn --parallel=4 nios_caliptra_a5e
+
+
+
+----------------
+; Legal Notice ;
+----------------
+Copyright (C) 2025  Altera Corporation. All rights reserved.
+Your use of Altera Corporation's design tools, logic functions 
+and other software and tools, and any partner logic 
+functions, and any output files from any of the foregoing 
+(including device programming or simulation files), and any 
+associated documentation or information are expressly subject 
+to the terms and conditions of the Altera Program License 
+Subscription Agreement, the Altera Quartus Prime License Agreement,
+the Altera IP License Agreement, or other applicable license
+agreement, including, without limitation, that your use is for
+the sole purpose of programming logic devices manufactured by
+Altera and sold by Altera or its authorized distributors.  Please
+refer to the Altera Software License Subscription Agreements 
+on the Quartus Prime software download page.
+
+
+
