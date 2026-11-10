@@ -46,6 +46,7 @@ set_global_assignment -name SEARCH_PATH /workspace/caliptra-c10gx-1x/caliptra-rt
 set_global_assignment -name SYSTEMVERILOG_FILE /workspace/caliptra-c10gx-1x/caliptra-rtl/src/keyvault/rtl/kv_defines_pkg.sv
 set_global_assignment -name SYSTEMVERILOG_FILE /workspace/caliptra-c10gx-1x/caliptra-rtl/src/doe/rtl/doe_defines_pkg.sv
 set_global_assignment -name SYSTEMVERILOG_FILE /workspace/caliptra-c10gx-1x/quartus/syn_src/caliptra_sram.sv
+set_global_assignment -name VERILOG_CONSTANT_LOOP_LIMIT 65536
 set_global_assignment -name SYSTEMVERILOG_FILE /workspace/caliptra-c10gx-1x/caliptra-rtl/src/libs/rtl/ahb_defines_pkg.sv
 set_global_assignment -name SYSTEMVERILOG_FILE /workspace/caliptra-c10gx-1x/caliptra-rtl/src/libs/rtl/caliptra_ahb_srom.sv
 set_global_assignment -name SYSTEMVERILOG_FILE /workspace/caliptra-c10gx-1x/caliptra-rtl/src/libs/rtl/apb_slv_sif.sv

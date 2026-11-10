@@ -9,3 +9,4 @@ caliptra-rtl
 sim/obj_nios_top_fw/
 quartus_a5e_nios/sw/app/build/
 quartus_a5e_nios/sw/.shim/
+quartus_a5e_nios/ip/rst_release/

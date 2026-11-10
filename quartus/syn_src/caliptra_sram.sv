@@ -1,5 +1,6 @@
 // Synthesis-only replacement for caliptra-rtl libs/rtl/caliptra_sram.sv (word-wide RAM, infers M20K).
-// Initialized to 0 as an FPGA bitstream / power-up stand-in. This is NOT a
+// Initialized to 0 in the FPGA bitstream (config-time only; used here only for the
+// mailbox SRAM; needs QSF VERILOG_CONSTANT_LOOP_LIMIT >= DEPTH). This is NOT a
 // Caliptra-spec SRAM zeroization sweep on cptra_pwrgood (internal SRAM ports
 // are owned by the TCB and are not muxed here). See docs/NIOS_CALIPTRA_INTEGRATION.md M8.
 module caliptra_sram #(parameter DEPTH=64, parameter DATA_WIDTH=32, parameter ADDR_WIDTH=$clog2(DEPTH)) (
