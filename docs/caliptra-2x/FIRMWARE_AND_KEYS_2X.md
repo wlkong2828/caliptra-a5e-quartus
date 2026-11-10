@@ -135,7 +135,7 @@ What the script does:
    - header SVN = 0 (it refuses otherwise, because the SVN fuses are written as 0);
    - the PQC descriptor's key type equals the manifest `pqc_key_type`.
 2. **Vendor hash.** `FUSE_VENDOR_PK_HASH` = SHA-384(bundle[12 : 12+1736]), written as 12 **big-endian** 32-bit words. This matches caliptra-sw `image_pk_desc_hash` / `bytes_to_be_words_48`, and the `caliptra-image-app --print-hashes` computation (`image/app/src/create/mod.rs`).
-3. **Owner hash.** `CPTRA_OWNER_PK_HASH` = SHA-384(bundle[9168 : 9168+2688]), same word order. Then `CPTRA_OWNER_PK_HASH_LOCK` = 1.
+3. **Owner hash.** `CPTRA_OWNER_PK_HASH` = SHA-384(bundle[9168 : 9168+2688]) (owner ECC key 96 B + PQC key field 2,592 B), written as 12 **big-endian** 32-bit words to `0x30140–0x3016C`. Then `CPTRA_OWNER_PK_HASH_LOCK` = 1.
 4. **PQC type.** `FUSE_PQC_KEY_TYPE` = manifest `pqc_key_type` (1).
 5. **STUDY seeds.** STUDY UDS (16 words) and FE (8 words) from fixed formulas, **not secrets**. Every other fuse word is 0, except `FUSE_SOC_STEPPING_ID` = 1.
 6. **Output.** Writes `{addr,data}` lines (see the integration guide §8 for the full table) and prints both hashes. With the current bundle:
@@ -164,7 +164,7 @@ Steps marked *(untested here)* follow the caliptra-sw source but were not run in
 |---|---|---|---|
 | Vendor firmware-signing keys | ECC P-384 | 1–4 (`VENDOR_ECC_MAX_KEY_COUNT` = 4) | Silicon or firmware vendor HSM |
 | Vendor PQC keys | **ML-DSA-87** (`pqc_key_type` = 1) **or** LMS (`= 3`) | ML-DSA 1–4 (`VENDOR_MLDSA_MAX_KEY_COUNT`), LMS 1–32 (`VENDOR_LMS_MAX_KEY_COUNT`) | Vendor HSM |
-| Owner key | ECC P-384 + the same PQC type | 1 each | Platform owner HSM |
+| Owner key | ECC P-384 + one PQC key of the bundle's single `pqc_key_type` (ML-DSA-87 if 1, LMS if 3) | 1 each | Platform owner HSM |
 
 - All vendor public keys are hashed into one descriptor, so `FUSE_VENDOR_PK_HASH` commits to the whole set.
 - Keep spare keys for revocation. The **last** key index can never be revoked (`verify_vendor_ecc_pk_idx`: "Last key index is never revoked").
@@ -229,10 +229,10 @@ Steps marked *(untested here)* follow the caliptra-sw source but were not run in
    - **ECC:** sign `h.json.vendor` with the active vendor ECC key and `h.json.owner` with the owner ECC key (ECDSA P-384 over the given SHA-384 digest).
    - **ML-DSA-87:** sign the **raw header bytes**, not the digest. Vendor = bundle[16588:16708], owner = bundle[16588:16748] (§3). Pure ML-DSA, empty context. `--hashes` does not export these bytes, so cut them from the step-1 bundle.
 3. Assemble the two 4,724-byte `ImageSignatures` files. Convert r, s and the ML-DSA signature into caliptra's word order (§3); the ML-DSA signature is 4,627 B plus 1 pad byte.
-4. Rebuild with the same `--image-options` plus `--vendor-sig-override vsig.bin --owner-sig-override osig.bin`. Alternatively, patch the bytes at offsets 4,444 and 11,856 of the step-1 bundle.
+4. Rebuild with the step-1 public-key-only `--image-options` TOML plus `--vendor-sig-override vsig.bin --owner-sig-override osig.bin`. Alternatively, patch the bytes at offsets 4,444 and 11,856 of the step-1 bundle.
    - Rebuilding is only valid if the build is reproducible. caliptra-sw has a consistency test for ELF builds, but this was not checked here.
 5. Verify before fusing:
-   - Check the ECC signatures with your public keys over the §3 byte ranges (the same check we ran on the fake-key bundle).
+   - Check the ECC signatures with your public keys over the §3 byte ranges: ECDSA P-384 over SHA-384 of bundle[16588:16708] (vendor) and bundle[16588:16748] (owner). This is the check that passed on the fake-key bundle.
    - Boot in Verilator ([SIMULATION_2X.md](SIMULATION_2X.md)), or in caliptra-sw's emulator, with the regenerated fuse image.
 
 No other external-signing tool exists in caliptra-sw `dd1e79d`: no PKCS#11 / HSM plug-in.

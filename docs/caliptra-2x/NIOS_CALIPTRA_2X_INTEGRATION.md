@@ -23,7 +23,7 @@
 | `rtl_2x/nios_caliptra2x_top.sv`, `avmm_to_axi.sv`, `soc_fuse_ctrl2x.sv`, `soc_fw_store.sv`, `reset_sync.sv`, `caliptra_passive_top.sv` | Written; simulated (Verilator) |
 | `scripts/gen_fuse_image_2x.py` → `fw_2x/fuse_image_2x.hex` | Written; output used in the PASS run (regeneration is byte-identical) |
 | `fw_2x/` ROM + FW bundle (+ `build_rom.sh`, `SHA256SUMS`) | Built from caliptra-sw `dd1e79d` |
-| Platform Designer system `nios_caliptra2x_sys` (Nios V + PIOs + 1 MiB window) | **Not created yet.** The TB uses a behavioral stand-in with the same ports |
+| Platform Designer system `nios_caliptra2x_sys` (Nios V + PIOs + 1 MiB window) | **Not created yet.** The TB uses a behavioral stand-in module `nios_caliptra2x_sys` with the ports the top instantiates: `clk_clk`, `reset_reset_n`, `caliptra_axi_address[19:0]`, `_read`, `_write`, `_writedata[31:0]`, `_byteenable[3:0]`, `_readdata[31:0]`, `_readdatavalid`, `_waitrequest`, `_burstcount`, `_debugaccess`, `ctrl_pio_export[31:0]` (out), `status_pio_export[31:0]` (in), `magic_pio_export[31:0]` (out) |
 | Nios C firmware for 2.x (`main.c` port) | **Not ported yet.** The 1.x `quartus_a5e_nios/sw/app/main.c` is unchanged. The TB host model defines the 2.x sequence (§11) |
 | Quartus project for the full Nios + 2.x top | **Not created.** `quartus_a5e_2x/` synthesizes only the Caliptra core wrapper (fit gate) |
 
@@ -119,39 +119,52 @@ flowchart TB
 
 | Port | Dir | Width | Connection |
 |---|---|---|---|
-| `clk` | in | 1 | Single clock for Nios, glue and Caliptra |
-| `reset_n` | in | 1 | Board reset, active low; ANDed with `~ninit_done` |
-| `led` | out | 8 | `magic_pio[7:0]` |
+| `clk` | in | 1 | Single clock (rising edge) for the PD system, glue and Caliptra. It is the only clock domain in the top, and both 2FF reset synchronizers run on it |
+| `reset_n` | in | 1 | Board reset, **active-low**, asynchronous: it is ANDed with `~ninit_done` (`sys_reset_n = reset_n & ~ninit_done`) without being synchronized first |
+| `led` | out | 8 | `magic_out[7:0]` (`magic_pio_export`), active-high, 1 = bit set; driven by the magic PIO (TB model initializes it to 0) |
 
 ### 3.2 Internal glue signals
 
 | Signal | Source → sink | Notes |
 |---|---|---|
-| `ninit_done` | `rst_release` → gate | Agilex 5 Reset Release IP (sim: `sim/rst_release_stub.sv`) |
-| `sys_reset_n` | `reset_n & ~ninit_done` | PD reset; also gates the raw pwrgood/rst_b requests |
-| `glue_rst_n` | `rst_sync_async_assert` (2 stages) | Resets decode, bridge, fuse ctrl |
-| `ctrl_out[0]` | ctrl PIO → `raw_pwrgood = ctrl_out[0] & sys_reset_n` → `pwrgood_sync_async_assert` → `cptra_pwrgood` | Reset value 0 = Caliptra unpowered |
-| `ctrl_out[1]` | ctrl PIO → `raw_rst_b = ctrl_out[1] & sys_reset_n` → `rst_sync_async_assert` → `cptra_rst_b` | Warm reset = drop only this bit |
-| `ctrl_out[2]` | ctrl PIO → `BootFSM_BrkPoint` | Default 0 |
-| `status_in` | → status PIO | See §3.3 |
-| `fuse_busy` | `soc_fuse_ctrl2x.busy` | 1 in NEXT/SEND/RESP: fuse ctrl owns AW/W/B |
-| `bridge_idle` | `avmm_to_axi.idle` | Exported for a warm-reset quiesce; **not yet used** in the top |
-| `nios_axi_user` | register, reset/load `NIOS_AXI_USER` | A register (not an assign) so the TB can `force` a wrong ID |
-| `generic_input_wires` | `64'b0` | IS Table 13: bit 0 = zeroization status; no source → 0 |
+| `ninit_done` | `rst_release` → gate | Agilex 5 Reset Release IP output, **active-high**: 1 = device still initializing, 0 = user logic may run. Sim stub `sim/rst_release_stub.sv`: 1 at time 0, 0 after 25 ns |
+| `sys_reset_n` | `reset_n & ~ninit_done` | **Active-low**, combinational and asynchronous (not synchronized in this top). It drives the PD `reset_reset_n`, feeds `u_sync_glue`, and is ANDed into `raw_pwrgood` / `raw_rst_b` |
+| `glue_rst_n` | `u_sync_glue` = `rst_sync_async_assert #(.STAGES(2))` on `sys_reset_n` | **Active-low**. Assertion (1→0) is asynchronous; deassertion (0→1) comes 2 `clk` edges after `sys_reset_n` rises. It resets the read-valid flops of the window decode, `avmm_to_axi`, `soc_fuse_ctrl2x` and `nios_axi_user` |
+| `ctrl_out[0]` | ctrl PIO → `raw_pwrgood = ctrl_out[0] & sys_reset_n` → `u_sync_pwrgood` = `pwrgood_sync_async_assert #(.STAGES(2))` → `cptra_pwrgood` | **Active-high** (1 = power good). The cell sets `cptra_pwrgood` = 1 asynchronously as soon as `raw_pwrgood` rises, and drops it 2 `clk` edges after `raw_pwrgood` falls (see §10.1 note). The PIO reset value must be 0 (the TB model initializes `ctrl` = 0), so Caliptra starts unpowered |
+| `ctrl_out[1]` | ctrl PIO → `raw_rst_b = ctrl_out[1] & sys_reset_n` → `u_sync_rst_b` = `rst_sync_async_assert #(.STAGES(2))` → `cptra_rst_b` | **Active-low** reset (0 = Caliptra in reset). Assertion (1→0) is asynchronous; deassertion (0→1) comes 2 `clk` edges after `raw_rst_b` rises. Reset value 0. A warm reset drops only this bit |
+| `ctrl_out[2]` | ctrl PIO → `BootFSM_BrkPoint` (direct, no synchronizer) | **Active-high**, reset value 0. `soc_ifc_top.sv` latches it once after `cptra_noncore_rst_b` deasserts. It only takes effect if debug is unlocked or the lifecycle is MANUFACTURING (or `ss_debug_intent` = 1). With the straps here (PRODUCTION, `debug_locked` = 1, `ss_debug_intent` = 0) it is **ignored** |
+| `status_in[31:0]` | Caliptra outputs → `status_pio_export` (PIO input) | Bit map, polarity and reset values in §3.3 |
+| `fuse_busy` | `soc_fuse_ctrl2x.busy` | Active-high, combinational from the FSM state (0 in reset/IDLE). It is 1 in NEXT/SEND/RESP, when the fuse ctrl owns AW/W/B |
+| `bridge_idle` | `avmm_to_axi.idle` | Active-high, 1 in bridge state `IDLE` (1 in reset). Meant for a warm-reset quiesce; **not yet used** in the top |
+| `nios_axi_user[31:0]` | Flop on `clk` / `glue_rst_n`, reset and load value `NIOS_AXI_USER` = `32'h1` | A register (not an assign) so the TB can `force` a wrong ID |
+| `generic_input_wires[63:0]` | Constant `64'b0` → `caliptra_top` input | IS Table 13: bit 0 = zeroization status; with no source it is tied to 0 |
 
-### 3.3 `status_pio` bits (same positions as 1.x)
+### 3.3 `status_pio` bits (32-bit input PIO, `status_in`)
 
-| Bit | Signal | 1.x name |
-|---|---|---|
-| 0 | `ready_for_fuses` | same |
-| 1 | `ready_for_mb_processing` | `ready_for_fw_push` |
-| 2 | `ready_for_runtime` | same |
-| 3 | `mailbox_data_avail` | same |
-| 4 | `mailbox_flow_done` | same |
-| 5 | `cptra_error_fatal` | same |
-| 6 | `cptra_error_non_fatal` | same |
-| 7 | `etrng_req` | same |
-| 31:8 | `generic_output_wires[23:0]` | same (ROM/FW log byte on `[7:0]`, strobe toggle on `[8]`) |
+`nios_caliptra2x_top.sv`: `status_in = {generic_output_wires[23:0], etrng_req, cptra_error_non_fatal, cptra_error_fatal, mailbox_flow_done, mailbox_data_avail, ready_for_runtime, ready_for_mb_processing, ready_for_fuses}`.
+
+Common to every bit:
+- **Direction:** `caliptra_top` **output** → `caliptra_passive_top` output → `status_in` → `status_pio_export` (PIO **input**, Nios reads it).
+- **Polarity:** all **active-high**: 1 = condition true.
+- **Clock domain:** Caliptra's `clk`. Each bit comes from a flop clocked by `clk` or by one of the clock-gated copies of `clk` that `clk_gate.sv` makes (`rdc_clk_cg`, `soc_ifc_clk_cg`):
+  - bit 0: the boot FSM on `clk`;
+  - bits 1, 2, 4, 7 and 31:8: `soc_ifc_reg` on `rdc_clk_cg`;
+  - bits 5 and 6: `soc_ifc_top` flops on `rdc_clk_cg`;
+  - bit 3: decoded combinationally from the mailbox FSM state register, which runs on `soc_ifc_clk_cg`. Nios, glue and Caliptra all run on the single top-level `clk`, so there is **no synchronizer**: the bits are wired straight to the PIO.
+- **Reset value:** all **0**. Bits 0, 3, 5 and 6 reset on `cptra_noncore_rst_b`, the internal reset derived from `cptra_rst_b`. The register-backed bits (1, 2, 4, 7 and 31:8) have `resetsignal = cptra_rst_b`. So they all read 0 while `ctrl` = 0 after power-up.
+- **Bit positions:** identical to the 1.x `quartus_a5e_nios/rtl/nios_caliptra_top.sv` status PIO. Only bit 1 changed name.
+
+| Bit | Signal (1-bit unless noted) | Driver inside caliptra-rtl v2.1.2 | Reset | Meaning when 1 / host use | 1.x bit |
+|---|---|---|---|---|---|
+| 0 | `ready_for_fuses` | `soc_ifc_boot_fsm.sv` flop on `clk`: `(boot_fsm_ps == BOOT_FUSE) && !fuse_wr_done_observed` | 0 | The boot FSM is in `BOOT_FUSE` and `CPTRA_FUSE_WR_DONE` has not been written yet, so fuses may be written. It is also wired to `soc_fuse_ctrl2x.ready_for_fuses`: START/START_DONE without it gives ERR, and it reads back as fuse ctrl STATUS bit 3. The host polls it at §11 step 3 | bit 0 `ready_for_fuses` |
+| 1 | `ready_for_mb_processing` | `CPTRA_FLOW_STATUS.ready_for_mb_processing` (bit 28), written by ROM/FW (`soc_ifc_reg`, `rdc_clk_cg`) | 0 | The ROM is ready for a mailbox command (FW_LOAD). The host polls it at step 7 | bit 1 `ready_for_fw_push` |
+| 2 | `ready_for_runtime` | `CPTRA_FLOW_STATUS.ready_for_runtime` (bit 29), written by FW | 0 | Runtime firmware is up. The host polls it at step 10 | bit 2 `ready_for_runtime` |
+| 3 | `mailbox_data_avail` | `mbox.sv` (`soc_ifc_clk_cg`) `soc_mbox_data_avail` = 1 while the mailbox FSM is in `MBOX_EXECUTE_SOC` | 0 (FSM resets to `MBOX_IDLE`) | The Caliptra uC has set EXECUTE with data or a response for the SoC. The TB host does not poll it; it uses `MBOX_STATUS` | bit 3 `mailbox_data_avail` |
+| 4 | `mailbox_flow_done` | `CPTRA_FLOW_STATUS.mailbox_flow_done` (bit 31), written by FW | 0 | FW reports that the mailbox flow is complete. The TB does not poll it. The final `CPTRA_FLOW_STATUS = b8000000` has it set | bit 4 `mailbox_flow_done` |
+| 5 | `cptra_error_fatal` | `soc_ifc_top.sv` flop on `rdc_clk_cg`, set by a new unmasked bit in `CPTRA_HW_ERROR_FATAL` / `CPTRA_FW_ERROR_FATAL` | 0 | Fatal error. It is **sticky**: the RTL has no clear path except reset (the RTL comment says the platform must apply `cptra_rst_b`). The IS recovery rule is a pwrgood cycle (§10.3). The TB treats it as FAIL | bit 5 `cptra_error_fatal` |
+| 6 | `cptra_error_non_fatal` | `soc_ifc_top.sv` flop on `rdc_clk_cg`, set like bit 5 from the `*_NON_FATAL` registers | 0 | Non-fatal error. It deasserts once every unmasked non-fatal bit is cleared; the host clears them with RW1C | bit 6 `cptra_error_non_fatal` |
+| 7 | `etrng_req` | `soc_ifc_top.sv` `trng_req = CPTRA_TRNG_STATUS.DATA_REQ` (no `CALIPTRA_INTERNAL_TRNG`) | 0 | ROM/FW requests TRNG data. The host writes `CPTRA_TRNG_DATA[0..11]`, then `DATA_WR_DONE` (§9) | bit 7 `etrng_req` |
+| 31:8 | `generic_output_wires[23:0]` (24 of 64 bits) | `CPTRA_GENERIC_OUTPUT_WIRES[0][23:0]`, written by ROM/FW (`[63:24]` not wired to the PIO) | 0 | ROM/FMC/RT console: `[7:0]` = ASCII character, and `[8]` toggles once per character (the TB decoder in `tb_nios2x_top_fw.sv` prints lines from these). `[23:9]` are not decoded | bits 31:8 `generic_output_wires[23:0]` |
 
 ### 3.4 `caliptra_passive_top` / `caliptra_top` connections
 
@@ -161,16 +174,16 @@ Widths come from `config_defines.svh`: `CALIPTRA_AXI_DATA_WIDTH` = 32, `CALIPTRA
 
 | `caliptra_top` port | Width | Driven by (`nios_caliptra2x_top` → wrapper) | Status |
 |---|---|---|---|
-| `clk` | 1 | `clk` | |
-| `cptra_pwrgood` | 1 | 2FF-synced `ctrl_out[0]` | |
-| `cptra_rst_b` | 1 | 2FF-synced `ctrl_out[1]` | |
+| `clk` | 1 | Top-level `clk`, direct | Caliptra input; same clock as Nios and glue, so there is no CDC |
+| `cptra_pwrgood` | 1 | `u_sync_pwrgood` output (from `ctrl_out[0] & sys_reset_n`) | Input, **active-high**; 0 = Caliptra powered off (cold reset of all pwrgood-domain state). Reset value 0 |
+| `cptra_rst_b` | 1 | `u_sync_rst_b` output (from `ctrl_out[1] & sys_reset_n`) | Input, **active-low**; 0 = Caliptra in (warm) reset. Async assert, 2FF sync deassert. Reset value 0 |
 | `cptra_obf_key` | 256 | `STUDY_PROD_MIMIC_OBF_KEY` = `31358e8a_f34d6a45_…_b2c3b8d5` (localparam) | **TEST-ONLY** |
 | `cptra_csr_hmac_key` | 16 × 32 (`CLP_CSR_HMAC_KEY_DWORDS` = 16) | `{16{32'h5A3C_96E1}}` | **TEST-ONLY** |
 | `security_state.device_lifecycle` | 2 | `2'b11` = DEVICE_PRODUCTION | **TEST-ONLY** (hardwired) |
 | `security_state.debug_locked` | 1 | `1'b1` | **TEST-ONLY** (hardwired) |
 | `cptra_obf_field_entropy_vld` / `cptra_obf_field_entropy` | 1 / 256 | `0` / `'0` | Passive: tie 0 (IS Table 12) |
 | `cptra_obf_uds_seed_vld` / `cptra_obf_uds_seed` | 1 / 512 | `0` / `'0` | Passive: tie 0 |
-| `BootFSM_BrkPoint` | 1 | `ctrl_out[2]` | |
+| `BootFSM_BrkPoint` | 1 | `ctrl_out[2]`, direct | Input, active-high, reset 0. Ignored with the PRODUCTION + debug-locked straps (§3.2) |
 | `scan_mode` | 1 | `1'b0` | |
 | `jtag_tck/tms/tdi/trst_n` | 1 each | `0` (TAP held in reset) | OPEN (no TAP endpoint) |
 | `jtag_tdo`, `jtag_tdoEn` | 1 each | unconnected | |
@@ -230,7 +243,7 @@ Widths come from `config_defines.svh`: `CALIPTRA_AXI_DATA_WIDTH` = 32, `CALIPTRA
 
 - The IDs are unique per agent and non-zero, as IS Table 19 recommends.
 - The RTL integration parameters are left at upstream defaults: `CPTRA_SET_MBOX_AXI_USER_INTEG = 0`, `CPTRA_SET_FUSE_AXI_USER_INTEG = 0`. The IDs are therefore *programmed and locked* by the host on every cold boot (§11, step 4), not hardened at compile time.
-- **Fuse range gating.** In `soc_ifc_arb.sv`, SoC requests to `0x30200–0x305FF` (`SOC_IFC_FUSE_START_ADDR`..`_END_ADDR`) are routed only if `valid_fuse_user` is set. Once `CPTRA_FUSE_AXI_USER_LOCK` = 1, that means AxUSER == `CPTRA_FUSE_VALID_AXI_USER` (= 2). So **the Nios (user 1) can neither write nor read fuse registers**. This explains the `FUSE_PQC_KEY_TYPE readback=00000000` seen in the sim (§9.3).
+- **Fuse range gating.** In `soc_ifc_arb.sv`, SoC requests to `0x30200–0x305FF` (`SOC_IFC_FUSE_START_ADDR`..`_END_ADDR`) are routed only if `valid_fuse_user` is set. Once `CPTRA_FUSE_AXI_USER_LOCK` = 1, that means AxUSER == `CPTRA_FUSE_VALID_AXI_USER` (= 2). So **the Nios (user 1) can neither write nor read fuse registers**. This explains the `FUSE_PQC_KEY_TYPE readback=00000000` seen in the sim ([SIMULATION_2X.md §4.3](SIMULATION_2X.md)).
 - `CPTRA_OWNER_PK_HASH[12]` (`0x30140`) and `CPTRA_OWNER_PK_HASH_LOCK` (`0x30170`) are **outside** the fuse range. Any SoC requester can write them until the lock is set. In this design the fuse controller writes and locks them. Note that the Nios could also write them before the lock (see checklist, §13).
 - The sim's `+test=axiuser` checks: a mailbox write with AxUSER 3 gives SLVERR; a fuse write with AxUSER 3 gives SLVERR; a fuse write with AxUSER 1 (Nios) gives SLVERR; a `HW_REV_ID` read with AxUSER 1 is accepted (`TB_AXIUSER PASS`).
 
@@ -303,7 +316,7 @@ Internal addresses are `0x3000_0000 + AXI address` (`SOC_IFC_REG_OFFSET`).
 - **AXI side:** single beat, `AxLEN=0`, `AxSIZE=2` (32-bit), `AxBURST=INCR` (`2'b01`), `AxLOCK=0`, `AxID=0`, `WSTRB=4'hF`, `WLAST=1`. `AWUSER = WUSER = ARUSER = user_i`. The address is word-aligned (`{a[AW-1:2],2'b00}`).
 - **One outstanding transaction.** States: `IDLE → WADDR → WRESP → DONE` for writes and `IDLE → RADDR → RDATA → DONE → RESP` for reads. AW and W are issued together, and each drops on its own handshake.
 - **Avalon handshake:** `avs_waitrequest` is low for exactly one cycle (`DONE`) to accept. Read data comes one cycle later with `avs_readdatavalid` (`RESP`).
-- **Errors:** `BRESP`/`RRESP` ≠ OKAY sets `err_q`, so `avs_response = 2'b10` (SLVERR) for the last transaction. The TB reads `u_bridge.err_q` directly for the AxUSER test. Firmware would read the Avalon response, if the PD interconnect forwards it.
+- **Errors:** `BRESP`/`RRESP` ≠ OKAY sets `err_q`, so `avs_response = 2'b10` (SLVERR) for the last transaction. The TB reads `u_bridge.err_q` directly for the AxUSER test. **In `nios_caliptra2x_top.sv` the bridge's `avs_response` drives `cl_response`, but `cl_response` is not connected to any `nios_caliptra2x_sys` port.** So SLVERR does not reach the Nios today. Adding a `caliptra_axi_response` port to the PD window is an open item (§15).
 - **Spec fit (IS "Unsupported features"):** single outstanding, in order, no narrow writes to `mbox_datain` / `TRNG_DATA`. AxCACHE/PROT/REGION/QOS are not driven.
 - **`idle` output:** high in `IDLE`, intended for warm-reset quiescing. It is not yet used by the top.
 
@@ -404,12 +417,15 @@ Offsets are verified against `caliptra_reg_defines.svh` (`CLP_SOC_IFC_REG_*`, mi
 
 | Event | How | Effect |
 |---|---|---|
-| FPGA configuration | Reset Release IP holds `ninit_done`=1 → `sys_reset_n`=0 | Nios, glue and Caliptra requests all held |
-| Board reset | `reset_n`=0 | Same as above; also a Caliptra **cold** reset (pwrgood/rst_b requests gated by `sys_reset_n`) |
+| FPGA configuration | Reset Release IP holds `ninit_done`=1 → `sys_reset_n`=0 | PD system in reset (`reset_reset_n`=0). `glue_rst_n`=0 (async). `raw_pwrgood`=`raw_rst_b`=0, so `cptra_rst_b`=0 (async) and `cptra_pwrgood`=0 (2 `clk` after; it was never raised) |
+| Board reset | `reset_n`=0 → `sys_reset_n`=0 | PD system reset; the ctrl PIO returns to 0. `glue_rst_n`=0 (async). `cptra_rst_b`=0 (async), and `cptra_pwrgood` falls 2 `clk` edges later (needs `clk` running). The result is a Caliptra **cold** reset |
 | Caliptra cold reset | Host clears `ctrl[0]` (and `[1]`), then sets `ctrl=1` → wait → `ctrl=3` | pwrgood-domain state cleared (fuses, owner hash + lock, AxUSER locks) → full fuse push needed |
 | Caliptra warm reset | Host clears only `ctrl[1]`, then sets it again | Fuses/owner hash persist; host must issue fuse ctrl **START_DONE** in `BOOT_FUSE`. **Not simulated in 2.x** |
 
-- Both Caliptra resets use `reset_sync.sv` cells: asynchronous assertion, 2-stage synchronous deassertion, `SYNCHRONIZER_IDENTIFICATION FORCED_IF_ASYNCHRONOUS`. This meets IS Table 4 / the RDC rules.
+- Both Caliptra resets use `reset_sync.sv` cells (2 stages, `SYNCHRONIZER_IDENTIFICATION FORCED_IF_ASYNCHRONOUS`):
+  - `cptra_rst_b` (active-low): 1→0 is asynchronous, and 0→1 is synchronized (2 `clk`).
+  - `cptra_pwrgood` (active-high): 0→1 is asynchronous, and 1→0 is synchronized (2 `clk`). This follows IS Table 4 literally ("Asynchronous Assertion, Synchronous deassertion to clk").
+- **Note on pwrgood.** The IS RDC table also lists `CPTRA_PWRGD` as an async, active-low reset. Seen that way, the 0→1 edge of `cptra_pwrgood` is the reset *release*, and this cell does not synchronize it. Here that edge always comes from the ctrl PIO flop, which is clocked by `clk` (`sys_reset_n` cannot raise it, because the PIO is 0 when `sys_reset_n` rises), so it is already synchronous. Keep that property if the source changes.
 - In the sim, pwrgood is raised and then `rst_b` follows 20 cycles later (`cold_release()`). That is above IS Table 19's 10-clock minimum.
 
 ### 10.2 Watchdog
@@ -483,7 +499,7 @@ The magic/LED codes the TB uses are 1 = start, 2 = ready_for_fuses, 3 = AxUSER p
 | Fuses | 83 words, data-only image | 104 words + 12 owner hash + lock, address/data image, 117 entries |
 | Owner PK hash | Fuse `FUSE_OWNER_PK_HASH` | Register `CPTRA_OWNER_PK_HASH[12]` + `_LOCK` (pwrgood) |
 | Lifecycle | `FUSE_LIFE_CYCLE` + straps | Straps only |
-| Ready signal | `ready_for_fw_push` | `ready_for_mb_processing` (same PIO bit 1) |
+| Ready signal | `ready_for_fw_push` | `ready_for_mb_processing`; both on `status_pio` bit 1, active-high |
 | Mailbox | 128 KiB | 256 KiB |
 | ROM / ICCM / DCCM | 48 / 128 / 128 KiB | 96 / 256 / 256 KiB |
 | PQC | LMS optional | ML-DSA-87 (Adams-Bridge) or LMS, selected by `FUSE_PQC_KEY_TYPE` |
@@ -499,7 +515,7 @@ References: IS Table 4 (clocks/resets), Table 5 (AXI), Tables 11–13 (straps, g
 | Requirement | Spec ref | Implementation | Status |
 |---|---|---|---|
 | Clock running before / ≥10 clk around `cptra_pwrgood` | Table 19 Resets and Clocks | Free-running clk; TB 20 clk pwrgood→rst_b | **PASS** (sim) |
-| Async assert / sync deassert of pwrgood, rst_b | Table 4 / RDC | `reset_sync.sv` 2FF cells | **PASS** |
+| Async assert / sync deassert of pwrgood, rst_b | Table 4 / RDC | `reset_sync.sv` 2FF cells: `rst_b` 1→0 async, 0→1 sync; `pwrgood` 0→1 async, 1→0 sync (literal Table 4; the 0→1 source is a `clk` flop, §10.1) | **PASS** |
 | Agilex Reset Release before user logic | Intel A5E | `rst_release` gates `sys_reset_n` | **PASS** (stub in sim) |
 | AXI single outstanding, in order, no narrow `mbox_datain`/`TRNG_DATA` | IS Unsupported features | `avmm_to_axi` single-beat, `WSTRB=F` | **PASS** |
 | Drive AxUSER on all requests; never `0xFFFFFFFF` | Table 19 AXI USER | Nios 1, fuse 2 | **PASS** |
@@ -521,7 +537,7 @@ References: IS Table 4 (clocks/resets), Table 5 (AXI), Tables 11–13 (straps, g
 | `generic_input_wires` bit 0 = zeroization status; others 0 | Table 13 | `64'b0` | **PASS** |
 | TRNG serviced by a hardware gasket (FIPS) | IS §TRNG | Host firmware/TB model, pseudo-random data | **TEST-ONLY** |
 | Report Caliptra error outputs | Table 19 Error reporting | Polled on `status_pio[5:6]`; not a Nios IRQ | **OPEN** (IRQ) |
-| Recover fatal only via pwrgood reset | Table 19 Error reporting | Planned (1.x has it); not in the 2.x TB | **OPEN** |
+| Recover fatal only via pwrgood reset | Table 19 Error reporting | Planned: clear `ctrl[0]`/`[1]`, re-raise, full fuse push (the 1.x `main.c` does this with ≤3 retries); not in the 2.x TB | **OPEN** |
 | SoC programs WDT before debug-locked ROM | HW spec WDT | `WDT_CFG` written before fuses; ROM log confirms | **PASS** |
 | `TIMER_CONFIG` programmed | `soc_ifc` RDL | 20000 ps (50 MHz) | **PASS** (TB clock is 100 MHz; set per board) |
 | `scan_mode` 0 functional; 1 for 5,000 clk before scan | Table 19 DFT | Tied 0, no scan | **PASS** (FPGA) |
@@ -540,7 +556,7 @@ References: IS Table 4 (clocks/resets), Table 5 (AXI), Tables 11–13 (straps, g
 
 From [`docs/P1_FIT_RESULT_2X_A5E.md`](P1_FIT_RESULT_2X_A5E.md). Quartus Prime Pro 25.3.0 b109, Analysis & Synthesis only. The top is `rtl_2x/caliptra_passive_top.sv` (Caliptra core only, **no Nios**). `MLDSA_MASKING` is on (upstream default).
 
-| Resource | 2.x synth | A5EC065 | % | 1.x (same flow) |
+| Resource | 2.x synth | A5EC065 | % | 1.x (Nios project†) |
 |---|---:|---:|---:|---:|
 | **ALMs needed (pre-fit estimate)** | **279,685** | **222,400** | **125.8 %** | 138,715 |
 | Combinational ALUTs | 395,094 | — | — | 218,761 |
@@ -548,6 +564,13 @@ From [`docs/P1_FIT_RESULT_2X_A5E.md`](P1_FIT_RESULT_2X_A5E.md). Quartus Prime Pr
 | Block memory bits | 9,005,696 | 31.46 Mb | ≈ 28.6 % | ≈ 5.67 Mb |
 | M20K (estimate) | ≈ 484 | 1,611 | ≈ 30 % | — |
 | DSP (synth / est. post-merge) | 213 / 199 | 846 | 25.2 % / 23.5 % | 49 |
+
+† The 1.x column is the `quartus_a5e_nios/` project: Nios V plus Caliptra 1.x, synthesized with Quartus Prime Pro 25.3.0 b109 (Analysis & Synthesis only; source: `CALIPTRA_2X_INTEGRATION_PLAN.md` §3.1). Its scope differs by row:
+- **ALMs and block memory:** the whole design (`nios_caliptra_a5e.syn.summary`: 138,715 ALMs).
+- **ALUTs and registers:** the `caliptra_top` hierarchy row only.
+- **DSP:** 49 in synthesis (47 post-merge).
+
+So this column is **not** the same top as the 2.x column, which is the core-only `caliptra_passive_top`. For a like-for-like comparison, the 1.x core-only wrapper (`quartus_a5e/`, `caliptra_a5e.syn.summary`) estimates 141,256 / 222,400 ALMs (64 %), 142,373 registers and 47 DSP post-merge.
 
 - **Biggest consumer: Adams-Bridge** (`abr_inst`): 101,640 ALUTs, 244,925 FFs, 164 DSP. The masked NTT `hybrid_bf2x2` alone has 218,303 FFs.
 - **Next:** `ecc_top1` (79,991 ALUTs), VeeR (55,132), key vault (51,019).
@@ -557,7 +580,7 @@ From [`docs/P1_FIT_RESULT_2X_A5E.md`](P1_FIT_RESULT_2X_A5E.md). Quartus Prime Pr
 
 | Option | Fits | Spec-conformant | Comment |
 |---|---|---|---|
-| **A. Agilex 7** (e.g. AGF/AGI 014 ≈ 487k ALMs, ~57 % on this estimate; 022/027 for margin) | Yes | Yes | Same RTL; change FAMILY/DEVICE in `quartus_a5e_2x/gen_qsf.py`; new PD/pins |
+| **A. Agilex 7** (e.g. AGF/AGI 014 ≈ 487k ALMs, ~57 % on this estimate; 022/027 for margin) | Yes | Yes | Unmodified `rtl_2x/` + caliptra-rtl v2.1.2 RTL; change FAMILY/DEVICE in `quartus_a5e_2x/gen_qsf.py`; new PD/pins |
 | **B. Simulation-only 2.x** (keep Caliptra 1.x in A5E hardware) | n/a | Yes | Develop the glue, firmware and tooling in Verilator / sw-emulator now |
 | **C. Unmasked / reduced test build** (`MLDSA_MASKING` undefined and/or `RV_FPGA_OPTIMIZE`) | Unknown, untested | **No**: removes side-channel countermeasures | Per the plan, upstream `MLDSA_MASKING` mainly zeroes the randomness; real savings may need an RTL fork. Research only |
 
@@ -570,3 +593,4 @@ From [`docs/P1_FIT_RESULT_2X_A5E.md`](P1_FIT_RESULT_2X_A5E.md). Quartus Prime Pr
 3. Add 2.x `warm` and `fatal` Verilator tests, as in the 1.x suite.
 4. Choose the hardware target (Agilex 7 vs. sim-only), then do a full fit, timing, and synthesis-integrity constraints.
 5. Production replacements for every TEST-ONLY row: OTP fuses, a real lifecycle, an HSM-generated obfuscation and CSR HMAC key, a hardware TRNG, and own signing keys ([FIRMWARE_AND_KEYS_2X.md](FIRMWARE_AND_KEYS_2X.md)).
+6. Export the bridge's Avalon `response` (`cl_response`, 2'b10 = SLVERR) as a `caliptra_axi_response` port of `nios_caliptra2x_sys`. Today it is left unconnected in `nios_caliptra2x_top.sv`, so the Nios cannot see AXI errors.

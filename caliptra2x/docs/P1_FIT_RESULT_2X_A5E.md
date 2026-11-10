@@ -20,7 +20,7 @@ Memory, DSP and register counts all fit.
 
 ## Totals (`output_files/caliptra2x_a5e.syn.rpt`)
 
-| Resource | 2.x synth | Device A5EC065 | % | 1.x synth (same flow) |
+| Resource | 2.x synth | Device A5EC065 | % | 1.x synth (Nios project†) |
 |---|---:|---:|---:|---:|
 | **Logic utilization estimate (ALMs needed)** (pre-fit) | **279,685** | **222,400** (read from report) | **125.8 %** | 138,715 |
 | Combinational ALUTs | 395,094 | (2 per ALM) | — | 218,761 |
@@ -30,6 +30,13 @@ Memory, DSP and register counts all fit.
 | MLAB bits | 0 | — | — | — |
 | DSP blocks (synth / est. post-merge) | 213 / 199 | 846 | 25.2 % / 23.5 % | 49 |
 | I/O | 1,265 (virtual) | — | — | — |
+
+† The 1.x column is the `quartus_a5e_nios/` project: Nios V plus Caliptra 1.x, synthesized with Quartus Prime Pro 25.3.0 b109 (Analysis & Synthesis only; source: `CALIPTRA_2X_INTEGRATION_PLAN.md` §3.1). Its scope differs by row:
+- **ALMs and block memory:** the whole design (`nios_caliptra_a5e.syn.summary`: 138,715 ALMs).
+- **ALUTs and registers:** the `caliptra_top` hierarchy row only.
+- **DSP:** 49 in synthesis (47 post-merge).
+
+So this column is **not** the same top as the 2.x column, which is the core-only `caliptra_passive_top`. For a like-for-like comparison, the 1.x core-only wrapper (`quartus_a5e/`, `caliptra_a5e.syn.summary`) estimates 141,256 / 222,400 ALMs (64 %), 142,373 registers and 47 DSP post-merge.
 
 - **Over by:** 57,285 ALMs at 126 %. To fit at a comfortable ~85 % utilization, about 90k ALMs (≈ 32 %) would have to come out.
 - **How reliable the estimate is:** "ALMs needed" is a pre-fit estimate. The fitter's ALM packing usually lands within about ±10–15 % of it. Even a 20 % packing gain gives ≈ 224k ALMs, which is still ≥ 100 %. **Verdict: doesn't fit** (not marginal).
