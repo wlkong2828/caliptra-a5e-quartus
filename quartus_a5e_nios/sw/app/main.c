@@ -354,8 +354,8 @@ int main(void)
     }
     magic(0xCA11F00Du);                                  /* success; led = 0x0D */
     /* caliptra_warm_reset() is available for a host-initiated warm reset
-     * (hold pwrgood, pulse rst_b, START_DONE, FIRMWARE_LOAD). Not called
-     * automatically after a successful cold boot. */
+     * (hold pwrgood, pulse rst_b, START_DONE, wait ready_for_runtime; FW is
+     * only re-loaded if ready_for_fw_push asserts). Not called automatically. */
 
     /* Keep serving runtime TRNG and poll for errors (no IRQ wired in this PD). */
     for (;;) {
