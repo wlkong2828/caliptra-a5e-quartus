@@ -60,7 +60,7 @@ Caliptra registers through the window (base 0x0004_0000 + offset):
 2. poll `status_pio.ready_for_fuses`
 3. magic=2; read `CPTRA_HW_REV_ID`
 4. magic=3: program+lock fuse, TRNG, and mailbox PAUSER to 1; write `CPTRA_TIMER_CONFIG=20000`; write `CPTRA_WDT_CFG=100_000_000`
-5. magic=4: `soc_fuse_ctrl` CTRL.START (83 `FUSE_*` words + `FUSE_WR_DONE`). After a **warm reset** use CTRL.START_DONE (bit 2) instead — see `caliptra_warm_reset()`.
+5. magic=4: `soc_fuse_ctrl` CTRL.START (83 `FUSE_*` words + `FUSE_WR_DONE`). After a **warm reset** use CTRL.START_DONE (bit 2); ROM resumes existing FW to `ready_for_runtime` (no second `FIRMWARE_LOAD`) — see `caliptra_warm_reset()`.
 6. poll `ready_for_fw_push` while servicing ETRNG (xorshift, TEST-ONLY)
 7. mailbox `FIRMWARE_LOAD` of `soc_fw_store` (109000 bytes); magic=6/7
 8. poll `ready_for_runtime`; magic=`0xCA11F00D` (led=0x0D)

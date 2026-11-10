@@ -256,8 +256,10 @@ void caliptra_pwrgood_cycle(void)
 }
 
 /* Warm reset: hold pwrgood, pulse rst_b, wait ready_for_fuses, re-lock
- * rst_b-domain PAUSER (TRNG + mailbox), write FUSE_WR_DONE only, then
- * FIRMWARE_LOAD through ready_for_runtime. Fuse PAUSER, WDT, TIMER persist. */
+ * rst_b-domain PAUSER (TRNG + mailbox), write FUSE_WR_DONE only.
+ * After a successful previous cold boot, rom-1.1.1 WarmResetFlow jumps to
+ * the existing firmware — FIRMWARE_LOAD is not repeated. If the previous
+ * cold boot did not complete, ready_for_fw_push may assert and we load FW. */
 int caliptra_warm_reset(void)
 {
     int rc;
@@ -274,16 +276,26 @@ int caliptra_warm_reset(void)
     rc = start_fuses(1);                                 /* START_DONE only */
     if (rc) return rc;
     magic(0x00000014u);
-    rc = wait_status(ST_READY_FOR_FW, 200000000u);
-    if (rc) return rc;
-    magic(0x00000015u);
-    rc = load_firmware();
-    if (rc) return rc;
-    magic(0x00000017u);
-    rc = wait_status(ST_READY_FOR_RT, 200000000u);
-    if (rc) return rc;
-    puthex("warm ready_for_runtime FLOW_STATUS = ", CPTRA(CPTRA_FLOW_STATUS));
-    return ERR_OK;
+    /* Prefer ready_for_runtime (normal warm path). Fall back to FW load. */
+    for (uint32_t t = 0; t <= 200000000u; t++) {
+        trng_service();
+        if (handle_errors() == ERR_FATAL) return ERR_FATAL;
+        if (status() & ST_READY_FOR_RT) {
+            puthex("warm ready_for_runtime FLOW_STATUS = ", CPTRA(CPTRA_FLOW_STATUS));
+            return ERR_OK;
+        }
+        if (status() & ST_READY_FOR_FW) {
+            magic(0x00000015u);
+            rc = load_firmware();
+            if (rc) return rc;
+            magic(0x00000017u);
+            rc = wait_status(ST_READY_FOR_RT, 200000000u);
+            if (rc) return rc;
+            puthex("warm ready_for_runtime FLOW_STATUS = ", CPTRA(CPTRA_FLOW_STATUS));
+            return rc;
+        }
+    }
+    return ERR_TIMEOUT;
 }
 
 /* Cold boot from a state where Caliptra is (or will be) out of reset. */

@@ -295,7 +295,25 @@ module nios_caliptra_sys (
       wr(18'h1f004, 2); // CLEAR
       start_fuses(1);
       magic_pio_export = 32'h14;
-      load_fw_to_runtime();
+      // rom-1.1.1 WarmResetFlow jumps to existing FW after a successful cold boot;
+      // ready_for_fw_push / FIRMWARE_LOAD are not part of that path. If fw_push
+      // does assert (previous cold boot incomplete), load the bundle as usual.
+      $display("[%0d] waiting for ready_for_runtime after warm START_DONE", cyc);
+      while (!status_pio_export[2]) begin
+        if (status_pio_export[1]) begin
+          $display("[%0d] ready_for_fw_push after warm (unexpected if prev cold completed); loading FW", cyc);
+          load_fw_to_runtime();
+          break;
+        end
+        if (status_pio_export[5] && !allow_fatal) begin
+          $display("TB_WARM FAIL unexpected fatal at %0d", cyc); $finish;
+        end
+        handle_non_fatal();
+        trng_svc();
+        @(posedge clk);
+      end
+      if (!status_pio_export[2]) wait_st(2);
+      $display("[%0d] ready_for_runtime after warm reset", cyc);
       magic_pio_export = 32'hCA11F00D;
       $display("TB_WARM PASS cyc=%0d trng=%0d", cyc, trng_reqs);
       if (testname=="warm") $finish;

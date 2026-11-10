@@ -420,7 +420,7 @@ A **board `reset_n` assertion** takes both raw requests low *and* resets Nios / 
 
 `FUSE_WR_DONE.done.swwe` is `soc_req & ~done`. After a warm reset the register still reads 1, so a naive rewrite would be dropped and would **not** set `swmod`. In v1.1 RTL, `fuse_wr_done_observed` is the `swmod` of that field. **If the bit is already 1, a second write of 1 may not produce `swmod`.** The Integration Spec still requires the SoC to perform the write in `BOOT_FUSE`. The START_DONE path issues that write; the Verilator warm-reset test is the authority for whether the Boot FSM advances on this RTL. If a future RTL/test shows `swmod` is not raised when the value is unchanged, the host must clear-and-rewrite or use a documented SoC workaround — do not assume a second write of 1 is enough without the passing test.
 
-After START_DONE the host still re-programs TRNG and mailbox PAUSER/lock (those reset on `rst_b`), then waits for `ready_for_fw_push` and repeats `FIRMWARE_LOAD`.
+After START_DONE the host re-programs TRNG and mailbox PAUSER/lock (those reset on `rst_b`). rom-1.1.1 `WarmResetFlow` then jumps to the **existing** firmware (data-vault entry point) if the previous cold boot completed; `ready_for_fw_push` / `FIRMWARE_LOAD` are not repeated. The host waits for `ready_for_runtime`. If the previous cold boot did not complete, `ready_for_fw_push` may still assert and the host loads FW as usual.
 
 ### 5.6 SDC / false paths
 
@@ -490,7 +490,7 @@ This is what `quartus_a5e_nios/sw/app/main.c` does (same sequence as `sim/tb_nio
 10. **Poll `ready_for_runtime`.** Read `CPTRA_FW_REV_ID*`.
 11. **MAGIC `0xCA11F00D`** (LED = `0x0D`). Idle loop continues to service runtime TRNG requests and poll errors.
 
-**Warm reset** (`caliptra_warm_reset()`, TB `+test=warm`): hold pwrgood, pulse `rst_b`, wait `ready_for_fuses`, re-lock TRNG and mailbox PAUSER (skip fuse PAUSER), `CTRL.START_DONE` (bit 2), then steps 8–11 again.
+**Warm reset** (`caliptra_warm_reset()`, TB `+test=warm`): hold pwrgood, pulse `rst_b`, wait `ready_for_fuses`, re-lock TRNG and mailbox PAUSER (skip fuse PAUSER), `CTRL.START_DONE` (bit 2). ROM `WarmResetFlow` resumes the existing firmware; the host waits for `ready_for_runtime` (and only repeats `FIRMWARE_LOAD` if `ready_for_fw_push` asserts).
 
 **Fatal recovery:** pwrgood cycle, then the cold-boot sequence from step 2, up to three retries.
 
@@ -577,7 +577,7 @@ Severities: **High** = security or correctness risk if this image were treated a
 | M7 | **FIXED.** 2FF `u_sync_pwrgood` / `u_sync_rst_b` provide async assert and sync deassert to `clk`. Verilator `+test=sync` PASS. SDC: `reset_n` is still an async false path into the 2FF pins and the PD; synchronizer outputs are timed to `clk`. |
 | M8 | **OPEN**, with FPGA mitigation. A pwrgood-time zeroization FSM would mux TCB-owned SRAM ports (mailbox, ICCM, DCCM, ICache); that mux is not added. `quartus/syn_src/caliptra_sram.sv` now initializes inferred M20K to 0 at bitstream / sim start, which is not ASIC repair and is not used by the official SRAM model in Verilator. |
 | M9 | **Clock / pins:** 50 MHz board clock, no PLL, no on-die oscillator, almost all I/O still **virtual pins** (only `clk` and `reset_n` are real in the QSF). Not board-proven. |
-| M10 | **FIXED.** CTRL bit 2 `START_DONE` writes only `FUSE_WR_DONE`. `caliptra_warm_reset()` and TB `+test=warm` hold pwrgood, pulse `rst_b`, re-lock rst_b-domain PAUSER, START_DONE, and `FIRMWARE_LOAD` through `ready_for_runtime` again. v1.1 `swmod` fires on any write to that register even if the bit is already 1. |
+| M10 | **FIXED.** CTRL bit 2 `START_DONE` writes only `FUSE_WR_DONE`. `caliptra_warm_reset()` and TB `+test=warm` hold pwrgood, pulse `rst_b`, re-lock rst_b-domain PAUSER, START_DONE, then wait for `ready_for_runtime` (ROM jumps to existing FW; no `FIRMWARE_LOAD` after a completed cold boot). v1.1 `swmod` fires on any write to that register even if the bit is already 1. |
 | M11 | **OPEN.** Quartus / Qsys regeneration was not feasible here (no Quartus Pro 25.3 image in this environment). Exact steps are in §12. |
 | M12 | **FIXED.** Host / TB write `CPTRA_TIMER_CONFIG = 20000` after `ready_for_fuses`. |
 
