@@ -10,3 +10,14 @@ sim/obj_nios_top_fw/
 quartus_a5e_nios/sw/app/build/
 quartus_a5e_nios/sw/.shim/
 quartus_a5e_nios/ip/rst_release/
+
+# Quartus Nios project: keep only the small flow/syn summaries in git
+quartus_a5e_nios/output_files/*
+!quartus_a5e_nios/output_files/nios_caliptra_a5e.flow.rpt
+!quartus_a5e_nios/output_files/nios_caliptra_a5e.syn.summary
+quartus_a5e_nios/syn_wrapper.log
+
+# Verilator: build log and partial/aborted run logs are local only
+sim/nios_top_fw_build.log
+sim/*_partial.log
+sim/nios_top_fw_run.log

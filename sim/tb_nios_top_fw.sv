@@ -343,7 +343,9 @@ module nios_caliptra_sys (
       $display("TB_FATAL PASS cyc=%0d (recovered through full fuse push)", cyc);
     end
 
-    $display("TB_ALL PASS cyc=%0d trng=%0d", cyc, trng_reqs);
+    // $finish takes effect at the end of the time step, so single-test
+    // runs (prod/fatal) fall through to here; only +test=all reports TB_ALL.
+    if (testname=="all") $display("TB_ALL PASS cyc=%0d trng=%0d", cyc, trng_reqs);
     $finish;
   end
 endmodule

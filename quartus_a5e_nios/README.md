@@ -40,6 +40,9 @@ Simulation: Verilator covers this FPGA glue RTL (`nios_caliptra_top` + fuse ctrl
 Caliptra) with a behavioral Nios host (`../sim/run_nios_top_fw.sh`, see `../sim/BOOT_NIOS_TOP_PROD.md`).
 Simulating the full Platform Designer Nios V IP system needs Intel Questa/ModelSim with the Quartus
 simulation libraries.
+Revision-3 results (2026-11-10): `+test=sync`, `pauser`, `prod` (`ready_for_runtime` at cycle 24,064,900),
+`warm` (runtime again at 32,845,182, no FIRMWARE_LOAD), `fatal` (pwrgood recovery + full fuse push) and `all` — **all PASS**.
+Synthesis (Quartus Pro 25.3, with Reset Release IP): **138,715 / 222,400 ALMs (62%)**.
 
 ## Address map (Nios data master; from generated `sw/bsp/system.h`)
 | Base | Span | Block |
@@ -88,9 +91,9 @@ Quartus files: `nios_caliptra_a5e.qpf/.qsf` (paths relative: `../caliptra-rtl`, 
 `nios_caliptra.sdc` (50 MHz clk). Order: build the app first so `onchip_mem.hex` exists before synthesis.
 
 ## Not done / blockers for "talk on hardware"
-- No board pinout / IO standards (clk, reset_n, led virtual-pin study only); no PLL. The Agilex 5 Reset Release IP (`ip/rst_release.ip`, `ninit_done`) is instantiated (M11); Verilator uses `../sim/rst_release_stub.sv`.
+- No board pinout / IO standards (clk, reset_n, led virtual-pin study only); no PLL, no on-die oscillator; Caliptra JTAG TAP tied off. The Agilex 5 Reset Release IP (`ip/rst_release.ip`, `ninit_done`) is instantiated (M11); Verilator uses `../sim/rst_release_stub.sv`.
 - Full fit not run here (16 GB host OOMs on Caliptra place&route; need ≥32 GB).
 - SRAM pwrgood zeroization walk is not implemented (mailbox SRAM is zero in the bitstream only; M8).
-- Error pins are polled with recovery; they are not yet Nios IRQs (Qsys steps in §12).
+- Error pins are polled with recovery; they are not yet Nios IRQs (Qsys steps in §12 of `../docs/NIOS_CALIPTRA_INTEGRATION.md`).
 - ETRNG xorshift, study UDS/FE/obf key, and the fuse hex image are TEST-ONLY.
 - Full Platform Designer Nios V + interconnect is not simulated; Verilator uses a behavioral host (`../sim/run_nios_top_fw.sh`, plusargs `+test=prod|sync|pauser|warm|fatal|all`).
