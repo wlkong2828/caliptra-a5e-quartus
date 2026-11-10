@@ -28,10 +28,10 @@ This is the complete connection map and bring-up note for the Nios host design. 
 | Item | What changed |
 |---|---|
 | `CPTRA_HW_REV_ID` | Not a flat `0x0000_0011`. It is `{SOC_STEPPING_ID[15:0], CPTRA_GENERATION[15:0]}` with generation reset value `0x0011` (major 1, minor 1, patch 0). The host reads it *before* fuses, so `0x0000_0011` is correct at that moment. RTL continuously copies `FUSE_SOC_STEPPING_ID` into the stepping field, so after the image's stepping fuse (`0x1`) is written a later read can be `0x0001_0011`. |
-| Reset synchronizers | The v1.1 Integration Spec RDC section *requires* the integrator to add external synchronizers: `cptra_pwrgood` and `cptra_rst_b` must already be synchronized to `clk` at the Caliptra boundary. The first revision treated this as a milder CDC note on `reset_n`. It is a **FAIL**. |
-| Warm reset vs fuses | First revision correctly said the host always does a cold-style fuse push, but did not audit `soc_fuse_ctrl` against the required warm-reset path (fuses persist; SoC must still **write `FUSE_WR_DONE` again** without re-writing locked fuses). The IP has no done-only mode. |
+| Reset synchronizers | The v1.1 Integration Spec RDC section *requires* the integrator to add external synchronizers: `cptra_pwrgood` and `cptra_rst_b` must already be synchronized to `clk` at the Caliptra boundary. The first revision treated this as a milder CDC note on `reset_n`. Rev 2 rated it **FAIL**; fixed in rev 3 (M7). |
+| Warm reset vs fuses | First revision correctly said the host always does a cold-style fuse push, but did not audit `soc_fuse_ctrl` against the required warm-reset path (fuses persist; SoC must still **write `FUSE_WR_DONE` again** without re-writing locked fuses). Rev 2: the IP had no done-only mode; rev 3 adds `START_DONE` (M10). |
 | Watchdog / fatal | Added a full WDT / NMI / `cptra_error_fatal` section. The fatal *output pin* clears on `cptra_rst_b` (internal `cptra_noncore_rst_b`); sticky logs and `CPTRA_WDT_CFG` persist across warm reset; the integration requirement to *recover* from a fatal is a power-good reset. WDT t2 specifically needs a **warm reset** to restart the timers. |
-| `CPTRA_TIMER_CONFIG` | Was omitted. SoC-writable clock period in picoseconds (sticky on pwrgood, default 0). Nios never programs it. |
+| `CPTRA_TIMER_CONFIG` | Was omitted. SoC-writable clock period in picoseconds (sticky on pwrgood, default 0). Rev 2: Nios never programmed it; rev 3 writes 20000 (M12). |
 | 2.x names | There is no `cptra_bootfsm_bp` or `strap_ss` in 1.x. The breakpoint pin is `BootFSM_BrkPoint`. The NMI vector is an *internal register*, not a strap. |
 
 ---
