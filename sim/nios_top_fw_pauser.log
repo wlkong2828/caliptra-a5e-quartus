@@ -1,0 +1,12 @@
+TB_NIOS_TOP test=pauser max_cycles=100000
+[45] HW_REV_ID=00000011
+[90] === test_pauser: wrong-user write rejected ===
+[95] MBOX write PAUSER=2 -> PSLVERR OK
+[100] fuse write PAUSER=2 -> PSLVERR OK
+[105] PAUSER=1 HW_REV_ID=00000011 accepted OK
+TB_PAUSER PASS
+TB_NIOS_TOP PASS test=pauser
+- tb_nios_top_fw.sv:265: Verilog $finish
+- S i m u l a t i o n   R e p o r t: Verilator 5.054 2026-11-01
+- Verilator: $finish at 1us; walltime 0.018 s; speed 57.411 us/s
+- Verilator: cpu 0.018 s on 1 threads; allocated 8 MB

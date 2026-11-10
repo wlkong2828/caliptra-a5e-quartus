@@ -1,6 +1,6 @@
 // avmm_to_apb.sv - Avalon-MM (waitrequest, no pipelining) -> APB3 subordinate bridge.
 // One transfer at a time: SETUP (PSEL) -> ACCESS (PSEL+PENABLE) until PREADY.
-// PAUSER is a constant parameter (Caliptra 1.x mailbox user ID).
+// PAUSER is driven from pauser_i (the Nios AXI/APB user ID; default PAUSER_VAL=1).
 module avmm_to_apb #(
   parameter int AW = 18,
   parameter logic [31:0] PAUSER_VAL = 32'h0000_0001
@@ -15,6 +15,7 @@ module avmm_to_apb #(
   output logic          avs_readdatavalid,
   output logic          avs_waitrequest,
   output logic [1:0]    avs_response,     // 2'b10 SLVERR when PSLVERR
+  input  logic [31:0]   pauser_i,         // Nios AXI/APB user ID (tie to PAUSER_VAL)
   // APB requester
   output logic [31:0]   PADDR,
   output logic [2:0]    PPROT,
@@ -55,7 +56,7 @@ module avmm_to_apb #(
   assign PENABLE = (st == ACCESS);
   assign PWRITE  = wr_q;
   assign PWDATA  = wdata_q;
-  assign PAUSER  = PAUSER_VAL;
+  assign PAUSER  = pauser_i;
 
   // waitrequest held until DONE (accept); readdatavalid in RESP for reads
   assign avs_waitrequest   = !(st == DONE);

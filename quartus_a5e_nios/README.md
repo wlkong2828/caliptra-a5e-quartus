@@ -1,6 +1,6 @@
 # Nios V/m host + Caliptra 1.x on Agilex 5 E (A5EC065BB32AE6S)
 
-The complete, RTL-reviewed connection map, fuse/TRNG review, and boot sequence are in [`docs/NIOS_CALIPTRA_INTEGRATION.md`](../docs/NIOS_CALIPTRA_INTEGRATION.md). That note supersedes the **Firmware** and **Not done** sections below, which are stale relative to the `soc_fuse_ctrl` + rom-1.1.1 + `FIRMWARE_LOAD` flow already in this tree.
+The complete, RTL-reviewed connection map, fuse/TRNG review, boot sequence, and spec checklist are in [`docs/NIOS_CALIPTRA_INTEGRATION.md`](../docs/NIOS_CALIPTRA_INTEGRATION.md) (revision 3).
 
 Compile study: an Intel **Nios V/m** CPU acts as the SoC "mailbox host" for **Caliptra 1.x**
 (chipsalliance/caliptra-rtl v1.1 @ 5f85fb4, passive mode) over Caliptra's **APB** subordinate.
@@ -15,10 +15,11 @@ except `clk`/`reset_n` are virtual pins; nothing here is board-proven yet.
       │                                      ├─ jtag_uart (stdout)
       │                                      ├─ ctrl_pio  (out) ──► cptra_pwrgood / cptra_rst_b / BootFSM_BrkPoint
       │                                      ├─ status_pio(in)  ◄── ready_for_* / mailbox_* / errors / etrng_req / gen_out[23:0]
-      │                                      ├─ magic_pio (out) ──► led[7:0] + Caliptra generic_input_wires[31:0]
+      │                                      ├─ magic_pio (out) ──► led[7:0] only (generic_input_wires tied 0)
       │                                      └─ caliptra_win (mm_bridge, 256 KiB) ─► exported Avalon master
       │                                                              │
-      │        rtl/avmm_to_apb.sv (PAUSER = 0x0000_0001 constant) ◄──┘
+      │        2FF reset sync (async assert / sync deassert) on cptra_pwrgood, cptra_rst_b
+      │        rtl/avmm_to_apb.sv (PAUSER = nios_pauser, default 0x1) ◄──┘
       │                    │ APB3 (PADDR[17:0] used)
       └──► caliptra_passive_top (../rtl) ─ Caliptra 1.x + M20K mailbox/ROM/ICCM/DCCM
 ```
@@ -52,18 +53,20 @@ simulation libraries.
 
 Caliptra registers through the window (base 0x0004_0000 + offset):
 `MBOX_CSR` 0x2_0000 (MBOX_LOCK 0x2_0000), `CPTRA_FLOW_STATUS` 0x3_003C (bit30 ready_for_fuses),
-`CPTRA_HW_REV_ID` 0x3_00D4 (**expect 0x0000_0011** = CPTRA_GENERATION 1.1), fuses 0x3_0200…
+`CPTRA_HW_REV_ID` 0x3_00D4 (`{SOC_STEPPING_ID, 0x0011}`; `0x0000_0011` before fuses, `0x0001_0011` after stepping=1), fuses 0x3_0200…
 
 ## Firmware (`sw/app/main.c`)
-1. magic=1 → pwrgood → release `cptra_rst_b`
-2. poll `status_pio.ready_for_fuses` (timeout → magic 0xDEAD0001)
-3. magic=2; read `CPTRA_HW_REV_ID` and `CPTRA_FLOW_STATUS` over APB, print on JTAG UART
-4. magic=3: program + lock `CPTRA_MBOX_VALID_PAUSER[0]`=1 (our bridge PAUSER; default 0xFFFFFFFF would PSLVERR the mailbox)
-5. magic=4: TEST fuse load (one UDS word) + `CPTRA_FUSE_WR_DONE`=1 (fail 0xDEAD0003)
-6. acquire `MBOX_LOCK`, check `MBOX_USER`=1 (fail 0xDEAD0004); fatal/non-fatal error check (fail 0xDEAD0005)
-7. magic=**0xCA11F00D** on success (led=0x0D). Same sequence as `../sim/tb_boot_apb.sv` (passes in Verilator).
-Mailbox `FIRMWARE_LOAD` needs the caliptra-sw 1.x ROM in the build (next step).
-Note: after editing main.c, rerun `sw/build_app.sh` (with elf2hex) so `onchip_mem.hex` matches before synthesis.
+1. magic=1 → pwrgood → release `cptra_rst_b` (through the 2FF synchronizers)
+2. poll `status_pio.ready_for_fuses`
+3. magic=2; read `CPTRA_HW_REV_ID`
+4. magic=3: program+lock fuse, TRNG, and mailbox PAUSER to 1; write `CPTRA_TIMER_CONFIG=20000`; write `CPTRA_WDT_CFG=100_000_000`
+5. magic=4: `soc_fuse_ctrl` CTRL.START (83 `FUSE_*` words + `FUSE_WR_DONE`). After a **warm reset** use CTRL.START_DONE (bit 2) instead — see `caliptra_warm_reset()`.
+6. poll `ready_for_fw_push` while servicing ETRNG (xorshift, TEST-ONLY)
+7. mailbox `FIRMWARE_LOAD` of `soc_fw_store` (109000 bytes); magic=6/7
+8. poll `ready_for_runtime`; magic=`0xCA11F00D` (led=0x0D)
+9. idle: keep servicing TRNG; poll errors — non-fatal is RW1C-cleared, fatal does a limited pwrgood-cycle recovery
+
+Same sequence as `../sim/tb_nios_top_fw.sv`. After editing main.c, rerun `sw/build_app.sh` so `onchip_mem.hex` matches before synthesis. If Quartus `elf2hex` is unavailable, the script falls back to `scripts/elf2hex_intel.py`.
 
 ## Rebuild
 All Quartus/PD commands run inside Docker via `./dock.sh '<cmd>'` (needs `--net=host` + license
@@ -83,8 +86,9 @@ Quartus files: `nios_caliptra_a5e.qpf/.qsf` (paths relative: `../caliptra-rtl`, 
 `nios_caliptra.sdc` (50 MHz clk). Order: build the app first so `onchip_mem.hex` exists before synthesis.
 
 ## Not done / blockers for "talk on hardware"
-- No board pinout / IO standards (clk, reset_n, led virtual-pin study only); no PLL.
+- No board pinout / IO standards (clk, reset_n, led virtual-pin study only); no PLL; no Intel Reset Release IP (`ninit_done`) — steps in the integration note §12 (M11).
 - Full fit not run here (16 GB host OOMs on Caliptra place&route; need ≥32 GB).
-- Caliptra ROM image not loaded (`ROM_INIT_FILE=""`): HW_REV_ID / FLOW_STATUS / fuses work from
-  the BootFSM without ROM, but going past `ready_for_fuses` needs the caliptra-sw 1.x ROM hex + fuse/FW flow.
-- No simulation testbench of the PD system yet (avmm_to_apb + Caliptra APB is simple; recommended next).
+- SRAM pwrgood zeroization walk is not implemented (FPGA init-to-0 only; M8).
+- Error pins are polled with recovery; they are not yet Nios IRQs (Qsys steps in §12).
+- ETRNG xorshift, study UDS/FE/obf key, and the fuse hex image are TEST-ONLY.
+- Full Platform Designer Nios V + interconnect is not simulated; Verilator uses a behavioral host (`../sim/run_nios_top_fw.sh`, plusargs `+test=prod|sync|pauser|warm|fatal|all`).

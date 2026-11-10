@@ -3,3 +3,9 @@ tmp-clearbox/
 dni/
 *.dat
 *license*
+
+# Local trees / build products (not vendored)
+caliptra-rtl
+sim/obj_nios_top_fw/
+quartus_a5e_nios/sw/app/build/
+quartus_a5e_nios/sw/.shim/

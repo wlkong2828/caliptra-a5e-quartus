@@ -338,6 +338,7 @@ set_global_assignment -name IP_FILE qsys/ip/nios_caliptra_sys/nios_caliptra_sys_
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/avmm_to_apb.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/soc_fuse_ctrl.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/soc_fw_store.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/reset_sync.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/nios_caliptra_top.sv
 set_global_assignment -name HEX_FILE ../fw/caliptra-rom.hex
 set_global_assignment -name HEX_FILE ../fw/caliptra-fw-bundle.hex

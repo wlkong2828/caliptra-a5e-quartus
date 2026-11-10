@@ -3,14 +3,22 @@
 // ready_for_fuses, writes every FUSE_* register in soc_ifc over APB, then sets
 // CPTRA_FUSE_WR_DONE. This block does exactly that from an on-chip "OTP" image
 // (FUSE_IMAGE_FILE, 83 words for soc_ifc 0x200..0x348). UDS/field entropy are never
-// readable by the host CPU (as with real OTP) - Nios only kicks START and reads status.
+// readable by the host CPU (as with real OTP) - Nios only kicks START / START_DONE
+// and reads status.
 // TEST FUSE VALUES ONLY.
+//
+// Cold reset (pwrgood deasserted): fuses and FUSE_WR_DONE are cleared; SoC must
+// re-push the full OTP image + FUSE_WR_DONE (CTRL bit0 START).
+// Warm reset (rst_b only, pwrgood held): fuse contents and FUSE_WR_DONE persist,
+// but the Boot FSM needs to observe a FUSE_WR_DONE write (swmod) after
+// ready_for_fuses. Use CTRL bit2 START_DONE to write only CPTRA_FUSE_WR_DONE=1.
 //
 // Nios MMIO (word regs, 4 KiB window):
 //   0x00 ID        RO  0x4655_5345 ("FUSE")
-//   0x04 CTRL      WO  bit0 START (push fuses), bit1 CLEAR (clear DONE/ERR)
+//   0x04 CTRL      WO  bit0 START (full 83 words + DONE), bit1 CLEAR (clear DONE/ERR),
+//                      bit2 START_DONE (write only CPTRA_FUSE_WR_DONE; warm-reset path)
 //   0x08 STATUS    RO  bit0 BUSY, bit1 DONE, bit2 ERR, bit3 READY_FOR_FUSES (live)
-//   0x0C COUNT     RO  fuse words written (83 on success, +1 for FUSE_WR_DONE)
+//   0x0C COUNT     RO  fuse words written (83+1 on full START, 1 on START_DONE)
 //   0x10 FW_BYTES  RO  size of the FW bundle in soc_fw_store (bytes)
 //   0x14 NUM_FUSES RO  83
 module soc_fuse_ctrl #(
@@ -51,9 +59,14 @@ module soc_fuse_ctrl #(
     end else begin
       if (mmio_write && mmio_addr[11:2] == 10'h1 && mmio_wdata[1]) begin done_q <= 1'b0; err_q <= 1'b0; end
       case (st)
-        IDLE: if (mmio_write && mmio_addr[11:2] == 10'h1 && mmio_wdata[0]) begin
+        IDLE: if (mmio_write && mmio_addr[11:2] == 10'h1 && (mmio_wdata[0] || mmio_wdata[2])) begin
                 if (!ready_for_fuses) begin err_q <= 1'b1; st <= ERR; end
-                else begin idx <= '0; cnt <= '0; done_q <= 1'b0; err_q <= 1'b0; st <= NEXT; end
+                else begin
+                  // bit0 START (full image) wins over bit2 START_DONE if both are set
+                  idx    <= mmio_wdata[0] ? '0 : NUM_FUSES[7:0];
+                  cnt    <= '0; done_q <= 1'b0; err_q <= 1'b0;
+                  st     <= NEXT;
+                end
               end
         NEXT: begin   // load address/data for idx
                 PADDR  <= last ? FUSE_WR_DONE : FUSE_BASE + {22'h0, idx, 2'b00};
@@ -88,4 +101,3 @@ module soc_fuse_ctrl #(
       default: mmio_rdata <= 32'h0;
     endcase
 endmodule
-
