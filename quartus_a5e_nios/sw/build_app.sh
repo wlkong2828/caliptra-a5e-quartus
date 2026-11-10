@@ -14,7 +14,18 @@ sed -i "s/-march=rv32i -mabi/-march=rv32i_zicsr_zifencei -mabi/" bsp/toolchain.c
 cmake -S app -B app/build -G "${CMAKE_GEN:-Ninja}" -DCMAKE_BUILD_TYPE=Release
 cmake --build app/build -j --target caliptra_host.elf
 riscv32-unknown-elf-size app/build/caliptra_host.elf
-# RAM init image (Intel word-addressed HEX) via elf2hex from the Quartus Docker image -> ./onchip_mem.hex (project dir)
+# RAM init image (Intel word-addressed HEX) -> ../onchip_mem.hex (project dir)
 if [ "${NO_HEX:-0}" != 1 ]; then
-  ../dock.sh 'QUARTUS_ROOTDIR=/opt/altera/quartus elf2hex sw/app/build/caliptra_host.elf -o onchip_mem.hex -b 0x00000000 -w 32 -e 0x0000FFFF -r 4'
+  HEX_OK=0
+  if [ "${SKIP_DOCKER:-0}" != 1 ] && command -v docker >/dev/null 2>&1 \
+     && docker image inspect alterafpga/quartuspro-v25.3:agilex5 >/dev/null 2>&1; then
+    if ../dock.sh 'QUARTUS_ROOTDIR=/opt/altera/quartus elf2hex sw/app/build/caliptra_host.elf -o onchip_mem.hex -b 0x00000000 -w 32 -e 0x0000FFFF -r 4'; then
+      HEX_OK=1
+    fi
+  fi
+  if [ "$HEX_OK" != 1 ]; then
+    echo "Quartus elf2hex unavailable; using scripts/elf2hex_intel.py fallback"
+    "$RISCV_BIN/riscv-none-elf-objcopy" -O binary app/build/caliptra_host.elf /tmp/caliptra_host.bin
+    python3 ../../scripts/elf2hex_intel.py /tmp/caliptra_host.bin -o ../onchip_mem.hex -b 0x00000000 -w 32 -e 0x0000FFFF -r 4
+  fi
 fi

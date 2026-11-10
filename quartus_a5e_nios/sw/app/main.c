@@ -1,14 +1,19 @@
 /* Nios V SoC host for Caliptra 1.x (passive) on Agilex 5 E.
  * Mimics a real SoC boot of Caliptra 1.x:
  *   1. power-good / reset release                         (SoC power sequencer)
- *   2. wait ready_for_fuses, register mailbox PAUSER       (SoC boot firmware)
+ *   2. wait ready_for_fuses; program+lock PAUSER (fuse, TRNG, mailbox);
+ *      program CPTRA_TIMER_CONFIG and CPTRA_WDT_CFG
  *   3. soc_fuse_ctrl pushes the OTP fuse image + FUSE_WR_DONE (SoC fuse controller IP)
+ *      -- after a warm reset (rst_b only) use START_DONE (CTRL bit2) instead
  *   4. service etrng_req with 12 TRNG words (SoC TRNG)     -- whole boot
  *   5. wait ready_for_fw_push, mailbox FIRMWARE_LOAD of the FW bundle read from
  *      soc_fw_store (stand-in for SoC boot flash)
  *   6. wait ready_for_runtime, read FW_REV_ID
+ * Error handling (polled via STATUS_PIO; no Qsys IRQ in this PD):
+ *   cptra_error_non_fatal -> log and RW1C-clear HW/FW_ERROR_NON_FATAL
+ *   cptra_error_fatal     -> limited pwrgood (cold) reset recovery, then re-boot
  * MAGIC_PIO milestones (led = MAGIC[7:0]) are listed in README.md.
- * Same sequence as sim/tb_boot_apb_fw.sv (passes in Verilator). TEST KEYS/ENTROPY ONLY. */
+ * Same sequence as sim/tb_nios_top_fw.sv (passes in Verilator). TEST KEYS/ENTROPY ONLY. */
 #include <stdint.h>
 #include "sys/alt_stdio.h"
 #include "system.h"
@@ -42,19 +47,29 @@
 #define MBOX_DATAOUT        0x20014u
 #define MBOX_EXECUTE        0x20018u
 #define MBOX_STATUS         0x2001Cu
+#define CPTRA_HW_ERROR_FATAL     0x30000u
+#define CPTRA_HW_ERROR_NON_FATAL 0x30004u
+#define CPTRA_FW_ERROR_FATAL     0x30008u
+#define CPTRA_FW_ERROR_NON_FATAL 0x3000Cu
 #define CPTRA_FLOW_STATUS   0x3003Cu
 #define CPTRA_MBOX_VALID_PAUSER0 0x30048u
 #define CPTRA_MBOX_PAUSER_LOCK0  0x3005Cu
+#define CPTRA_TRNG_VALID_PAUSER  0x30070u
+#define CPTRA_TRNG_PAUSER_LOCK   0x30074u
 #define CPTRA_TRNG_DATA0    0x30078u   /* 12 words .. 0x300A4 */
 #define CPTRA_TRNG_STATUS   0x300ACu   /* bit1 DATA_WR_DONE */
 #define CPTRA_FUSE_WR_DONE  0x300B0u
+#define CPTRA_TIMER_CONFIG  0x300B4u
 #define CPTRA_HW_REV_ID     0x300D4u
+#define CPTRA_FUSE_VALID_PAUSER  0x30108u
+#define CPTRA_FUSE_PAUSER_LOCK   0x3010Cu
 #define CPTRA_WDT_CFG0      0x30110u   /* ROM starts WDT1 with this timeout when debug_locked=1 */
 #define CPTRA_WDT_CFG1      0x30114u
 #define WDT_TIMEOUT_CYCLES  100000000u /* hw-model default is 40M; margin for slow APB host */
+#define TIMER_PERIOD_PS     20000u     /* clk period in picoseconds at 50 MHz */
 #define CPTRA_FW_REV_ID0    0x300D8u
 #define CPTRA_FW_REV_ID1    0x300DCu
-#define HOST_PAUSER         0x00000001u  /* constant PAUSER driven by rtl/avmm_to_apb.sv */
+#define HOST_PAUSER         0x00000001u  /* PAUSER driven by rtl/avmm_to_apb.sv (nios_pauser) */
 #define MBOX_CMD_FWLD       0x46574C44u  /* "FWLD" FIRMWARE_LOAD */
 #define MBOX_ST_DATA_READY  1u
 #define MBOX_ST_CMD_COMPLETE 2u
@@ -62,11 +77,14 @@
 
 /* ---- soc_fuse_ctrl (rtl/soc_fuse_ctrl.sv) ---- */
 #define FC_ID               0x00u        /* 0x46555345 */
-#define FC_CTRL             0x04u        /* bit0 START, bit1 CLEAR */
+#define FC_CTRL             0x04u        /* bit0 START, bit1 CLEAR, bit2 START_DONE */
 #define FC_STATUS           0x08u        /* bit0 BUSY bit1 DONE bit2 ERR bit3 RFF */
 #define FC_COUNT            0x0Cu
 #define FC_FW_BYTES         0x10u
 #define FC_NUM_FUSES        0x14u
+#define FC_START            1u
+#define FC_CLEAR            2u
+#define FC_START_DONE       4u           /* warm-reset: rewrite FUSE_WR_DONE only */
 
 /* ---- STATUS_PIO bits (rtl/nios_caliptra_top.sv) ---- */
 #define CTRL_PWRGOOD        (1u << 0)
@@ -77,6 +95,13 @@
 #define ST_ERROR_FATAL      (1u << 5)
 #define ST_ERROR_NON_FATAL  (1u << 6)
 #define ST_ETRNG_REQ        (1u << 7)
+
+#define FATAL_RETRY_LIMIT   3u
+
+#define ERR_OK              0
+#define ERR_FATAL           1
+#define ERR_TIMEOUT         2
+#define ERR_FAIL            3
 
 static inline void magic(uint32_t v) { REG32(MAGIC_PIO_BASE) = v; }
 static void fail(uint32_t code) { magic(code); for (;;) ; }
@@ -108,92 +133,244 @@ static void trng_service(void)
     trng_reqs++;
     for (uint32_t t = 0; (status() & ST_ETRNG_REQ) && t < 100000u; t++) ;
 }
-static void check_fatal(void) { if (status() & ST_ERROR_FATAL) fail(0xDEAD00FFu); }
 
-/* wait for STATUS_PIO bit while servicing TRNG */
-static void wait_status(uint32_t bit, uint32_t timeout_code)
+/* Poll non-fatal errors: log and RW1C-clear. Fatal is returned to the caller. */
+static int handle_errors(void)
 {
-    for (uint32_t t = 0; !(status() & bit); t++) {
-        trng_service(); check_fatal();
-        if (t > 200000000u) fail(timeout_code);
+    uint32_t st = status();
+    if (st & ST_ERROR_NON_FATAL) {
+        uint32_t hw = CPTRA(CPTRA_HW_ERROR_NON_FATAL);
+        uint32_t fw = CPTRA(CPTRA_FW_ERROR_NON_FATAL);
+        puthex("non_fatal HW_ERROR_NON_FATAL=", hw);
+        puthex("non_fatal FW_ERROR_NON_FATAL=", fw);
+        CPTRA(CPTRA_HW_ERROR_NON_FATAL) = hw;          /* RW1C */
+        CPTRA(CPTRA_FW_ERROR_NON_FATAL) = fw;
+        alt_putstr("cleared cptra_error_non_fatal\n");
     }
+    if (st & ST_ERROR_FATAL) {
+        puthex("FATAL HW_ERROR_FATAL=", CPTRA(CPTRA_HW_ERROR_FATAL));
+        puthex("FATAL FW_ERROR_FATAL=", CPTRA(CPTRA_FW_ERROR_FATAL));
+        return ERR_FATAL;
+    }
+    return ERR_OK;
 }
 
-int main(void)
+/* wait for STATUS_PIO bit while servicing TRNG and non-fatal errors */
+static int wait_status(uint32_t bit, uint32_t timeout_iters)
 {
-    magic(0x00000001u);                                  /* M1 alive */
+    for (uint32_t t = 0; !(status() & bit); t++) {
+        trng_service();
+        if (handle_errors() == ERR_FATAL) return ERR_FATAL;
+        if (t > timeout_iters) return ERR_TIMEOUT;
+    }
+    return ERR_OK;
+}
 
-    /* 1. power good, then release reset */
-    REG32(CTRL_PIO_BASE) = CTRL_PWRGOOD;
-    delay(1000);
-    REG32(CTRL_PIO_BASE) = CTRL_PWRGOOD | CTRL_RST_B;
-
-    /* 2. ready_for_fuses */
-    wait_status(ST_READY_FOR_FUSES, 0xDEAD0001u);
-    magic(0x00000002u);
-    uint32_t hw_rev = CPTRA(CPTRA_HW_REV_ID);
-    puthex("CPTRA_HW_REV_ID   = ", hw_rev);
-    if (hw_rev == 0 || hw_rev == 0xFFFFFFFFu) fail(0xDEAD0002u);
-
-    /* PAUSER=1 is not a default valid mailbox user: register + lock slot 0 (fuse phase only) */
-    CPTRA(CPTRA_MBOX_VALID_PAUSER0) = HOST_PAUSER;
-    CPTRA(CPTRA_MBOX_PAUSER_LOCK0)  = 1u;
+/* Program PAUSER valid+lock in 1.x order, plus timer and WDT.
+ * Fuse PAUSER is sticky on pwrgood (skip after a warm reset).
+ * TRNG and mailbox PAUSER/lock reset on rst_b and must be rewritten after warm reset.
+ * TIMER_CONFIG and WDT_CFG are pwrgood-sticky but are rewritten anyway (harmless). */
+static void program_pauser_timer_wdt(int include_fuse_pauser)
+{
+    if (include_fuse_pauser) {
+        CPTRA(CPTRA_FUSE_VALID_PAUSER) = HOST_PAUSER;
+        CPTRA(CPTRA_FUSE_PAUSER_LOCK)  = 1u;
+    }
+    CPTRA(CPTRA_TRNG_VALID_PAUSER)     = HOST_PAUSER;
+    CPTRA(CPTRA_TRNG_PAUSER_LOCK)      = 1u;
+    CPTRA(CPTRA_MBOX_VALID_PAUSER0)    = HOST_PAUSER;
+    CPTRA(CPTRA_MBOX_PAUSER_LOCK0)     = 1u;
+    CPTRA(CPTRA_TIMER_CONFIG)          = TIMER_PERIOD_PS;
     /* production (debug locked): ROM arms WDT1 from CPTRA_WDT_CFG; 0 => 1 cycle => fatal NMI */
-    CPTRA(CPTRA_WDT_CFG0) = WDT_TIMEOUT_CYCLES;
-    CPTRA(CPTRA_WDT_CFG1) = 0u;
-    magic(0x00000003u);
+    CPTRA(CPTRA_WDT_CFG0)              = WDT_TIMEOUT_CYCLES;
+    CPTRA(CPTRA_WDT_CFG1)              = 0u;
+}
 
-    /* 3. fuse controller IP pushes the full OTP image (83 FUSE_* words) + FUSE_WR_DONE */
-    if (FUSECTL(FC_ID) != 0x46555345u) fail(0xDEAD0003u);
-    FUSECTL(FC_CTRL) = 1u;                               /* START */
+/* Kick soc_fuse_ctrl: full image (START) or FUSE_WR_DONE only (START_DONE). */
+static int start_fuses(int done_only)
+{
     uint32_t fs;
+    if (FUSECTL(FC_ID) != 0x46555345u) return ERR_FAIL;
+    FUSECTL(FC_CTRL) = done_only ? FC_START_DONE : FC_START;
     for (uint32_t t = 0; ((fs = FUSECTL(FC_STATUS)) & 1u) || !(fs & 6u); t++)
-        if (t > 1000000u) fail(0xDEAD0004u);
-    if (fs & 4u) fail(0xDEAD0005u);                      /* PSLVERR or not ready_for_fuses */
-    puthex("FUSE words written= ", FUSECTL(FC_COUNT));  /* 84 = 83 fuses + FUSE_WR_DONE */
-    if (!(CPTRA(CPTRA_FUSE_WR_DONE) & 1u)) fail(0xDEAD0006u);
+        if (t > 1000000u) return ERR_TIMEOUT;
+    if (fs & 4u) return ERR_FAIL;                       /* PSLVERR or not ready_for_fuses */
+    puthex("FUSE words written= ", FUSECTL(FC_COUNT));  /* 84 cold, 1 warm */
+    if (!(CPTRA(CPTRA_FUSE_WR_DONE) & 1u)) return ERR_FAIL;
     puthex("CPTRA_FLOW_STATUS = ", CPTRA(CPTRA_FLOW_STATUS));
-    magic(0x00000004u);
+    return ERR_OK;
+}
 
-    /* 4/5. ROM boots (TRNG serviced meanwhile) until ready_for_fw_push */
-    wait_status(ST_READY_FOR_FW, 0xDEAD0007u);
-    magic(0x00000005u);
-    puthex("ready_for_fw_push, trng_reqs = ", trng_reqs);
-
-    /* mailbox FIRMWARE_LOAD */
+static int load_firmware(void)
+{
     uint32_t fw_bytes = FUSECTL(FC_FW_BYTES);
-    uint32_t t = 0;
-    while (CPTRA(MBOX_LOCK) & 1u) { trng_service(); if (++t > 10000000u) fail(0xDEAD0008u); }
-    if (CPTRA(MBOX_USER) != HOST_PAUSER) fail(0xDEAD0009u);
+    uint32_t t = 0, mst;
+    while (CPTRA(MBOX_LOCK) & 1u) {
+        trng_service();
+        if (handle_errors() == ERR_FATAL) return ERR_FATAL;
+        if (++t > 10000000u) return ERR_TIMEOUT;
+    }
+    if (CPTRA(MBOX_USER) != HOST_PAUSER) return ERR_FAIL;
     CPTRA(MBOX_CMD)  = MBOX_CMD_FWLD;
     CPTRA(MBOX_DLEN) = fw_bytes;
     uint32_t words = (fw_bytes + 3u) / 4u;
     for (uint32_t i = 0; i < words; i++) {
         CPTRA(MBOX_DATAIN) = FWSTORE(i);
-        if ((i & 0xFFu) == 0) trng_service();
+        if ((i & 0xFFu) == 0) {
+            trng_service();
+            if (handle_errors() == ERR_FATAL) return ERR_FATAL;
+        }
     }
     CPTRA(MBOX_EXECUTE) = 1u;
     magic(0x00000006u);
     puthex("FIRMWARE_LOAD bytes= ", fw_bytes);
 
-    uint32_t mst;
     t = 0;
     while (((mst = CPTRA(MBOX_STATUS)) & 0xFu) == 0) {
-        trng_service(); check_fatal();
-        if (++t > 200000000u) fail(0xDEAD000Au);
+        trng_service();
+        if (handle_errors() == ERR_FATAL) return ERR_FATAL;
+        if (++t > 200000000u) return ERR_TIMEOUT;
     }
     puthex("MBOX_STATUS       = ", mst);
     CPTRA(MBOX_EXECUTE) = 0u;                            /* release mailbox */
-    if ((mst & 0xFu) == MBOX_ST_CMD_FAILURE) fail(0xDEAD000Bu);
+    if ((mst & 0xFu) == MBOX_ST_CMD_FAILURE) return ERR_FAIL;
+    return ERR_OK;
+}
+
+/* Release pwrgood then rst_b, with delay so the 2FF sync-deassert can complete. */
+static void caliptra_cold_release(void)
+{
+    REG32(CTRL_PIO_BASE) = CTRL_PWRGOOD;
+    delay(1000);
+    REG32(CTRL_PIO_BASE) = CTRL_PWRGOOD | CTRL_RST_B;
+    delay(100);
+}
+
+/* Full pwrgood cycle (cold reset) used to recover from cptra_error_fatal. */
+void caliptra_pwrgood_cycle(void)
+{
+    alt_putstr("fatal: pwrgood cycle recovery\n");
+    REG32(CTRL_PIO_BASE) = 0;
+    delay(2000);                                         /* cover 2FF sync deassert of pwrgood + hold */
+    caliptra_cold_release();
+}
+
+/* Warm reset: hold pwrgood, pulse rst_b, wait ready_for_fuses, re-lock
+ * rst_b-domain PAUSER (TRNG + mailbox), write FUSE_WR_DONE only.
+ * After a successful previous cold boot, rom-1.1.1 WarmResetFlow jumps to
+ * the existing firmware — FIRMWARE_LOAD is not repeated. If the previous
+ * cold boot did not complete, ready_for_fw_push may assert and we load FW. */
+int caliptra_warm_reset(void)
+{
+    int rc;
+    alt_putstr("warm reset: rst_b only (pwrgood held)\n");
+    REG32(CTRL_PIO_BASE) = CTRL_PWRGOOD;                 /* drop rst_b, hold pwrgood */
+    delay(2000);
+    REG32(CTRL_PIO_BASE) = CTRL_PWRGOOD | CTRL_RST_B;
+    delay(100);
+    rc = wait_status(ST_READY_FOR_FUSES, 200000000u);
+    if (rc) return rc;
+    program_pauser_timer_wdt(0);                         /* skip fuse PAUSER (pwrgood-sticky) */
+    magic(0x00000013u);
+    FUSECTL(FC_CTRL) = FC_CLEAR;
+    rc = start_fuses(1);                                 /* START_DONE only */
+    if (rc) return rc;
+    magic(0x00000014u);
+    /* Prefer ready_for_runtime (normal warm path). Fall back to FW load. */
+    for (uint32_t t = 0; t <= 200000000u; t++) {
+        trng_service();
+        if (handle_errors() == ERR_FATAL) return ERR_FATAL;
+        if (status() & ST_READY_FOR_RT) {
+            puthex("warm ready_for_runtime FLOW_STATUS = ", CPTRA(CPTRA_FLOW_STATUS));
+            return ERR_OK;
+        }
+        if (status() & ST_READY_FOR_FW) {
+            magic(0x00000015u);
+            rc = load_firmware();
+            if (rc) return rc;
+            magic(0x00000017u);
+            rc = wait_status(ST_READY_FOR_RT, 200000000u);
+            if (rc) return rc;
+            puthex("warm ready_for_runtime FLOW_STATUS = ", CPTRA(CPTRA_FLOW_STATUS));
+            return rc;
+        }
+    }
+    return ERR_TIMEOUT;
+}
+
+/* Cold boot from a state where Caliptra is (or will be) out of reset. */
+static int caliptra_cold_boot(void)
+{
+    int rc;
+    rc = wait_status(ST_READY_FOR_FUSES, 200000000u);
+    if (rc) return rc;
+    magic(0x00000002u);
+    uint32_t hw_rev = CPTRA(CPTRA_HW_REV_ID);
+    puthex("CPTRA_HW_REV_ID   = ", hw_rev);
+    if (hw_rev == 0 || hw_rev == 0xFFFFFFFFu) return ERR_FAIL;
+
+    program_pauser_timer_wdt(1);
+    magic(0x00000003u);
+
+    rc = start_fuses(0);
+    if (rc) return rc;
+    magic(0x00000004u);
+
+    rc = wait_status(ST_READY_FOR_FW, 200000000u);
+    if (rc) return rc;
+    magic(0x00000005u);
+    puthex("ready_for_fw_push, trng_reqs = ", trng_reqs);
+
+    rc = load_firmware();
+    if (rc) return rc;
     magic(0x00000007u);
 
-    /* 6. runtime */
-    wait_status(ST_READY_FOR_RT, 0xDEAD000Cu);
+    rc = wait_status(ST_READY_FOR_RT, 200000000u);
+    if (rc) return rc;
     puthex("ready_for_runtime FLOW_STATUS = ", CPTRA(CPTRA_FLOW_STATUS));
     puthex("CPTRA_FW_REV_ID0  = ", CPTRA(CPTRA_FW_REV_ID0));
     puthex("CPTRA_FW_REV_ID1  = ", CPTRA(CPTRA_FW_REV_ID1));
-    if (status() & (ST_ERROR_FATAL | ST_ERROR_NON_FATAL)) fail(0xDEAD000Du);
+    return ERR_OK;
+}
+
+int main(void)
+{
+    uint32_t attempts = 0;
+    int rc;
+
+    magic(0x00000001u);                                  /* M1 alive */
+
+    caliptra_cold_release();
+
+    for (;;) {
+        rc = caliptra_cold_boot();
+        if (rc == ERR_OK) break;
+        if (rc == ERR_FATAL) {
+            if (++attempts > FATAL_RETRY_LIMIT) fail(0xDEAD00FFu);
+            caliptra_pwrgood_cycle();
+            continue;
+        }
+        fail(rc == ERR_TIMEOUT ? 0xDEAD000Eu : 0xDEAD000Fu);
+    }
     magic(0xCA11F00Du);                                  /* success; led = 0x0D */
-    for (;;) trng_service();                             /* keep serving runtime TRNG requests */
+    /* caliptra_warm_reset() is available for a host-initiated warm reset
+     * (hold pwrgood, pulse rst_b, START_DONE, wait ready_for_runtime; FW is
+     * only re-loaded if ready_for_fw_push asserts). Not called automatically. */
+
+    /* Keep serving runtime TRNG and poll for errors (no IRQ wired in this PD). */
+    for (;;) {
+        trng_service();
+        if (handle_errors() == ERR_FATAL) {
+            if (++attempts > FATAL_RETRY_LIMIT) fail(0xDEAD00FFu);
+            caliptra_pwrgood_cycle();
+            rc = caliptra_cold_boot();
+            if (rc == ERR_OK) {
+                magic(0xCA11F00Du);
+                continue;
+            }
+            if (rc == ERR_FATAL) continue;
+            fail(0xDEAD0010u);
+        }
+    }
     return 0;
 }

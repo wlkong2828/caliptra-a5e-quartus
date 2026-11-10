@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <deploy
- date="2026.11.02.05:57:41"
- outputDirectory="/workspace/caliptra-c10gx-1x/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_clk/">
+ date="2026.11.10.16:22:37"
+ outputDirectory="/workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_clk/">
  <perimeter>
   <parameter
      name="AUTO_GENERATION_ID"
@@ -99,17 +99,17 @@
   <parameter name="AUTO_DEVICE_SPEEDGRADE" value="6" />
   <generatedFiles>
    <file
-       path="/workspace/caliptra-c10gx-1x/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_clk/synth/nios_caliptra_sys_clk.v"
+       path="/workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_clk/synth/nios_caliptra_sys_clk.v"
        attributes="CONTAINS_INLINE_CONFIGURATION" />
   </generatedFiles>
   <childGeneratedFiles>
    <file
-       path="/workspace/caliptra-c10gx-1x/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_clk/synth/nios_caliptra_sys_clk.v"
+       path="/workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_clk/synth/nios_caliptra_sys_clk.v"
        attributes="CONTAINS_INLINE_CONFIGURATION" />
   </childGeneratedFiles>
   <sourceFiles>
    <file
-       path="/workspace/caliptra-c10gx-1x/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_clk.ip" />
+       path="/workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_clk.ip" />
   </sourceFiles>
   <childSourceFiles/>
   <messages>

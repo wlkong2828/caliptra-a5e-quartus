@@ -1,0 +1,9 @@
+Synthesis Status : Successful - Tue Nov 10 16:29:53 2026
+Revision Name : nios_caliptra_a5e
+Top-level Entity Name : nios_caliptra_top
+Family : Agilex 5
+Quartus Prime Version : 25.3.0 Build 109 09/24/2025 SC Pro Edition
+Device : A5EC065BB32AE6S
+Logic utilization estimate (in ALMs) : 138,715 / 222,400 ( 62 % )
+Total dedicated logic registers : 145784
+Estimated DSP Blocks Post-Merging : 47

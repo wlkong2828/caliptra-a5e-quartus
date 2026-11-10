@@ -1,18 +1,18 @@
-[43] HW_REV_ID=00000011
-[65] FUSE_CTRL ID=46555345
-[323] FUSE_CTRL STATUS=00000002 COUNT=84
-  readback FUSE_UDS_SEED_0 (expect 0 - write-only to SoC) = 00000000
-[333] FUSE_WR_DONE=00000001
+TB_NIOS_TOP test=prod max_cycles=200000000
+[45] HW_REV_ID=00000011
+[92] FUSE_CTRL ID=46555345
+[350] FUSE_CTRL STATUS=00000002 COUNT=84 (done_only=0)
+[355] FUSE_WR_DONE=00000001
 
 Running Caliptra ROM ...
 
 [state] CFI Enabled
 [tb] etrng_req rise status=00010a80
-[191384] TRNG request 1 serviced
+[191411] TRNG request 1 serviced
 [tb] etrng_req rise status=00010a80
-[191681] TRNG request 2 serviced
+[191708] TRNG request 2 serviced
 [tb] etrng_req rise status=00010a80
-[191957] TRNG request 3 serviced
+[191984] TRNG request 3 serviced
 [state] LifecycleState = Production
 [state] DebugLocked = Yes
 [state] Starting the WD Timer 100000000 cycles
@@ -25,12 +25,12 @@ ROM Digest: 0212785561DA4479F3A14AA516C8A6DB0A887B428A3A9053BF5F2EA529A5D6BD
 [kat] SHA2-512-ACC
 [kat] ECC-384
 [tb] etrng_req rise status=00010a80
-[445807] TRNG request 4 serviced
+[445834] TRNG request 4 serviced
 [tb] etrng_req rise status=00010a80
-[1168543] TRNG request 5 serviced
+[1168570] TRNG request 5 serviced
 [kat] HMAC-384Kdf
 [tb] etrng_req rise status=00010a80
-[2885456] TRNG request 6 serviced
+[2885483] TRNG request 6 serviced
 [kat] LMS
 [kat] --
 [cold-reset] ++
@@ -39,18 +39,18 @@ ROM Digest: 0212785561DA4479F3A14AA516C8A6DB0A887B428A3A9053BF5F2EA529A5D6BD
 [idev] CDI.KEYID = 6
 [idev] SUBJECT.KEYID = 7
 [idev] UDS.KEYID = 0
-[3449101] ready_for_fw_push trng=6
+[3449128] ready_for_fw_push trng=6
   MBOX_USER=00000001
 [tb] etrng_req rise status=00000a82
-[3458155] TRNG request 7 serviced
+[3458182] TRNG request 7 serviced
 [idev] Erasing UDS.KEYID = 0
 [tb] etrng_req rise status=00010a82
-[3470868] TRNG request 8 serviced
+[3470895] TRNG request 8 serviced
 [tb] etrng_req rise status=00010a82
-[3481788] TRNG request 9 serviced
-[3640382] FIRMWARE_LOAD 109000 bytes from soc_fw_store
+[3481815] TRNG request 9 serviced
+[3640409] FIRMWARE_LOAD 109000 bytes from soc_fw_store
 [tb] etrng_req rise status=00010a82
-[4204691] TRNG request 10 serviced
+[4204718] TRNG request 10 serviced
 [idev] Sha1 KeyId Algorithm
 [idev] --
 [ldev] ++
@@ -59,19 +59,19 @@ ROM Digest: 0212785561DA4479F3A14AA516C8A6DB0A887B428A3A9053BF5F2EA529A5D6BD
 [ldev] AUTHORITY.KEYID = 7
 [ldev] FE.KEYID = 1
 [tb] etrng_req rise status=00000a82
-[5961855] TRNG request 11 serviced
+[5961882] TRNG request 11 serviced
 [tb] etrng_req rise status=00000a82
-[5968047] TRNG request 12 serviced
+[5968074] TRNG request 12 serviced
 [ldev] Erasing FE.KEYID = 1
 [tb] etrng_req rise status=00000a82
-[5975243] TRNG request 13 serviced
+[5975270] TRNG request 13 serviced
 [tb] etrng_req rise status=00000a82
-[5986448] TRNG request 14 serviced
+[5986475] TRNG request 14 serviced
 [tb] etrng_req rise status=00000a82
-[6709492] TRNG request 15 serviced
+[6709519] TRNG request 15 serviced
 [ldev] Signing Cert w/ AUTHORITY.KEYID = 7
 [tb] etrng_req rise status=00010a82
-[8462645] TRNG request 16 serviced
+[8462672] TRNG request 16 serviced
 [ldev] PUB.X = D45590812D5C815654340595DEEC943BF16CCC79A74E8785D789EB0897C90F642AA64564A708AFD45132D464C6E15DBB
 [ldev] PUB.Y = D5CAF5069BC07C1A2603A5B4EAA1621A57861D993D8B9C267ECE96BCF31C211EDA89BACF71498350E2BBE09352FF4CD5
 [ldev] SIG.R = 56CF220D2F8DD10C8DFA4EDD0F2437C8BC42B62D22DFF832BECE40E7E34F1D683E30EF8CACE2F9D709FF400CFBE6A7E1
@@ -83,22 +83,22 @@ ROM Digest: 0212785561DA4479F3A14AA516C8A6DB0A887B428A3A9053BF5F2EA529A5D6BD
 [fwproc] Img verified w/ Vendor ECC Key Idx 0
 [fwproc] Load FMC at address 0x40000000 len 16928
 [fwproc] Load Runtime at address 0x40005000 len 86188
-[14362301] MBOX_STATUS=2
+[14362328] MBOX_STATUS=2
 [afmc] ++
 [afmc] CDI.KEYID = 6
 [afmc] SUBJECT.KEYID = 7
 [afmc] AUTHORITY.KEYID = 5
 [tb] etrng_req rise status=00000a82
-[14372327] TRNG request 17 serviced
+[14372354] TRNG request 17 serviced
 [tb] etrng_req rise status=00000a82
-[14384926] TRNG request 18 serviced
+[14384953] TRNG request 18 serviced
 [tb] etrng_req rise status=00000a82
-[14393943] TRNG request 19 serviced
+[14393970] TRNG request 19 serviced
 [tb] etrng_req rise status=00000a82
-[15115143] TRNG request 20 serviced
+[15115170] TRNG request 20 serviced
 [afmc] Signing Cert w/ AUTHORITY.KEYID = 5
 [tb] etrng_req rise status=00010a82
-[16882532] TRNG request 21 serviced
+[16882559] TRNG request 21 serviced
 [afmc] Erase AUTHORITY.KEYID = 5
 [afmc] PUB.X = AB4F1C8FD8DE8096BD85DDE0D131CABED8540EEE65B4FC45601257067E6C532822CE9D53E90FFCD771F7A21286B94E35
 [afmc] PUB.Y = DD0F38069E1BA95A0B07F9DEEBA6291D616FA02C892D69866ADC54D4DDCFCD0FA64837D9F5BE1BD4B8414C196D77D4C4
@@ -115,11 +115,11 @@ Running Caliptra FMC ...
 
 [state] CFI Enabled
 [tb] etrng_req rise status=00010a82
-[18685420] TRNG request 22 serviced
+[18685447] TRNG request 22 serviced
 [tb] etrng_req rise status=00010a82
-[18685643] TRNG request 23 serviced
+[18685670] TRNG request 23 serviced
 [tb] etrng_req rise status=00010a82
-[18685857] TRNG request 24 serviced
+[18685884] TRNG request 24 serviced
 [alias rt] Extend RT PCRs
 [alias rt] Extend RT PCRs Done
 [alias rt] Lock RT PCRs
@@ -131,20 +131,20 @@ Running Caliptra FMC ...
 [alias rt] Derive CDI
 [alias rt] Store in in slot 0x4
 [tb] etrng_req rise status=00000a82
-[18782296] TRNG request 25 serviced
+[18782323] TRNG request 25 serviced
 [alias rt] Derive Key Pair
 [alias rt] Store priv key in slot 0x5
 [tb] etrng_req rise status=00010a82
-[18790793] TRNG request 26 serviced
+[18790820] TRNG request 26 serviced
 [tb] etrng_req rise status=00010a82
-[18794202] TRNG request 27 serviced
+[18794229] TRNG request 27 serviced
 [tb] etrng_req rise status=00010a82
-[19514333] TRNG request 28 serviced
+[19514360] TRNG request 28 serviced
 [alias rt] Derive Key Pair - Done
 [alias rt] Signing Cert with AUTHO
             RITY.KEYID = 7
 [tb] etrng_req rise status=00010a82
-[21236600] TRNG request 29 serviced
+[21236627] TRNG request 29 serviced
 [alias rt] Erasing AUTHORITY.KEYID = 7
 [alias rt] PUB.X = C0A115920AF13033EA9987B07BBEBDB398E80024FFA81DD854A2103C3DF557775D73AB74A446A793A9092216BC3E3819
 [alias rt] PUB.Y = B3C945C6ED5DE49112C577E110C33EFEA20C97BCBFCF4D88836779682C03195BEDE428F35D3F2B4FBB24230229DB7EDF
@@ -160,16 +160,18 @@ Running Caliptra FMC ...
 
 [state] CFI Enabled
 [tb] etrng_req rise status=00000a82
-[23948599] TRNG request 30 serviced
+[23948626] TRNG request 30 serviced
 [tb] etrng_req rise status=00000a82
-[23948815] TRNG request 31 serviced
+[23948842] TRNG request 31 serviced
 [tb] etrng_req rise status=00000a82
-[23949027] TRNG request 32 serviced
+[23949054] TRNG request 32 serviced
 [rt] Runtime listening for mailbox commands...
-[24064873] ready_for_runtime
-TB_NIOS_TOP PASS cyc=24064873 trng=32
-- tb_nios_top_fw.sv:74: Verilog $finish
+[24064900] ready_for_runtime
+TB_NIOS_TOP PASS cyc=24064900 trng=32 (prod)
+- tb_nios_top_fw.sv:273: Verilog $finish
+TB_ALL PASS cyc=24064900 trng=32
+- tb_nios_top_fw.sv:347: Verilog $finish
 - S i m u l a t i o n   R e p o r t: Verilator 5.054 2026-11-01
-- Verilator: $finish at 241ms; walltime 2102.513 s; speed 114.458 us/s
-- Verilator: cpu 2102.206 s on 1 threads; allocated 8 MB
-wall_time_s=2103
+- Verilator: $finish at 241ms; walltime 2668.465 s; speed 90.183 us/s
+- Verilator: cpu 2664.079 s on 1 threads; allocated 8 MB
+exit=0 wall_time_s=2668

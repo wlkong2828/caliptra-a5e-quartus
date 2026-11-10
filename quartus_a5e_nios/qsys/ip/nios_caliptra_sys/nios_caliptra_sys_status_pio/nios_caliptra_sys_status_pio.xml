@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <deploy
- date="2026.11.02.05:57:42"
- outputDirectory="/workspace/caliptra-c10gx-1x/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_status_pio/">
+ date="2026.11.10.16:22:35"
+ outputDirectory="/workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_status_pio/">
  <perimeter>
   <parameter
      name="AUTO_GENERATION_ID"
@@ -154,17 +154,17 @@
   <parameter name="AUTO_DEVICE_SPEEDGRADE" value="6" />
   <generatedFiles>
    <file
-       path="/workspace/caliptra-c10gx-1x/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_status_pio/synth/nios_caliptra_sys_status_pio.v"
+       path="/workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_status_pio/synth/nios_caliptra_sys_status_pio.v"
        attributes="CONTAINS_INLINE_CONFIGURATION" />
   </generatedFiles>
   <childGeneratedFiles>
    <file
-       path="/workspace/caliptra-c10gx-1x/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_status_pio/synth/nios_caliptra_sys_status_pio.v"
+       path="/workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_status_pio/synth/nios_caliptra_sys_status_pio.v"
        attributes="CONTAINS_INLINE_CONFIGURATION" />
   </childGeneratedFiles>
   <sourceFiles>
    <file
-       path="/workspace/caliptra-c10gx-1x/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_status_pio.ip" />
+       path="/workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_status_pio.ip" />
   </sourceFiles>
   <childSourceFiles>
    <file
@@ -174,7 +174,7 @@
    <message level="Info" culprit="nios_caliptra_sys_status_pio">"Generating: nios_caliptra_sys_status_pio"</message>
    <message level="Info" culprit="nios_caliptra_sys_status_pio">"Generating: nios_caliptra_sys_status_pio_altera_avalon_pio_1924_5kps7ry"</message>
    <message level="Info" culprit="status_pio">Starting RTL generation for module 'nios_caliptra_sys_status_pio_altera_avalon_pio_1924_5kps7ry'</message>
-   <message level="Info" culprit="status_pio">  Generation command is [exec /opt/altera/quartus/linux64//perl/bin/perl -I /opt/altera/quartus/linux64//perl/lib -I /opt/altera/quartus/sopc_builder/bin/europa -I /opt/altera/quartus/sopc_builder/bin/perl_lib -I /opt/altera/quartus/sopc_builder/bin -I /opt/altera/quartus/../ip/altera/sopc_builder_ip/common -I /opt/altera/quartus/../ip/altera/eip/altera_avalon_pio -- /opt/altera/quartus/../ip/altera/eip/altera_avalon_pio/generate_rtl.pl --name=nios_caliptra_sys_status_pio_altera_avalon_pio_1924_5kps7ry --dir=/tmp/alt0759_15140567491724924701.dir/0001_status_pio_gen/ --quartus_dir=/opt/altera/quartus --verilog --config=/tmp/alt0759_15140567491724924701.dir/0001_status_pio_gen//nios_caliptra_sys_status_pio_altera_avalon_pio_1924_5kps7ry_component_configuration.pl  --do_build_sim=0  ]</message>
+   <message level="Info" culprit="status_pio">  Generation command is [exec /opt/altera/quartus/linux64//perl/bin/perl -I /opt/altera/quartus/linux64//perl/lib -I /opt/altera/quartus/sopc_builder/bin/europa -I /opt/altera/quartus/sopc_builder/bin/perl_lib -I /opt/altera/quartus/sopc_builder/bin -I /opt/altera/quartus/../ip/altera/sopc_builder_ip/common -I /opt/altera/quartus/../ip/altera/eip/altera_avalon_pio -- /opt/altera/quartus/../ip/altera/eip/altera_avalon_pio/generate_rtl.pl --name=nios_caliptra_sys_status_pio_altera_avalon_pio_1924_5kps7ry --dir=/tmp/alt0767_15225607664327856604.dir/0001_status_pio_gen/ --quartus_dir=/opt/altera/quartus --verilog --config=/tmp/alt0767_15225607664327856604.dir/0001_status_pio_gen//nios_caliptra_sys_status_pio_altera_avalon_pio_1924_5kps7ry_component_configuration.pl  --do_build_sim=0  ]</message>
    <message level="Info" culprit="status_pio">Done RTL generation for module 'nios_caliptra_sys_status_pio_altera_avalon_pio_1924_5kps7ry'</message>
   </messages>
  </entity>
@@ -205,12 +205,12 @@
   <parameter name="direction" value="Input" />
   <generatedFiles>
    <file
-       path="/workspace/caliptra-c10gx-1x/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_status_pio/altera_avalon_pio_1924/synth/nios_caliptra_sys_status_pio_altera_avalon_pio_1924_5kps7ry.v"
+       path="/workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_status_pio/altera_avalon_pio_1924/synth/nios_caliptra_sys_status_pio_altera_avalon_pio_1924_5kps7ry.v"
        attributes="" />
   </generatedFiles>
   <childGeneratedFiles>
    <file
-       path="/workspace/caliptra-c10gx-1x/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_status_pio/altera_avalon_pio_1924/synth/nios_caliptra_sys_status_pio_altera_avalon_pio_1924_5kps7ry.v"
+       path="/workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_status_pio/altera_avalon_pio_1924/synth/nios_caliptra_sys_status_pio_altera_avalon_pio_1924_5kps7ry.v"
        attributes="" />
   </childGeneratedFiles>
   <sourceFiles>
@@ -222,7 +222,7 @@
   <messages>
    <message level="Info" culprit="nios_caliptra_sys_status_pio">"Generating: nios_caliptra_sys_status_pio_altera_avalon_pio_1924_5kps7ry"</message>
    <message level="Info" culprit="status_pio">Starting RTL generation for module 'nios_caliptra_sys_status_pio_altera_avalon_pio_1924_5kps7ry'</message>
-   <message level="Info" culprit="status_pio">  Generation command is [exec /opt/altera/quartus/linux64//perl/bin/perl -I /opt/altera/quartus/linux64//perl/lib -I /opt/altera/quartus/sopc_builder/bin/europa -I /opt/altera/quartus/sopc_builder/bin/perl_lib -I /opt/altera/quartus/sopc_builder/bin -I /opt/altera/quartus/../ip/altera/sopc_builder_ip/common -I /opt/altera/quartus/../ip/altera/eip/altera_avalon_pio -- /opt/altera/quartus/../ip/altera/eip/altera_avalon_pio/generate_rtl.pl --name=nios_caliptra_sys_status_pio_altera_avalon_pio_1924_5kps7ry --dir=/tmp/alt0759_15140567491724924701.dir/0001_status_pio_gen/ --quartus_dir=/opt/altera/quartus --verilog --config=/tmp/alt0759_15140567491724924701.dir/0001_status_pio_gen//nios_caliptra_sys_status_pio_altera_avalon_pio_1924_5kps7ry_component_configuration.pl  --do_build_sim=0  ]</message>
+   <message level="Info" culprit="status_pio">  Generation command is [exec /opt/altera/quartus/linux64//perl/bin/perl -I /opt/altera/quartus/linux64//perl/lib -I /opt/altera/quartus/sopc_builder/bin/europa -I /opt/altera/quartus/sopc_builder/bin/perl_lib -I /opt/altera/quartus/sopc_builder/bin -I /opt/altera/quartus/../ip/altera/sopc_builder_ip/common -I /opt/altera/quartus/../ip/altera/eip/altera_avalon_pio -- /opt/altera/quartus/../ip/altera/eip/altera_avalon_pio/generate_rtl.pl --name=nios_caliptra_sys_status_pio_altera_avalon_pio_1924_5kps7ry --dir=/tmp/alt0767_15225607664327856604.dir/0001_status_pio_gen/ --quartus_dir=/opt/altera/quartus --verilog --config=/tmp/alt0767_15225607664327856604.dir/0001_status_pio_gen//nios_caliptra_sys_status_pio_altera_avalon_pio_1924_5kps7ry_component_configuration.pl  --do_build_sim=0  ]</message>
    <message level="Info" culprit="status_pio">Done RTL generation for module 'nios_caliptra_sys_status_pio_altera_avalon_pio_1924_5kps7ry'</message>
   </messages>
  </entity>

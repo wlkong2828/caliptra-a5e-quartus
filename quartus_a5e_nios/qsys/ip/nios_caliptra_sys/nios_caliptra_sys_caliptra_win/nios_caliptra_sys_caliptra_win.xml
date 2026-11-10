@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <deploy
- date="2026.11.02.05:57:42"
- outputDirectory="/workspace/caliptra-c10gx-1x/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_caliptra_win/">
+ date="2026.11.10.16:22:36"
+ outputDirectory="/workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_caliptra_win/">
  <perimeter>
   <parameter
      name="AUTO_GENERATION_ID"
@@ -227,17 +227,17 @@
   <parameter name="AUTO_S0_CPU_INFO_ID" value="" />
   <generatedFiles>
    <file
-       path="/workspace/caliptra-c10gx-1x/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_caliptra_win/synth/nios_caliptra_sys_caliptra_win.v"
+       path="/workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_caliptra_win/synth/nios_caliptra_sys_caliptra_win.v"
        attributes="CONTAINS_INLINE_CONFIGURATION" />
   </generatedFiles>
   <childGeneratedFiles>
    <file
-       path="/workspace/caliptra-c10gx-1x/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_caliptra_win/synth/nios_caliptra_sys_caliptra_win.v"
+       path="/workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_caliptra_win/synth/nios_caliptra_sys_caliptra_win.v"
        attributes="CONTAINS_INLINE_CONFIGURATION" />
   </childGeneratedFiles>
   <sourceFiles>
    <file
-       path="/workspace/caliptra-c10gx-1x/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_caliptra_win.ip" />
+       path="/workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_caliptra_win.ip" />
   </sourceFiles>
   <childSourceFiles>
    <file
@@ -255,24 +255,24 @@
   <parameter name="MAX_BURST_SIZE" value="1" />
   <generatedFiles>
    <file
-       path="/workspace/caliptra-c10gx-1x/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_caliptra_win/altera_avalon_mm_bridge_2010/synth/nios_caliptra_sys_caliptra_win_altera_avalon_mm_bridge_2010_tex5a4i.v"
+       path="/workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_caliptra_win/altera_avalon_mm_bridge_2010/synth/nios_caliptra_sys_caliptra_win_altera_avalon_mm_bridge_2010_tex5a4i.v"
        attributes="" />
    <file
-       path="/workspace/caliptra-c10gx-1x/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_caliptra_win/altera_avalon_mm_bridge_2010/synth/altera_merlin_waitrequest_adapter.v"
+       path="/workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_caliptra_win/altera_avalon_mm_bridge_2010/synth/altera_merlin_waitrequest_adapter.v"
        attributes="" />
    <file
-       path="/workspace/caliptra-c10gx-1x/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_caliptra_win/altera_avalon_mm_bridge_2010/synth/altera_avalon_sc_fifo.v"
+       path="/workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_caliptra_win/altera_avalon_mm_bridge_2010/synth/altera_avalon_sc_fifo.v"
        attributes="" />
   </generatedFiles>
   <childGeneratedFiles>
    <file
-       path="/workspace/caliptra-c10gx-1x/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_caliptra_win/altera_avalon_mm_bridge_2010/synth/nios_caliptra_sys_caliptra_win_altera_avalon_mm_bridge_2010_tex5a4i.v"
+       path="/workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_caliptra_win/altera_avalon_mm_bridge_2010/synth/nios_caliptra_sys_caliptra_win_altera_avalon_mm_bridge_2010_tex5a4i.v"
        attributes="" />
    <file
-       path="/workspace/caliptra-c10gx-1x/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_caliptra_win/altera_avalon_mm_bridge_2010/synth/altera_merlin_waitrequest_adapter.v"
+       path="/workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_caliptra_win/altera_avalon_mm_bridge_2010/synth/altera_merlin_waitrequest_adapter.v"
        attributes="" />
    <file
-       path="/workspace/caliptra-c10gx-1x/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_caliptra_win/altera_avalon_mm_bridge_2010/synth/altera_avalon_sc_fifo.v"
+       path="/workspace/exports/caliptra-a5e-quartus-repo/quartus_a5e_nios/qsys/ip/nios_caliptra_sys/nios_caliptra_sys_caliptra_win/altera_avalon_mm_bridge_2010/synth/altera_avalon_sc_fifo.v"
        attributes="" />
   </childGeneratedFiles>
   <sourceFiles>

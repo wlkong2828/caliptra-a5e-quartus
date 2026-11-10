@@ -47,6 +47,7 @@ set_global_assignment -name SEARCH_PATH ../caliptra-rtl/src/aes/rtl
 set_global_assignment -name SYSTEMVERILOG_FILE ../caliptra-rtl/src/keyvault/rtl/kv_defines_pkg.sv
 set_global_assignment -name SYSTEMVERILOG_FILE ../caliptra-rtl/src/doe/rtl/doe_defines_pkg.sv
 set_global_assignment -name SYSTEMVERILOG_FILE ../quartus/syn_src/caliptra_sram.sv
+set_global_assignment -name VERILOG_CONSTANT_LOOP_LIMIT 65536
 set_global_assignment -name SYSTEMVERILOG_FILE ../caliptra-rtl/src/libs/rtl/ahb_defines_pkg.sv
 set_global_assignment -name SYSTEMVERILOG_FILE ../caliptra-rtl/src/libs/rtl/caliptra_ahb_srom.sv
 set_global_assignment -name SYSTEMVERILOG_FILE ../caliptra-rtl/src/libs/rtl/apb_slv_sif.sv
@@ -338,6 +339,8 @@ set_global_assignment -name IP_FILE qsys/ip/nios_caliptra_sys/nios_caliptra_sys_
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/avmm_to_apb.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/soc_fuse_ctrl.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/soc_fw_store.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/reset_sync.sv
+set_global_assignment -name IP_FILE ip/rst_release.ip
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/nios_caliptra_top.sv
 set_global_assignment -name HEX_FILE ../fw/caliptra-rom.hex
 set_global_assignment -name HEX_FILE ../fw/caliptra-fw-bundle.hex

@@ -1,9 +1,29 @@
 #!/bin/bash
-# Sim the real nios_caliptra_top glue (fuse ctrl IP + FW store + mailbox FIRMWARE_LOAD) with a behavioral Nios.
-set -eo pipefail; cd "$(dirname "$0")"; : # needs verilator >= 5.0 on PATH; run from repo with caliptra-rtl/ at the root
+# Sim the real nios_caliptra_top glue (fuse ctrl IP + FW store + mailbox FIRMWARE_LOAD,
+# 2FF reset sync, PAUSER lock, warm-reset START_DONE, fatal pwrgood recovery)
+# with a behavioral Nios.
+# Needs verilator >= 5.0 and caliptra-rtl/ at the repo root (v1.1 / rtl-20261101).
+# Plusargs: +test=prod|sync|pauser|warm|fatal|all  (default all)
+#           +max_cycles=N  (default 200000000)
+set -eo pipefail
+cd "$(dirname "$0")"
+export PATH="${VERILATOR_BIN:-/workspace/mamba/envs/eda/bin}:$PATH"
+if [ ! -f ../caliptra-rtl/src/integration/rtl/caliptra_top.sv ]; then
+  echo "error: caliptra-rtl not found at repo root; clone chipsalliance/caliptra-rtl v1.1 or unpack the rtl-20261101 release" >&2
+  exit 1
+fi
 N=../quartus_a5e_nios/rtl
 verilator --binary -j 8 -O3 -Wno-fatal -Wno-lint -Wno-style -Wno-UNOPTFLAT -Wno-MULTIDRIVEN -Wno-TIMESCALEMOD \
   --timing --top-module tb_nios_top_fw -Mdir obj_nios_top_fw -f boot_apb.f \
-  $N/avmm_to_apb.sv $N/soc_fuse_ctrl.sv $N/soc_fw_store.sv $N/nios_caliptra_top.sv tb_nios_top_fw.sv > nios_top_fw_build.log 2>&1
-start=$(date +%s); ./obj_nios_top_fw/Vtb_nios_top_fw "$@" | tee nios_top_fw_run.log
+  rst_release_stub.sv $N/reset_sync.sv $N/avmm_to_apb.sv $N/soc_fuse_ctrl.sv $N/soc_fw_store.sv $N/nios_caliptra_top.sv tb_nios_top_fw.sv > nios_top_fw_build.log 2>&1
+start=$(date +%s)
+# Default plusargs if the caller did not pass them
+args=("$@")
+has_test=0; has_max=0
+for a in "${args[@]+"${args[@]}"}"; do
+  case "$a" in +test=*) has_test=1;; +max_cycles=*) has_max=1;; esac
+done
+(( has_test )) || args+=(+test=all)
+(( has_max ))  || args+=(+max_cycles=200000000)
+./obj_nios_top_fw/Vtb_nios_top_fw "${args[@]}" | tee nios_top_fw_run.log
 echo "wall_time_s=$(( $(date +%s)-start ))" | tee -a nios_top_fw_run.log
