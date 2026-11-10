@@ -6,6 +6,18 @@ module nios_caliptra_top (
   input  logic       reset_n,    // board reset / push-button, active low
   output logic [7:0] led         // host_magic[7:0] (Nios writes 0xCA when HW_REV_ID read OK)
 );
+  // ---- Device init / reset qualification (Agilex 5) ----
+  // Reset Release IP (altera_s10_user_rst_clkgate, ip/rst_release.ip): ninit_done is 1
+  // until the SDM reports the fabric is fully configured, then 0. Hold all user logic
+  // (PD + glue + Caliptra request pins) in reset until then. No PLL in this design;
+  // if one is added, AND its locked output in here as well.
+  logic ninit_done, sys_reset_n, glue_rst_n;
+  rst_release u_rst_release (.ninit_done(ninit_done));
+  assign sys_reset_n = reset_n & ~ninit_done;
+  // Glue (bridge, fuse ctrl, window decode) reset: async assert, 2FF sync deassert to clk.
+  rst_sync_async_assert #(.STAGES(2)) u_sync_glue (
+    .clk, .async_rst_n(sys_reset_n), .rst_n(glue_rst_n));
+
   // ---- Platform Designer system ----
   logic [17:0] cl_address; logic cl_read, cl_write, cl_waitrequest, cl_readdatavalid;
   logic [31:0] cl_writedata, cl_readdata; logic [3:0] cl_byteenable; logic [1:0] cl_response;
@@ -13,7 +25,7 @@ module nios_caliptra_top (
 
   nios_caliptra_sys u_sys (
     .clk_clk                      (clk),
-    .reset_reset_n                (reset_n),
+    .reset_reset_n                (sys_reset_n),   // PD clock_source sync-deasserts internally
     .caliptra_apb_address         (cl_address),
     .caliptra_apb_read            (cl_read),
     .caliptra_apb_write           (cl_write),
@@ -42,8 +54,8 @@ module nios_caliptra_top (
   logic [31:0] br_readdata, fuse_rdata, fw_rdata;
   logic br_readdatavalid, br_waitrequest;
   logic loc_rv, loc_rv_fuse;
-  always_ff @(posedge clk or negedge reset_n)
-    if (!reset_n) begin loc_rv <= 1'b0; loc_rv_fuse <= 1'b0; end
+  always_ff @(posedge clk or negedge glue_rst_n)
+    if (!glue_rst_n) begin loc_rv <= 1'b0; loc_rv_fuse <= 1'b0; end
     else begin loc_rv <= cl_read && !sel_cptra; loc_rv_fuse <= sel_fuse; end
   assign cl_waitrequest   = sel_cptra ? br_waitrequest : 1'b0;   // local slaves: zero wait
   assign cl_readdatavalid = br_readdatavalid | loc_rv;
@@ -59,8 +71,8 @@ module nios_caliptra_top (
   // Constant Nios AXI/APB user ID (1). A register (not a continuous assign) so
   // the PAUSER-lock test can force a wrong ID and then restore 1 reliably.
   logic [31:0] nios_pauser;
-  always_ff @(posedge clk or negedge reset_n)
-    if (!reset_n) nios_pauser <= 32'h1;
+  always_ff @(posedge clk or negedge glue_rst_n)
+    if (!glue_rst_n) nios_pauser <= 32'h1;
     else          nios_pauser <= 32'h1;
 
   logic [31:0] PADDR, PWDATA, PAUSER, PRDATA, n_PAUSER; logic [2:0] PPROT;
@@ -68,7 +80,7 @@ module nios_caliptra_top (
   logic [31:0] n_PADDR, n_PWDATA, f_PADDR, f_PWDATA;
   logic n_PSEL, n_PENABLE, n_PWRITE, f_PSEL, f_PENABLE, f_PWRITE, fuse_busy;
   avmm_to_apb #(.AW(18), .PAUSER_VAL(32'h1)) u_bridge (
-    .clk, .rst_n(reset_n),
+    .clk, .rst_n(glue_rst_n),
     .avs_address(cl_address), .avs_read(cl_read && sel_cptra), .avs_write(cl_write && sel_cptra),
     .avs_writedata(cl_writedata), .avs_byteenable(cl_byteenable),
     .avs_readdata(br_readdata), .avs_readdatavalid(br_readdatavalid),
@@ -78,7 +90,7 @@ module nios_caliptra_top (
     .PWDATA(n_PWDATA), .PAUSER(n_PAUSER), .PREADY, .PSLVERR, .PRDATA);
 
   soc_fuse_ctrl #(.FUSE_IMAGE_FILE("../fw/fuse_image.hex"), .FW_BYTES(32'd109000)) u_fuse_ctrl (
-    .clk, .rst_n(reset_n), .ready_for_fuses,
+    .clk, .rst_n(glue_rst_n), .ready_for_fuses,
     .mmio_read(cl_read && sel_fuse), .mmio_write(cl_write && sel_fuse),
     .mmio_addr(cl_address[11:0]), .mmio_wdata(cl_writedata), .mmio_rdata(fuse_rdata),
     .busy(fuse_busy), .PADDR(f_PADDR), .PWDATA(f_PWDATA),
@@ -95,13 +107,14 @@ module nios_caliptra_top (
 
   // ---- Host controls (ctrl PIO, reset value 0 => Caliptra held in reset) ----
   // ctrl[0] cptra_pwrgood request, ctrl[1] cptra_rst_b request, ctrl[2] BootFSM_BrkPoint
-  // Raw requests are gated by board reset_n, then 2FF-synchronized per the 1.x spec:
+  // Raw requests are gated by sys_reset_n (board reset_n AND NOT ninit_done), then
+  // 2FF-synchronized per the 1.x spec:
   //   rst_b:    async assert (to 0), sync deassert (to 1)
   //   pwrgood:  async assert (to 1), sync deassert (to 0)
   logic cptra_pwrgood, cptra_rst_b;
   logic raw_pwrgood, raw_rst_b;
-  assign raw_pwrgood = ctrl_out[0] & reset_n;
-  assign raw_rst_b   = ctrl_out[1] & reset_n;
+  assign raw_pwrgood = ctrl_out[0] & sys_reset_n;
+  assign raw_rst_b   = ctrl_out[1] & sys_reset_n;
   pwrgood_sync_async_assert #(.STAGES(2)) u_sync_pwrgood (
     .clk, .async_pwrgood(raw_pwrgood), .pwrgood(cptra_pwrgood));
   rst_sync_async_assert #(.STAGES(2)) u_sync_rst_b (

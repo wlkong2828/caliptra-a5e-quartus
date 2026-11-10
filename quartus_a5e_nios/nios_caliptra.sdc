@@ -10,3 +10,9 @@ set_clock_groups -asynchronous -group {clk} -group {altera_reserved_tck}
 # The synchronizer *outputs* are registers timed to clk and must not be
 # false-pathed onward into Caliptra.
 set_false_path -from [get_ports reset_n]
+
+# Reset Release IP (u_rst_release, Agilex 5 ninit_done): an SDM-driven, quasi-static
+# signal that only falls once after configuration. It is combined with reset_n into
+# sys_reset_n, which goes to async-assert / sync-deassert synchronizers (u_sync_glue,
+# u_sync_pwrgood, u_sync_rst_b) and to the PD clock_source reset synchronizer.
+set_false_path -from [get_keepers -nowarn {*u_rst_release*}]

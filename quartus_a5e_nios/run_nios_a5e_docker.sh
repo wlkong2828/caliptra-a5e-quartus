@@ -5,8 +5,8 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 STAGE=${1:-syn}
-CMD='cd qsys && rm -rf ip nios_caliptra_sys nios_caliptra_sys.qsys .qsys_edit && qsys-script --script=nios_caliptra_sys.tcl --quartus-project=none && cd .. && quartus_ipgenerate nios_caliptra_a5e && quartus_syn --parallel=8 nios_caliptra_a5e'
-[ "$STAGE" = fit ] && CMD="$CMD && quartus_fit --parallel=8 nios_caliptra_a5e"
+CMD="cd qsys && rm -rf ip nios_caliptra_sys nios_caliptra_sys.qsys .qsys_edit && qsys-script --script=nios_caliptra_sys.tcl --quartus-project=none && cd .. && quartus_ipgenerate nios_caliptra_a5e && quartus_syn --parallel=${QPAR:-8} nios_caliptra_a5e"
+[ "$STAGE" = fit ] && CMD="$CMD && quartus_fit --parallel=${QPAR:-8} nios_caliptra_a5e"
 ./dock.sh "$CMD" > flow.log 2>&1; rc=$?
 grep -E "Logic utilization|ALMs|Error \(" output_files/nios_caliptra_a5e.syn.summary flow.log 2>/dev/null | head
 echo "rc=$rc"
