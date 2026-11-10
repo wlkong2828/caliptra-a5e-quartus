@@ -1,5 +1,7 @@
 # Nios V/m host + Caliptra 1.x on Agilex 5 E (A5EC065BB32AE6S)
 
+The complete, RTL-reviewed connection map, fuse/TRNG review, and boot sequence are in [`docs/NIOS_CALIPTRA_INTEGRATION.md`](../docs/NIOS_CALIPTRA_INTEGRATION.md). That note supersedes the **Firmware** and **Not done** sections below, which are stale relative to the `soc_fuse_ctrl` + rom-1.1.1 + `FIRMWARE_LOAD` flow already in this tree.
+
 Compile study: an Intel **Nios V/m** CPU acts as the SoC "mailbox host" for **Caliptra 1.x**
 (chipsalliance/caliptra-rtl v1.1 @ 5f85fb4, passive mode) over Caliptra's **APB** subordinate.
 Quartus Prime Pro 25.3 (Docker `alterafpga/quartuspro-v25.3:agilex5`). **Pinout TBD** – all I/O

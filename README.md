@@ -2,6 +2,8 @@
 
 Passive Caliptra 1.x (v1.1) Quartus Prime Pro 25.3 project targeting **A5EC065BB32AE6S**.
 
+**Nios ↔ Caliptra integration (signal map, TRNG, fuses, boot sequence):** [`docs/NIOS_CALIPTRA_INTEGRATION.md`](docs/NIOS_CALIPTRA_INTEGRATION.md).
+
 ## Contents
 - `quartus_a5e/` — Caliptra-only A5E synth study (QSF/QPF, reports)
 - `quartus_a5e_nios/` — **Nios V/m host + Avalon→APB + Caliptra 1.x** (synth ~62% ALMs)
