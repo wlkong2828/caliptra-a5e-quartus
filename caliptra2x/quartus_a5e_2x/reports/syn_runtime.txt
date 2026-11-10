@@ -1,0 +1,7 @@
+Critical Warning (20759): Use the Reset Release IP in Intel Agilex 5 FPGA designs to ensure a successful configuration. For more information about the Reset Release IP, refer to the Configuration User Guide.
+Info: Quartus Prime Synthesis was successful. 0 errors, 19 warnings
+    Info: Peak virtual memory: 6838 megabytes
+    Info: Elapsed time: 00:22:09
+53 incdirs, 581 files
+start Tue Nov 10 13:02:34 CST 2026
+rc=0 wall_s=1332 end Tue Nov 10 13:24:46 CST 2026

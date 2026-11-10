@@ -1,0 +1,8 @@
+output_files/
+qdb/
+dni/
+tmp-clearbox/
+*.qws
+syn.log
+run.out
+memmon.log

@@ -2,6 +2,8 @@
 
 Passive Caliptra 1.x (v1.1) Quartus Prime Pro 25.3 project targeting **A5EC065BB32AE6S**.
 
+**Caliptra 2.x study (passive / core-only, Nios V host):** [`docs/caliptra-2x/`](docs/caliptra-2x/) has three guides. [Integration](docs/caliptra-2x/NIOS_CALIPTRA_2X_INTEGRATION.md) covers signals, AxUSER IDs, the memory map, the fuse map, TRNG, the boot sequence, the spec checklist and the A5E fit result (126 %, does not fit). [Simulation](docs/caliptra-2x/SIMULATION_2X.md) covers the Verilator flow and the PASS run to `ready_for_runtime`. [Firmware & keys](docs/caliptra-2x/FIRMWARE_AND_KEYS_2X.md) covers the ROM and bundle build, fuse image generation, and production HSM key preparation. A combined PDF is at [`docs/caliptra-2x/NIOS_CALIPTRA_2X_GUIDE.pdf`](docs/caliptra-2x/NIOS_CALIPTRA_2X_GUIDE.pdf). The 2.x sources are in [`caliptra2x/`](caliptra2x/).
+
 **Nios ↔ Caliptra integration (signal map, TRNG, fuses, reset, watchdog, spec checklist):** [`docs/NIOS_CALIPTRA_INTEGRATION.md`](docs/NIOS_CALIPTRA_INTEGRATION.md) (revision 3).
 
 ## Contents

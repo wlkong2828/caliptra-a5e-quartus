@@ -1,0 +1,608 @@
+TB_NIOS2X test=all max_cycles=300000000
+[40] MILESTONE ready_for_fuses
+[45] HW_REV_ID=00000212
+[50] HW_CONFIG=00000010 (iTRNG_en=0 SUBSYSTEM_MODE_en=0)
+[55] CPTRA_SECURITY_STATE=00000007 (lifecycle=3 debug_locked=1)
+[109] === test_axiuser: wrong-user accesses rejected ===
+[115] MBOX write AxUSER=3 -> SLVERR OK
+[121] fuse write AxUSER=3 -> SLVERR OK
+[127] fuse write AxUSER=1 (Nios) -> SLVERR OK (fuses only from fuse ctrl user 2)
+[132] AxUSER=1 HW_REV_ID=00000212 accepted OK
+TB_AXIUSER PASS
+[134] FUSE_CTRL ID=46555345
+[136] FUSE_CTRL NUM_FUSES=117 (image entries)
+[614] FUSE_CTRL STATUS=00000002 COUNT=118
+[619] FUSE_WR_DONE=00000001
+  FUSE_PQC_KEY_TYPE readback=00000000
+  CPTRA_OWNER_PK_HASH_LOCK readback=00000001
+  CPTRA_OWNER_PK_HASH[0] readback=48afdb07
+[634] MILESTONE fuses done via soc_fuse_ctrl2x (COUNT=118)
+[377855] LOG 
+[378838] LOG Running Caliptra ROM ...
+[378915] LOG 
+[379079] etrng_req rise
+[379157] TRNG request 1 serviced
+[379345] etrng_req rise
+[379424] TRNG request 2 serviced
+[379581] etrng_req rise
+[379659] TRNG request 3 serviced
+[384577] LOG [state] Starting the WD Timer 100000000 cycles
+[386317] etrng_req rise
+[386395] TRNG request 4 serviced
+[387756] LOG [kat] AES-GCM
+[412662] LOG [kat] KDF-CMAC
+[427808] etrng_req rise
+[427887] TRNG request 5 serviced
+[428619] etrng_req rise
+[428697] TRNG request 6 serviced
+[442177] LOG [state] LifecycleState = Production
+[445304] LOG [state] DebugLocked = Yes
+[450858] LOG [state] Starting the WD Timer 100000000 cycles
+[451994] LOG [kat] SHA2-256
+[794349] LOG ROM Digest: AB0AEDDBE4F660DC3CDB6F3221DCE2ADA1F6D0593A403B0B12D9EB5CC5C632EB
+[795412] LOG [kat] ++
+[795869] LOG [kat] sha1
+[806963] LOG [kat] SHA2-256
+[809575] LOG [kat] SHA2-384
+[816113] LOG [kat] SHA2-512
+[822160] LOG [kat] SHA2-512-ACC
+[824396] LOG [kat] SHAKE-256
+[828794] LOG [kat] CSRNG
+[829418] LOG [kat] ECC-384
+[837046] etrng_req rise
+[837124] TRNG request 7 serviced
+[999999] heartbeat status=00 trng=7
+[1558054] etrng_req rise
+[1558133] TRNG request 8 serviced
+[1999999] heartbeat status=00 trng=8
+[2999999] heartbeat status=00 trng=8
+[3269156] LOG [kat] ECDH
+[3270355] etrng_req rise
+[3270433] TRNG request 9 serviced
+[3989613] LOG [kat] HMAC-384Kdf
+[3991100] etrng_req rise
+[3991178] TRNG request 10 serviced
+[3999999] heartbeat status=00 trng=10
+[4003134] LOG [kat] HMAC-512Kdf
+[4005612] etrng_req rise
+[4005691] TRNG request 11 serviced
+[4017236] LOG [kat] HKDF-384
+[4019168] etrng_req rise
+[4019246] TRNG request 12 serviced
+[4030978] etrng_req rise
+[4031056] TRNG request 13 serviced
+[4043088] LOG [kat] HKDF-512
+[4047248] etrng_req rise
+[4047327] TRNG request 14 serviced
+[4059969] etrng_req rise
+[4060047] TRNG request 15 serviced
+[4071957] LOG [kat] AES-GCM
+[4094292] LOG [kat] KDF-CMAC
+[4108873] LOG [kat] LMS
+[4615208] LOG [kat] MLDSA87
+[4632892] etrng_req rise
+[4632970] TRNG request 16 serviced
+[4633681] etrng_req rise
+[4633759] TRNG request 17 serviced
+[4741206] etrng_req rise
+[4741285] TRNG request 18 serviced
+[4742014] etrng_req rise
+[4742092] TRNG request 19 serviced
+[4999999] heartbeat status=00 trng=19
+[5187024] etrng_req rise
+[5187102] TRNG request 20 serviced
+[5187848] etrng_req rise
+[5187926] TRNG request 21 serviced
+[5524388] LOG [kat] --
+[5528568] LOG [cold-reset] ++
+[5538206] LOG [idev] ++
+[5539119] LOG [idev] CDI.KEYID = 6
+[5541369] LOG [idev] ECC SUBJECT.KEYID = 7, MLDSA SUBJECT.KEYID = 8
+[5542255] LOG [idev] UDS.KEYID = 0
+[5542288] MILESTONE ready_for_mb_processing trng=21
+  MBOX_USER=00000001
+[5554050] etrng_req rise
+[5554687] TRNG request 22 serviced
+[5562021] LOG [idev] Erasing UDS.KEYID = 0
+[5567127] etrng_req rise
+[5569213] TRNG request 23 serviced
+[5578762] etrng_req rise
+[5579644] TRNG request 24 serviced
+[5999999] heartbeat status=02 trng=24
+[6049774] MILESTONE FIRMWARE_LOAD issued, 253440 bytes from soc_fw_store
+[6300407] etrng_req rise
+[6300847] TRNG request 25 serviced
+[6999999] heartbeat status=02 trng=25
+[7999999] heartbeat status=02 trng=25
+[8008392] etrng_req rise
+[8008839] TRNG request 26 serviced
+[8015407] etrng_req rise
+[8016060] TRNG request 27 serviced
+[8016753] etrng_req rise
+[8017254] TRNG request 28 serviced
+[8078083] etrng_req rise
+[8078692] TRNG request 29 serviced
+[8079393] etrng_req rise
+[8079895] TRNG request 30 serviced
+[8661932] LOG [idev] Sha1 KeyId Algorithm
+[8699062] LOG [idev] Sha1 KeyId Algorithm
+[8999999] heartbeat status=02 trng=30
+[9038875] LOG [idev] --
+[9062249] LOG [ldev] ++
+[9063159] LOG [ldev] CDI.KEYID = 6
+[9065435] LOG [ldev] ECC SUBJECT.KEYID = 5, MLDSA SUBJECT.KEYID = 4
+[9067953] LOG [ldev] ECC AUTHORITY.KEYID = 7, MLDSA AUTHORITY.KEYID = 8
+[9068810] LOG [ldev] FE.KEYID = 1
+[9071105] LOG [ldev] Deriving DOT_STABLE_IDEV.KEYID = 0
+[9072535] etrng_req rise
+[9073047] TRNG request 31 serviced
+[9085474] etrng_req rise
+[9086287] TRNG request 32 serviced
+[9091852] etrng_req rise
+[9092500] TRNG request 33 serviced
+[9096467] LOG [ldev] Erasing FE.KEYID = 1
+[9099780] LOG [ldev] Deriving DOT_STABLE_LDEV.KEYID = 1
+[9101884] etrng_req rise
+[9102740] TRNG request 34 serviced
+[9115694] etrng_req rise
+[9115988] TRNG request 35 serviced
+[9123726] etrng_req rise
+[9124214] TRNG request 36 serviced
+[9845444] etrng_req rise
+[9846278] TRNG request 37 serviced
+[9999999] heartbeat status=02 trng=37
+[10999999] heartbeat status=02 trng=37
+[11555709] etrng_req rise
+[11556286] TRNG request 38 serviced
+[11564251] etrng_req rise
+[11564514] TRNG request 39 serviced
+[11565225] etrng_req rise
+[11565712] TRNG request 40 serviced
+[11626518] etrng_req rise
+[11627147] TRNG request 41 serviced
+[11627842] etrng_req rise
+[11628343] TRNG request 42 serviced
+[11999999] heartbeat status=02 trng=42
+[12115420] LOG [ldev] Signing Cert ECC AUTHORITY.KEYID = 7
+[12125637] etrng_req rise
+[12126520] TRNG request 43 serviced
+[12999999] heartbeat status=02 trng=43
+[13882949] LOG [ldev] Signing Cert MLDSA AUTHORITY.KEYID = 8
+[13883459] etrng_req rise
+[13883721] TRNG request 44 serviced
+[13884474] etrng_req rise
+[13884919] TRNG request 45 serviced
+[13999999] heartbeat status=02 trng=45
+[14246721] LOG [ldev] --
+[14279269] etrng_req rise
+[14279691] TRNG request 46 serviced
+[14280617] etrng_req rise
+[14280919] TRNG request 47 serviced
+[14283407] LOG [fwproc] Wait for Commands...
+[14288568] LOG [fwproc] Recv command 0x46574c44
+[14292635] LOG [fwproc] Received Image of size 253440 bytes
+[14999999] heartbeat status=02 trng=47
+[15999999] heartbeat status=02 trng=47
+[16999999] heartbeat status=02 trng=47
+[17010257] LOG [fwproc] Img verified ecc=0 MLDSA=0 svn=0 fuse_svn=0
+[17085903] LOG [fwproc] Load FMC at address 0x40000000 len 30760
+[17304364] LOG [fwproc] Load Runtime at address 0x40008000 len 205516
+[17999999] heartbeat status=02 trng=47
+[18999999] heartbeat status=02 trng=47
+[19999999] heartbeat status=02 trng=47
+[20999999] heartbeat status=02 trng=47
+[21319080] MILESTONE MBOX_STATUS=2 (2=CMD_COMPLETE)
+[21322047] LOG [fwproc] Initializing chain, length 128 (max 128)
+[21324478] etrng_req rise
+[21324556] TRNG request 48 serviced
+[21333749] etrng_req rise
+[21333827] TRNG request 49 serviced
+[21342215] etrng_req rise
+[21342293] TRNG request 50 serviced
+[21351133] etrng_req rise
+[21351211] TRNG request 51 serviced
+[21360296] etrng_req rise
+[21360374] TRNG request 52 serviced
+[21368647] etrng_req rise
+[21368725] TRNG request 53 serviced
+[21375276] etrng_req rise
+[21375354] TRNG request 54 serviced
+[21383095] etrng_req rise
+[21383173] TRNG request 55 serviced
+[21390970] etrng_req rise
+[21391048] TRNG request 56 serviced
+[21399349] etrng_req rise
+[21399427] TRNG request 57 serviced
+[21407434] etrng_req rise
+[21407512] TRNG request 58 serviced
+[21414091] etrng_req rise
+[21414169] TRNG request 59 serviced
+[21421112] etrng_req rise
+[21421190] TRNG request 60 serviced
+[21428385] etrng_req rise
+[21428463] TRNG request 61 serviced
+[21434804] etrng_req rise
+[21434882] TRNG request 62 serviced
+[21442974] etrng_req rise
+[21443052] TRNG request 63 serviced
+[21451213] etrng_req rise
+[21451291] TRNG request 64 serviced
+[21457660] etrng_req rise
+[21457738] TRNG request 65 serviced
+[21464709] etrng_req rise
+[21464787] TRNG request 66 serviced
+[21473298] etrng_req rise
+[21473376] TRNG request 67 serviced
+[21481355] etrng_req rise
+[21481433] TRNG request 68 serviced
+[21488600] etrng_req rise
+[21488678] TRNG request 69 serviced
+[21495005] etrng_req rise
+[21495083] TRNG request 70 serviced
+[21502740] etrng_req rise
+[21502818] TRNG request 71 serviced
+[21509481] etrng_req rise
+[21509559] TRNG request 72 serviced
+[21517986] etrng_req rise
+[21518064] TRNG request 73 serviced
+[21524909] etrng_req rise
+[21524987] TRNG request 74 serviced
+[21532504] etrng_req rise
+[21532582] TRNG request 75 serviced
+[21539819] etrng_req rise
+[21539897] TRNG request 76 serviced
+[21547470] etrng_req rise
+[21547548] TRNG request 77 serviced
+[21555149] etrng_req rise
+[21555227] TRNG request 78 serviced
+[21562870] etrng_req rise
+[21562948] TRNG request 79 serviced
+[21569345] etrng_req rise
+[21569423] TRNG request 80 serviced
+[21576983] etrng_req rise
+[21577061] TRNG request 81 serviced
+[21584802] etrng_req rise
+[21584880] TRNG request 82 serviced
+[21592663] etrng_req rise
+[21592741] TRNG request 83 serviced
+[21600916] etrng_req rise
+[21600994] TRNG request 84 serviced
+[21608385] etrng_req rise
+[21608463] TRNG request 85 serviced
+[21616890] etrng_req rise
+[21616968] TRNG request 86 serviced
+[21623785] etrng_req rise
+[21623863] TRNG request 87 serviced
+[21631688] etrng_req rise
+[21631766] TRNG request 88 serviced
+[21639647] etrng_req rise
+[21639725] TRNG request 89 serviced
+[21646696] etrng_req rise
+[21646774] TRNG request 90 serviced
+[21653367] etrng_req rise
+[21653445] TRNG request 91 serviced
+[21661928] etrng_req rise
+[21662006] TRNG request 92 serviced
+[21671105] etrng_req rise
+[21671183] TRNG request 93 serviced
+[21680464] etrng_req rise
+[21680542] TRNG request 94 serviced
+[21686673] etrng_req rise
+[21686751] TRNG request 95 serviced
+[21694716] etrng_req rise
+[21694794] TRNG request 96 serviced
+[21703179] etrng_req rise
+[21703257] TRNG request 97 serviced
+[21711376] etrng_req rise
+[21711454] TRNG request 98 serviced
+[21719111] etrng_req rise
+[21719189] TRNG request 99 serviced
+[21727140] etrng_req rise
+[21727218] TRNG request 100 serviced
+[21734805] etrng_req rise
+[21734883] TRNG request 101 serviced
+[21741966] etrng_req rise
+[21742044] TRNG request 102 serviced
+[21750303] etrng_req rise
+[21750381] TRNG request 103 serviced
+[21757660] etrng_req rise
+[21757738] TRNG request 104 serviced
+[21765577] etrng_req rise
+[21765655] TRNG request 105 serviced
+[21773886] etrng_req rise
+[21773964] TRNG request 106 serviced
+[21783021] etrng_req rise
+[21783099] TRNG request 107 serviced
+[21792324] etrng_req rise
+[21792402] TRNG request 108 serviced
+[21800297] etrng_req rise
+[21800375] TRNG request 109 serviced
+[21809040] etrng_req rise
+[21809118] TRNG request 110 serviced
+[21816355] etrng_req rise
+[21816433] TRNG request 111 serviced
+[21824160] etrng_req rise
+[21824238] TRNG request 112 serviced
+[21832315] etrng_req rise
+[21832393] TRNG request 113 serviced
+[21838776] etrng_req rise
+[21838854] TRNG request 114 serviced
+[21846763] etrng_req rise
+[21846841] TRNG request 115 serviced
+[21854722] etrng_req rise
+[21854800] TRNG request 116 serviced
+[21861002] etrng_req rise
+[21861080] TRNG request 117 serviced
+[21868919] etrng_req rise
+[21868997] TRNG request 118 serviced
+[21876598] etrng_req rise
+[21876676] TRNG request 119 serviced
+[21885145] etrng_req rise
+[21885223] TRNG request 120 serviced
+[21894196] etrng_req rise
+[21894274] TRNG request 121 serviced
+[21901637] etrng_req rise
+[21901715] TRNG request 122 serviced
+[21909624] etrng_req rise
+[21909702] TRNG request 123 serviced
+[21918003] etrng_req rise
+[21918081] TRNG request 124 serviced
+[21927026] etrng_req rise
+[21927104] TRNG request 125 serviced
+[21934789] etrng_req rise
+[21934867] TRNG request 126 serviced
+[21942608] etrng_req rise
+[21942686] TRNG request 127 serviced
+[21950133] etrng_req rise
+[21950211] TRNG request 128 serviced
+[21957826] etrng_req rise
+[21957904] TRNG request 129 serviced
+[21966037] etrng_req rise
+[21966115] TRNG request 130 serviced
+[21972512] etrng_req rise
+[21972590] TRNG request 131 serviced
+[21979393] etrng_req rise
+[21979471] TRNG request 132 serviced
+[21988766] etrng_req rise
+[21988844] TRNG request 133 serviced
+[21996641] etrng_req rise
+[21996719] TRNG request 134 serviced
+[21999999] heartbeat status=02 trng=134
+[22004572] etrng_req rise
+[22004650] TRNG request 135 serviced
+[22013385] etrng_req rise
+[22013463] TRNG request 136 serviced
+[22020000] etrng_req rise
+[22020078] TRNG request 137 serviced
+[22027694] etrng_req rise
+[22027772] TRNG request 138 serviced
+[22034967] etrng_req rise
+[22035045] TRNG request 139 serviced
+[22041834] etrng_req rise
+[22041912] TRNG request 140 serviced
+[22050017] etrng_req rise
+[22050095] TRNG request 141 serviced
+[22058032] etrng_req rise
+[22058110] TRNG request 142 serviced
+[22065907] etrng_req rise
+[22065985] TRNG request 143 serviced
+[22072956] etrng_req rise
+[22073034] TRNG request 144 serviced
+[22082315] etrng_req rise
+[22082393] TRNG request 145 serviced
+[22089938] etrng_req rise
+[22090016] TRNG request 146 serviced
+[22097645] etrng_req rise
+[22097723] TRNG request 147 serviced
+[22105478] etrng_req rise
+[22105556] TRNG request 148 serviced
+[22114109] etrng_req rise
+[22114187] TRNG request 149 serviced
+[22121956] etrng_req rise
+[22122034] TRNG request 150 serviced
+[22130013] etrng_req rise
+[22130091] TRNG request 151 serviced
+[22138182] etrng_req rise
+[22138260] TRNG request 152 serviced
+[22146421] etrng_req rise
+[22146499] TRNG request 153 serviced
+[22154100] etrng_req rise
+[22154178] TRNG request 154 serviced
+[22162927] etrng_req rise
+[22163005] TRNG request 155 serviced
+[22170620] etrng_req rise
+[22170698] TRNG request 156 serviced
+[22178579] etrng_req rise
+[22178657] TRNG request 157 serviced
+[22186146] etrng_req rise
+[22186224] TRNG request 158 serviced
+[22194371] etrng_req rise
+[22194449] TRNG request 159 serviced
+[22202974] etrng_req rise
+[22203052] TRNG request 160 serviced
+[22212459] etrng_req rise
+[22212537] TRNG request 161 serviced
+[22220558] etrng_req rise
+[22220636] TRNG request 162 serviced
+[22227159] etrng_req rise
+[22227237] TRNG request 163 serviced
+[22234796] etrng_req rise
+[22234874] TRNG request 164 serviced
+[22242139] etrng_req rise
+[22242217] TRNG request 165 serviced
+[22250266] etrng_req rise
+[22250344] TRNG request 166 serviced
+[22257987] etrng_req rise
+[22258065] TRNG request 167 serviced
+[22265848] etrng_req rise
+[22265926] TRNG request 168 serviced
+[22273486] etrng_req rise
+[22273564] TRNG request 169 serviced
+[22282929] etrng_req rise
+[22283007] TRNG request 170 serviced
+[22290538] etrng_req rise
+[22290616] TRNG request 171 serviced
+[22297559] etrng_req rise
+[22297637] TRNG request 172 serviced
+[22305463] etrng_req rise
+[22305541] TRNG request 173 serviced
+[22312806] etrng_req rise
+[22312884] TRNG request 174 serviced
+[22320695] etrng_req rise
+[22320773] TRNG request 175 serviced
+[22328850] etrng_req rise
+[22328928] TRNG request 176 serviced
+[22339391] LOG [fwproc] Chain initialized
+[22342136] LOG [afmc] ++
+[22344282] etrng_req rise
+[22344360] TRNG request 177 serviced
+[22357810] etrng_req rise
+[22357888] TRNG request 178 serviced
+[22368415] etrng_req rise
+[22368493] TRNG request 179 serviced
+[22999999] heartbeat status=02 trng=179
+[23089158] etrng_req rise
+[23089236] TRNG request 180 serviced
+[23999999] heartbeat status=02 trng=180
+[24798549] etrng_req rise
+[24798627] TRNG request 181 serviced
+[24806344] etrng_req rise
+[24806422] TRNG request 182 serviced
+[24807135] etrng_req rise
+[24807213] TRNG request 183 serviced
+[24868110] etrng_req rise
+[24868189] TRNG request 184 serviced
+[24868910] etrng_req rise
+[24868988] TRNG request 185 serviced
+[24999999] heartbeat status=02 trng=185
+[25380841] LOG [afmc] Signing Cert ECC AUTHORITY.KEYID = 5
+[25395671] etrng_req rise
+[25395749] TRNG request 186 serviced
+[25999999] heartbeat status=02 trng=186
+[26999999] heartbeat status=02 trng=186
+[27251907] LOG [afmc] Signing Cert MLDSA AUTHORITY.KEYID = 4
+[27252431] etrng_req rise
+[27252509] TRNG request 187 serviced
+[27253226] etrng_req rise
+[27253304] TRNG request 188 serviced
+[27794531] LOG [afmc] --
+[27808898] LOG [cold-reset] --
+[27811661] LOG [state] Locking Datavault
+[27820645] LOG [exit] Launching FMC @ 0x40000000
+[27874651] LOG 
+[27875426] LOG Running Caliptra FMC ...
+[27875466] LOG 
+[27876130] LOG [state] CFI Enabled
+[27876175] etrng_req rise
+[27876254] TRNG request 189 serviced
+[27876378] etrng_req rise
+[27876456] TRNG request 190 serviced
+[27876565] etrng_req rise
+[27876643] TRNG request 191 serviced
+[27930967] LOG [fht] FMC Alias ECC Private Key: 7
+[27932660] LOG [fht] FMC Alias MLDSA Key Pair Seed KV Slot: 8
+[27958425] etrng_req rise
+[27958504] TRNG request 192 serviced
+[27999999] heartbeat status=02 trng=192
+[28999999] heartbeat status=02 trng=192
+[29693244] etrng_req rise
+[29693322] TRNG request 193 serviced
+[29693620] etrng_req rise
+[29693698] TRNG request 194 serviced
+[29999999] heartbeat status=02 trng=194
+[30035513] LOG [alias rt] Extend RT PCRs
+[30035513] MILESTONE first FMC log line (ROM -> FMC handoff)
+[30040094] LOG [alias rt] Extend RT PCRs Done
+[30040847] LOG [alias rt] Lock RT PCRs
+[30041757] LOG [alias rt] Lock RT PCRs Done
+[30042926] LOG [fht] FMC Alias ECC Private Key: 7
+[30044600] LOG [fht] FMC Alias MLDSA Key Pair Seed KV Slot: 8
+[30099142] LOG [alias rt] Derive CDI
+[30100198] LOG [alias rt] Store it in slot 0x4
+[30100824] etrng_req rise
+[30100902] TRNG request 195 serviced
+[30105163] LOG [alias rt] Derive Key Pair
+[30107679] LOG [alias rt] Store ECC priv key in slot 0x5 and MLDSA key pair seed in slot 0x9
+[30108280] etrng_req rise
+[30108358] TRNG request 196 serviced
+[30111237] etrng_req rise
+[30111315] TRNG request 197 serviced
+[30829310] etrng_req rise
+[30829388] TRNG request 198 serviced
+[30999999] heartbeat status=02 trng=198
+[31999999] heartbeat status=02 trng=198
+[32527753] etrng_req rise
+[32527831] TRNG request 199 serviced
+[32530486] etrng_req rise
+[32530565] TRNG request 200 serviced
+[32530861] etrng_req rise
+[32530940] TRNG request 201 serviced
+[32561057] etrng_req rise
+[32561135] TRNG request 202 serviced
+[32561420] etrng_req rise
+[32561498] TRNG request 203 serviced
+[32827150] LOG [alias rt] Derive Key Pair - Done
+[32882595] LOG [alias rt] Signing ECC Cert with AUTHORITY.KEYID = 7
+[32887002] etrng_req rise
+[32887081] TRNG request 204 serviced
+[32999999] heartbeat status=02 trng=204
+[33999999] heartbeat status=02 trng=204
+[34585724] LOG [alias rt] Locking ECC AUTHORITY.KEYID = 7 & FMC CDI = 6
+[34589641] LOG [alias rt] ECC PUB.X = CF505C9B68596A05EFA917724B17BC77B97EC9E6A57A87A68FBEC0B37D558D603856D0A1896612CAE2BC162A7F700C46
+[34593366] LOG [alias rt] ECC PUB.Y = 4071E9949EAD01DF9A966393C274690F9C8B7AB96B13CF527289FC8CC6F876B1736BE258B20B4D11497AB20113E1E5D4
+[34597254] LOG [alias rt] ECC SIG.R = 7F28F6C959B707A9289EAAA346B8754A19D6E27759BDBC59F943E20CE0B5EFD2F630792DBDFEDF6330B657A7C9B76833
+[34600981] LOG [alias rt] ECC SIG.S = B8C629621079904A82573FC8AE831F351FFC401923575AA132845B6D119DB688FAB3B434AFF8E781AA0264E2695C5360
+[34999999] heartbeat status=02 trng=204
+[35598276] LOG [alias rt] Signing MLDSA Cert with AUTHORITY.KEYID = 8
+[35598476] etrng_req rise
+[35598555] TRNG request 205 serviced
+[35598851] etrng_req rise
+[35598930] TRNG request 206 serviced
+[35955640] LOG [alias rt] Locking MLDSA AUTHORITY.KEYID = 8 & FMC CDI = 6
+[35999999] heartbeat status=02 trng=206
+[36003133] LOG Caliptra RT
+[36003611] LOG [kat] AES-ECB
+[36010220] LOG [kat] AES-CBC
+[36017910] LOG [kat] AES-CTR
+[36027468] LOG [kat] AES-CMAC
+[36028734] etrng_req rise
+[36028812] TRNG request 207 serviced
+[36029108] etrng_req rise
+[36029187] TRNG request 208 serviced
+[36030180] etrng_req rise
+[36030258] TRNG request 209 serviced
+[36030933] etrng_req rise
+[36031012] TRNG request 210 serviced
+[36032954] LOG [kat] MLKEM1024
+[36215801] etrng_req rise
+[36215879] TRNG request 211 serviced
+[36216119] etrng_req rise
+[36216198] TRNG request 212 serviced
+[36216440] etrng_req rise
+[36216518] TRNG request 213 serviced
+[36217560] LOG [rt] OCP LOCK Unsupported
+[36217560] MILESTONE first RT log line (FMC -> RT handoff)
+[36472106] etrng_req rise
+[36472184] TRNG request 214 serviced
+[36472531] etrng_req rise
+[36472610] TRNG request 215 serviced
+[36472977] etrng_req rise
+[36473055] TRNG request 216 serviced
+[36473417] etrng_req rise
+[36473496] TRNG request 217 serviced
+[36596602] LOG [rt] Disable entropy source
+[36597923] LOG [rt] RT listening for mailbox commands...
+[36597957] MILESTONE ready_for_runtime
+  CPTRA_BOOT_STATUS        = 00000000
+  CPTRA_FLOW_STATUS        = b8000000
+  CPTRA_HW_ERROR_FATAL     = 00000000
+  CPTRA_FW_ERROR_FATAL     = 00000000
+  CPTRA_HW_ERROR_NON_FATAL = 00000000
+  CPTRA_FW_ERROR_NON_FATAL = 00000000
+SUMMARY ready_for_fuses=40 fuses_done=614 first_trng=379157 ready_for_mb_processing=5542288 fw_load_issued=6049774 mbox_complete=21319080 rom_to_fmc=30035513 fmc_to_rt=36217560 ready_for_runtime=36597957 trng_fills=217 fuse_writes=118
+TB_NIOS2X PASS cyc=36617987 trng=217 (prod, debug locked)
+- /workspace/exports/caliptra-a5e-2x-quartus-repo/sim_2x/tb_nios2x_top_fw.sv:200: Verilog $finish
+- S i m u l a t i o n   R e p o r t: Verilator 5.054 2026-11-01
+- Verilator: $finish at 366ms; walltime 4452.674 s; speed 82.238 us/s
+- Verilator: cpu 17793.551 s on 4 threads; allocated 18 MB
+wall_time_s=5069 end Tue Nov 10 15:18:14 CST 2026

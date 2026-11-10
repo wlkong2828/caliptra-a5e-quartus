@@ -21,3 +21,16 @@ quartus_a5e_nios/syn_wrapper.log
 sim/nios_top_fw_build.log
 sim/*_partial.log
 sim/nios_top_fw_run.log
+
+# Caliptra 2.x study (caliptra2x/): Verilator build dir and wrapper output
+caliptra2x/sim_2x/obj_nios2x/
+caliptra2x/sim_2x/run.out
+
+# Signing keys: never commit private keys (see docs/caliptra-2x/FIRMWARE_AND_KEYS_2X.md §6.6)
+keys/
+*.key
+*_priv*.pem
+*_priv*.bin
+*.p8
+*.p12
+*.pfx
