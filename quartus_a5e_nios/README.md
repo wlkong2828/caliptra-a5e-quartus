@@ -9,6 +9,8 @@ except `clk`/`reset_n` are virtual pins; nothing here is board-proven yet.
 
 ## Architecture
 ```
+ reset_n ──┐   u_rst_release (Reset Release IP, ip/rst_release.ip) ── ninit_done
+           └── sys_reset_n = reset_n & ~ninit_done ──► PD reset, glue 2FF (glue_rst_n), Caliptra request gating
  clk ─┬─────────────────────────────────────────────────────────────┐
       │  nios_caliptra_sys (Platform Designer)                      │
       │  Nios V/m ─AXI4-lite─► interconnect ─┬─ ram (64 KiB OCM, reset vector 0x0)
@@ -86,9 +88,9 @@ Quartus files: `nios_caliptra_a5e.qpf/.qsf` (paths relative: `../caliptra-rtl`, 
 `nios_caliptra.sdc` (50 MHz clk). Order: build the app first so `onchip_mem.hex` exists before synthesis.
 
 ## Not done / blockers for "talk on hardware"
-- No board pinout / IO standards (clk, reset_n, led virtual-pin study only); no PLL; no Intel Reset Release IP (`ninit_done`) — steps in the integration note §12 (M11).
+- No board pinout / IO standards (clk, reset_n, led virtual-pin study only); no PLL. The Agilex 5 Reset Release IP (`ip/rst_release.ip`, `ninit_done`) is instantiated (M11); Verilator uses `../sim/rst_release_stub.sv`.
 - Full fit not run here (16 GB host OOMs on Caliptra place&route; need ≥32 GB).
-- SRAM pwrgood zeroization walk is not implemented (FPGA init-to-0 only; M8).
+- SRAM pwrgood zeroization walk is not implemented (mailbox SRAM is zero in the bitstream only; M8).
 - Error pins are polled with recovery; they are not yet Nios IRQs (Qsys steps in §12).
 - ETRNG xorshift, study UDS/FE/obf key, and the fuse hex image are TEST-ONLY.
 - Full Platform Designer Nios V + interconnect is not simulated; Verilator uses a behavioral host (`../sim/run_nios_top_fw.sh`, plusargs `+test=prod|sync|pauser|warm|fatal|all`).

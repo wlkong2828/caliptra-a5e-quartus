@@ -14,14 +14,14 @@ This is the complete connection map and bring-up note for the Nios host design. 
 
 | Item | What changed in the design (and in this note) |
 |---|---|
-| M7 Reset synchronizers | `pwrgood_sync_async_assert` and `rst_sync_async_assert` (2FF) in `quartus_a5e_nios/rtl/reset_sync.sv`. Raw requests are still `ctrl_pio[0/1] & reset_n`, then synchronized: `cptra_rst_b` async assert (to 0) / sync deassert (to 1); `cptra_pwrgood` async assert (to 1) / sync deassert (to 0), per Integration Spec Table 4. Verilator `+test=sync` **PASS**. SDC comments the 2FFs; `reset_n` remains an async false path; synchronizer *outputs* are timed to `clk`. |
+| M7 Reset synchronizers | `pwrgood_sync_async_assert` and `rst_sync_async_assert` (2FF) in `quartus_a5e_nios/rtl/reset_sync.sv`. Raw requests are `ctrl_pio[0/1] & sys_reset_n` (`sys_reset_n = reset_n & ~ninit_done`, see M11), then synchronized: `cptra_rst_b` async assert (to 0) / sync deassert (to 1); `cptra_pwrgood` async assert (to 1) / sync deassert (to 0), per Integration Spec Table 4. Verilator `+test=sync` **PASS**. SDC comments the 2FFs; `reset_n` remains an async false path; synchronizer *outputs* are timed to `clk`. |
 | M10 Warm-reset fuse path | `soc_fuse_ctrl` CTRL bit 2 = `START_DONE` writes only `CPTRA_FUSE_WR_DONE=1`. Nios `caliptra_warm_reset()` holds pwrgood, pulses `rst_b`, re-locks TRNG/mailbox PAUSER (rst_b domain), then START_DONE and waits for `ready_for_runtime` (rom-1.1.1 `WarmResetFlow` resumes the existing FW; `FIRMWARE_LOAD` only if `ready_for_fw_push` asserts). Fuse PAUSER / TIMER / WDT persist (pwrgood-sticky). TB `+test=warm` covers this. |
 | M1 `generic_input_wires` | Tied `64'b0`. Bit 0 (zeroization status) is 0; there is no zeroization source on this FPGA SoC. Bits 63:1 reserved, no flops. `magic_pio` drives only `led[7:0]`. |
 | M12 `CPTRA_TIMER_CONFIG` | Nios / TB write `20000` (50 MHz period in picoseconds) after `ready_for_fuses`. Sticky on pwrgood; rewritten after warm reset as well (harmless). |
-| M5 Error handling | Host polls `status_pio[5/6]` (no Qsys IRQ — see M11 / open IRQ steps). Non-fatal: log and RW1C-clear `CPTRA_HW_ERROR_NON_FATAL` / `CPTRA_FW_ERROR_NON_FATAL`. Fatal: limited (`FATAL_RETRY_LIMIT=3`) `caliptra_pwrgood_cycle()` cold-reset recovery, then full cold boot. No more `fail()`-spin on the first fatal. TB `+test=fatal` **PASS** path. IRQ wiring remains **OPEN** (needs PD regen). |
+| M5 Error handling | Host polls `status_pio[5/6]` (no Qsys IRQ — see §12 open IRQ steps). Non-fatal: log and RW1C-clear `CPTRA_HW_ERROR_NON_FATAL` / `CPTRA_FW_ERROR_NON_FATAL`. Fatal: limited (`FATAL_RETRY_LIMIT=3`) `caliptra_pwrgood_cycle()` cold-reset recovery, then full cold boot. No more `fail()`-spin on the first fatal. TB `+test=fatal` **PASS** path. IRQ wiring remains **OPEN** (needs PD regen). |
 | M2 / M3 PAUSER | After `ready_for_fuses`, firmware programs and locks **fuse**, **TRNG**, and **mailbox slot 0** to `HOST_PAUSER=1` (the value `avmm_to_apb` actually drives) before fuse START. Fuse PAUSER is pwrgood-sticky (skipped on warm reset). TRNG and mailbox locks reset on `rst_b` and are rewritten. TB `+test=pauser`: write from PAUSER=2 is `PSLVERR`. |
 | M8 SRAM zeroization | Still **OPEN** for a pwrgood-time walk of TCB SRAM ports (not muxed). FPGA mitigation only: `quartus/syn_src/caliptra_sram.sv` (synthesis only) has an `initial` zero-fill, so the **mailbox SRAM** (the only `caliptra_sram` instance; 32768 × 39) is 0 in the configuration bitstream (QSF `VERILOG_CONSTANT_LOOP_LIMIT 65536` lets Quartus elaborate the loop). ICCM / DCCM / ICache use VeeR `el2_ram` and get no explicit init. This happens once at FPGA configuration — a later pwrgood cycle does **not** re-zero anything — so it is not the spec's pwrgood-time zeroization and not ASIC SRAM repair. Verilator uses the upstream `libs/rtl/caliptra_sram.sv` model, not this override. |
-| M11 Reset Release IP / PLL | Still **OPEN**. Quartus / Qsys regen was not feasible in this environment (no Quartus Pro image). Exact steps are in §12. |
+| M11 Reset Release IP / PLL | **FIXED (Reset Release); PLL N/A.** `quartus_a5e_nios/ip/rst_release.ip` = Agilex 5 **Reset Release Intel FPGA IP** (`altera_s10_user_rst_clkgate`, conduit `ninit_done`), instantiated as `u_rst_release` in `nios_caliptra_top.sv`. `sys_reset_n = reset_n & ~ninit_done` now drives the PD reset, the raw Caliptra pwrgood/rst_b requests, and a new glue 2FF (`u_sync_glue` → `glue_rst_n` for `avmm_to_apb`, `soc_fuse_ctrl`, window decode). Generated and synthesized with Quartus Pro 25.3. Verilator uses `sim/rst_release_stub.sv` (ninit_done=1 for 25 ns, like the vendor sim model). There is still no PLL (board 50 MHz direct); if one is added, AND `locked` into `sys_reset_n`. |
 
 ### Corrections vs. the first revision (`7ba4ce5`)
 
@@ -45,7 +45,7 @@ There was **no** `docs/` tree and no single integration note in the repo before 
 | [`quartus_a5e_nios/README.md`](https://github.com/pwilliam282/caliptra-a5e-quartus/blob/main/quartus_a5e_nios/README.md) | Closest earlier connection map: ASCII block diagram, Nios address map, straps, fuse-image summary | **Architecture / address-map / strap sections are mostly accurate.** The **Firmware** and **Not done** sections are stale (see §10). |
 | [`README.md`](https://github.com/pwilliam282/caliptra-a5e-quartus/blob/main/README.md) | Top-level overview: fuse controller, ETRNG service, FIRMWARE_LOAD, MAGIC `0xCA11F00D` | Accurate at a high level. |
 | [`sim/BOOT_NIOS_TOP_PROD.md`](https://github.com/pwilliam282/caliptra-a5e-quartus/blob/main/sim/BOOT_NIOS_TOP_PROD.md) | Verilator production-mimic boot (PASS at cycle 24,064,873, 32 TRNG fills) | Accurate for the behavioral-Nios TB. |
-| [`STUDY.md`](https://github.com/pwilliam282/caliptra-a5e-quartus/blob/main/STUDY.md) | C10 GX / A5E fit study (ALMs, routing OOM) | Not a signal map. Notes a Quartus critical warning for a **missing Reset Release IP** on the related A5E build — still missing in this Nios project. |
+| [`STUDY.md`](https://github.com/pwilliam282/caliptra-a5e-quartus/blob/main/STUDY.md) | C10 GX / A5E fit study (ALMs, routing OOM) | Not a signal map. Notes a Quartus critical warning for a **missing Reset Release IP** on the related A5E build. The Nios project now instantiates it (M11). |
 
 Official SoC-interface rules are in caliptra-rtl v1.1 `docs/CaliptraIntegrationSpecification.md` and `docs/CaliptraHardwareSpecification.md` at `5f85fb4`. Those files are *not* vendored in this git repo; get them with the RTL from release [rtl-20261101](https://github.com/pwilliam282/caliptra-a5e-quartus/releases/tag/rtl-20261101).
 
@@ -57,6 +57,10 @@ Official SoC-interface rules are in caliptra-rtl v1.1 `docs/CaliptraIntegrationS
 flowchart TB
   clk["clk 50 MHz"]
   rstn["reset_n"]
+  rr["Reset Release IP<br/>u_rst_release.ninit_done"]
+  gate["sys_reset_n =<br/>reset_n & ~ninit_done"]
+  rstn --> gate
+  rr --> gate
   led["led[7:0]"]
 
   subgraph pd ["nios_caliptra_sys (Platform Designer)"]
@@ -76,7 +80,9 @@ flowchart TB
   end
 
   clk --> pd
-  rstn --> pd
+  gate --> pd
+  gate -->|"2FF u_sync_glue"| glue["glue_rst_n<br/>(bridge, fuse ctrl, decode)"]
+  gate -->|"gates raw requests"| sync
   magic --> led
 
   win -->|"exported Avalon master"| dec["window decode in nios_caliptra_top"]
@@ -117,7 +123,7 @@ flowchart TB
 Text equivalent (for PDF / plain renderers):
 
 ```
- clk (50 MHz) + reset_n
+ clk (50 MHz) + sys_reset_n = reset_n & ~ninit_done (Reset Release IP u_rst_release)
         |
         v
  nios_caliptra_sys (Platform Designer)
@@ -143,7 +149,7 @@ Text equivalent (for PDF / plain renderers):
                                            QSPI / Caliptra JTAG / iTRNG / scan tied off
 ```
 
-There is **no** Intel Reset Release IP (`ninit_done`), **no** PLL (or PLL-lock AND into reset), and **no** ISSP in this project (M11 still OPEN; see §12). `clk` and `reset_n` go to the PD clock source. Caliptra `cptra_pwrgood` / `cptra_rst_b` are the 2FF-synchronized versions of `ctrl_pio[0/1] & reset_n`.
+The Agilex 5 **Reset Release IP** (`u_rst_release`, `ninit_done`) is instantiated; `sys_reset_n = reset_n & ~ninit_done` goes to the PD clock source reset, to the glue 2FF (`glue_rst_n`), and gates the raw Caliptra requests. There is **no** PLL (or PLL-lock AND into reset) and **no** ISSP. Caliptra `cptra_pwrgood` / `cptra_rst_b` are the 2FF-synchronized versions of `ctrl_pio[0/1] & sys_reset_n`.
 
 ---
 
@@ -156,10 +162,10 @@ Widths and official roles follow caliptra-rtl v1.1 `caliptra_top` / Integration 
 | Caliptra port | W | FPGA source / sink | Notes |
 |---|---:|---|---|
 | `clk` | 1 | Board `clk` (top port). Shared by Nios, glue, and Caliptra. | SDC: 50 MHz (`period 20 ns`). **No PLL**, no on-die oscillator. Spec validates up to 400 MHz and requires an on-die oscillator for the threat model. The input clock is **ungated**; internal Caliptra clock gating is off until SoC writes `CPTRA_CLK_GATING_EN` (`0x3_00C0`, default 0, SoC-writable, resets on `cptra_rst_b`). Nios never writes it. Clock is running before Nios asserts `cptra_pwrgood`. |
-| `cptra_pwrgood` | 1 | 2FF `u_sync_pwrgood` of `ctrl_pio[0] & reset_n` | Active-high. PIO reset value 0 ⇒ Caliptra held unpowered until Nios writes bit 0. Board `reset_n` also takes the raw request low (**cold reset**); the pin **deasserts synchronously** (2 clocks). Assert (0→1) is asynchronous, per Table 4. |
-| `cptra_rst_b` | 1 | 2FF `u_sync_rst_b` of `ctrl_pio[1] & reset_n` | Active-low warm-reset pin. Same raw AND, then 2FF: assert (1→0) asynchronous, deassert (0→1) synchronous. Official minimum: **≥ 10 clocks** after pwrgood before deasserting `cptra_rst_b`. Nios `delay(1000)` / TB 20 cycles meet that (and cover the 2FF). |
+| `cptra_pwrgood` | 1 | 2FF `u_sync_pwrgood` of `ctrl_pio[0] & sys_reset_n` | Active-high. PIO reset value 0 ⇒ Caliptra held unpowered until Nios writes bit 0. Board `reset_n` (or `ninit_done` during device init) also takes the raw request low (**cold reset**); the pin **deasserts synchronously** (2 clocks). Assert (0→1) is asynchronous, per Table 4. |
+| `cptra_rst_b` | 1 | 2FF `u_sync_rst_b` of `ctrl_pio[1] & sys_reset_n` | Active-low warm-reset pin. Same raw AND, then 2FF: assert (1→0) asynchronous, deassert (0→1) synchronous. Official minimum: **≥ 10 clocks** after pwrgood before deasserting `cptra_rst_b`. Nios `delay(1000)` / TB 20 cycles meet that (and cover the 2FF). |
 
-Top-level `reset_n` also resets the Platform Designer system (clock_source `resetSynchronousEdges DEASSERT` — this *does* sync-deassert the **Nios/PD** reset) and the glue (`avmm_to_apb`, `soc_fuse_ctrl`). Caliptra's two pins use the dedicated 2FFs, not the PD synchronizer. SDC: `set_false_path -from [get_ports reset_n]` (async board reset into the 2FF async pins and the PD); the synchronizer outputs are registers timed to `clk`.
+`sys_reset_n` (= `reset_n & ~ninit_done`) also resets the Platform Designer system (clock_source `resetSynchronousEdges DEASSERT` — this sync-deasserts the **Nios/PD** reset) and, through its own 2FF `u_sync_glue` (`glue_rst_n`, async assert / sync deassert), the glue (`avmm_to_apb`, `soc_fuse_ctrl`, window-decode flops, `nios_pauser`). Caliptra's two pins use the dedicated 2FFs, not the PD synchronizer. SDC: `set_false_path -from [get_ports reset_n]` and `set_false_path -from [get_keepers {*u_rst_release*}]` (async/quasi-static sources into the synchronizers' async pins and the PD); the synchronizer outputs are registers timed to `clk`.
 
 See **§5** for cold vs warm reset, fuse persistence, and the sequence diagram.
 
@@ -339,15 +345,20 @@ UDS / field entropy in the on-chip image are **not** readable through this MMIO 
 ### 5.1 How the pins are generated (this FPGA)
 
 ```
-reset_n (board, active-low, SDC false path)
+reset_n (board, active-low, SDC false path)     u_rst_release.ninit_done (Reset Release IP)
+   │                                                  │  1 until device init done, then 0
+   └───────────── sys_reset_n = reset_n & ~ninit_done ┘
+   │
+   ├──► rst_sync_async_assert u_sync_glue (2FF) → glue_rst_n
+   │      (avmm_to_apb, soc_fuse_ctrl, window decode, nios_pauser)
    │
    ├──► Platform Designer clock_source.clk_in_reset
    │      resetSynchronousEdges = DEASSERT
    │      ⇒ Nios, OCM, PIOs, mm_bridge get a sync-deasserted reset
    │      ctrl_pio reset value = 0
    │
-   └──► raw_pwrgood = ctrl_pio[0] & reset_n
-        raw_rst_b   = ctrl_pio[1] & reset_n
+   └──► raw_pwrgood = ctrl_pio[0] & sys_reset_n
+        raw_rst_b   = ctrl_pio[1] & sys_reset_n
              │
              ├── pwrgood_sync_async_assert (2FF) → cptra_pwrgood
              │     async assert (0→1), sync deassert (1→0) to clk
@@ -355,9 +366,10 @@ reset_n (board, active-low, SDC false path)
                    async assert (1→0), sync deassert (0→1) to clk
 ```
 
-Not present, and relevant for a real A5E kit bring-up:
+Present / not present for a real A5E kit bring-up:
 
-- **Intel Reset Release IP / `ninit_done`.** Agilex 5 fabric is not guaranteed ready until the Reset Release (`ninit_done`) handshake. Quartus already warned about a missing Reset Release IP on the sibling A5E project (`STUDY.md`). This Nios top has the same gap (M11 OPEN; exact steps in §12).
+- **Intel Reset Release IP / `ninit_done`: implemented** (`ip/rst_release.ip`, `u_rst_release`). Agilex 5 fabric is not guaranteed ready until `ninit_done` falls; until then `sys_reset_n` holds the PD, glue, and Caliptra requests in reset (M11).
+
 - **PLL and PLL-lock.** The SDC assumes a 50 MHz input already at the `clk` port. There is no PLL-lock term in the reset qualifier.
 - **ISSP** (In-System Sources and Probes) for debug-overriding resets: not instantiated.
 - **External 2FF synchronizers** on `cptra_pwrgood` and `cptra_rst_b`: **implemented** in `rtl/reset_sync.sv` (`u_sync_pwrgood`, `u_sync_rst_b`). Verilator `+test=sync` checks async assert and 2- or 3-cycle sync deassert.
@@ -384,7 +396,7 @@ sequenceDiagram
   participant C as Caliptra
 
   Board->>PD: clk already running
-  Board->>PD: reset_n deassert (PD synchronizes deassert)
+  Board->>PD: ninit_done falls (Reset Release IP) and reset_n deasserts<br/>sys_reset_n=1 (PD + glue 2FF sync deassert)
   Note over PIO,C: ctrl_pio = 0 after PD reset<br/>cptra_pwrgood=0, cptra_rst_b=0 (cold)
   PD->>PIO: MAGIC 1, write ctrl=1 (pwrgood)
   PIO->>C: cptra_pwrgood = 1
@@ -392,7 +404,7 @@ sequenceDiagram
   PD->>PIO: write ctrl=3 (pwrgood | rst_b)
   PIO->>C: cptra_rst_b = 1 (warm-reset pin released)
   C-->>PD: ready_for_fuses (BOOT_FUSE)
-  PD->>C: program+lock fuse/TRNG/mailbox PAUSER; TIMER_CONFIG=20000; WDT_CFG
+  PD->>C: program+lock fuse/TRNG/mailbox PAUSER, TIMER_CONFIG=20000, WDT_CFG
   PD->>C: soc_fuse_ctrl START → 83 FUSE_* + FUSE_WR_DONE
   C-->>PD: ready_for_fw_push / FIRMWARE_LOAD / ready_for_runtime
 ```
@@ -428,7 +440,8 @@ After START_DONE the host re-programs TRNG and mailbox PAUSER/lock (those reset 
 
 - `create_clock -period 20` on `clk` (50 MHz).
 - `altera_reserved_tck` 40 ns, asynchronous to `clk`.
-- `set_false_path -from [get_ports reset_n]` — board reset is asynchronous into the 2FF async pins and into the Nios PD. The **synchronized** `cptra_pwrgood` / `cptra_rst_b` are register outputs timed to `clk` and are not false-pathed onward into Caliptra.
+- `set_false_path -from [get_ports reset_n]` — board reset is asynchronous into the 2FF async pins and into the Nios PD.
+- `set_false_path -from [get_keepers -nowarn {*u_rst_release*}]` — `ninit_done` is SDM-driven and quasi-static (falls once after configuration); it only reaches the same synchronizers. The Reset Release IP ships its own SDC for its internal clock. The **synchronized** `cptra_pwrgood` / `cptra_rst_b` are register outputs timed to `clk` and are not false-pathed onward into Caliptra.
 
 There are no explicit constraints matching the official RDC false-path table (CPTRA_PWRGD vs other reset groups, etc.). The 2FFs provide the functional async-assert / sync-deassert the RDC analysis assumes at the Caliptra boundary.
 
@@ -574,11 +587,11 @@ Severities: **High** = security or correctness risk if this image were treated a
 | M4 | **FIXED in this revision.** `quartus_a5e_nios/README.md` Firmware / Not-done / architecture sections match the current RTL (2FF, PAUSER, START_DONE, TIMER_CONFIG, error recovery). |
 | M5 | **PARTIALLY FIXED.** Host polls `status_pio[5/6]`: non-fatal is logged and RW1C-cleared; fatal triggers a limited pwrgood-cycle recovery and cold re-boot (tested). IRQ routing to a Nios interrupt is still **OPEN** (needs Qsys regen; steps in §12). Automatic path uses pwrgood (specified general fatal recovery); `caliptra_warm_reset()` is available for a t2-style warm reset. |
 | M6 | **No hardware mutex** beyond the `fuse_busy` APB mux. Current FW is careful; a buggy host could overlap Nios APB with the fuse FSM. |
-| M7 | **FIXED.** 2FF `u_sync_pwrgood` / `u_sync_rst_b` provide async assert and sync deassert to `clk`. Verilator `+test=sync` PASS. SDC: `reset_n` is still an async false path into the 2FF pins and the PD; synchronizer outputs are timed to `clk`. |
+| M7 | **FIXED.** 2FF `u_sync_pwrgood` / `u_sync_rst_b` provide async assert and sync deassert to `clk`. Verilator `+test=sync` PASS. SDC: `reset_n` (and `u_rst_release`) are async false paths into the 2FF pins and the PD; synchronizer outputs are timed to `clk`. |
 | M8 | **OPEN**, with FPGA mitigation. A pwrgood-time zeroization FSM would mux TCB-owned SRAM ports (mailbox, ICCM, DCCM, ICache); that mux is not added. `quartus/syn_src/caliptra_sram.sv` (synthesis only) has an `initial` zero-fill, so the **mailbox SRAM** (the only `caliptra_sram` instance; 32768 × 39) is 0 in the configuration bitstream (QSF `VERILOG_CONSTANT_LOOP_LIMIT 65536` lets Quartus elaborate the loop). ICCM / DCCM / ICache use VeeR `el2_ram` and get no explicit init. This happens once at FPGA configuration — a later pwrgood cycle does **not** re-zero anything — so it is not the spec's pwrgood-time zeroization and not ASIC SRAM repair. Verilator uses the upstream `libs/rtl/caliptra_sram.sv` model, not this override. |
 | M9 | **Clock / pins:** 50 MHz board clock, no PLL, no on-die oscillator, almost all I/O still **virtual pins** (only `clk` and `reset_n` are real in the QSF). Not board-proven. |
 | M10 | **FIXED.** CTRL bit 2 `START_DONE` writes only `FUSE_WR_DONE`. `caliptra_warm_reset()` and TB `+test=warm` hold pwrgood, pulse `rst_b`, re-lock rst_b-domain PAUSER, START_DONE, then wait for `ready_for_runtime` (ROM jumps to existing FW; no `FIRMWARE_LOAD` after a completed cold boot). v1.1 `swmod` fires on any write to that register even if the bit is already 1. |
-| M11 | **OPEN.** Quartus / Qsys regeneration was not feasible here (no Quartus Pro 25.3 image in this environment). Exact steps are in §12. |
+| M11 | **FIXED (Reset Release IP); PLL not needed for the 50 MHz study clock.** `ip/rst_release.ip` (`altera_s10_user_rst_clkgate`, Agilex 5, conduit) → `u_rst_release.ninit_done`; `sys_reset_n = reset_n & ~ninit_done` feeds the PD, `u_sync_glue`, and the raw Caliptra requests. Quartus Pro 25.3 `quartus_ipgenerate` + `quartus_syn` include it. Board-level PLL-lock gating stays a board item (M9). |
 | M12 | **FIXED.** Host / TB write `CPTRA_TIMER_CONFIG = 20000` after `ready_for_fuses`. |
 
 ### Low
@@ -597,8 +610,8 @@ Severities: **High** = security or correctness risk if this image were treated a
 
 - `quartus_a5e_nios/README.md` Firmware / Not-done / architecture: updated in this revision to match RTL (M4).
 - Top-level `README.md` and `sim/BOOT_NIOS_TOP_PROD.md`: updated for the new tests and the 2FF / START_DONE / PAUSER / error-recovery path.
-- Revision 2 of this note recorded M1/M2/M3/M5/M7/M10/M12 as FAIL or OPEN. Those design items are fixed or narrowed as in the table above; M8 and M11 remain OPEN; H1–H4 and the TEST-ONLY TRNG/fuse/key items are unchanged on purpose.
-- Official Integration Spec vs this FPGA glue (remaining): ETRNG-by-firmware, study key, soft OTP, no iTRNG, no Caliptra TAP, no Reset Release IP, virtual pins, no SRAM pwrgood walk, no error IRQ — all called out above.
+- Revision 2 of this note recorded M1/M2/M3/M5/M7/M10/M12 as FAIL or OPEN. Those design items are fixed or narrowed as in the table above; M11 is now fixed (Reset Release IP); M8 remains OPEN; H1–H4 and the TEST-ONLY TRNG/fuse/key items are unchanged on purpose.
+- Official Integration Spec vs this FPGA glue (remaining): ETRNG-by-firmware, study key, soft OTP, no iTRNG, no Caliptra TAP, virtual pins, no SRAM pwrgood walk, no error IRQ — all called out above.
 
 ---
 
@@ -639,7 +652,7 @@ Requirements are from caliptra-rtl v1.1 Integration Spec (interface tables, Boot
 | Caliptra TAP as TAP endpoint; `jtag_trst_n` sync deassert | Integ Table 17 / JTAG | TAP tied off (`trst_n=0`) | **OPEN** / **TEST-ONLY** |
 | QSPI / UART only if defines enabled | Integ parameters | Defines off; QSPI tied off | **PASS** |
 | No 2.x `strap_ss_*` required | 1.x `caliptra_top` ports | None present; none wired | **PASS** (N/A) |
-| Agilex `ninit_done` / Reset Release before user logic | Intel A5E / Quartus warning | Not instantiated | **OPEN** (board bring-up) |
+| Agilex `ninit_done` / Reset Release before user logic | Intel A5E / Quartus warning | `u_rst_release` (Reset Release IP) → `sys_reset_n = reset_n & ~ninit_done` into PD, glue 2FF, and Caliptra request gating; synthesized in Quartus Pro 25.3 | **PASS** |
 
 ---
 
@@ -647,12 +660,6 @@ Requirements are from caliptra-rtl v1.1 Integration Spec (interface tables, Boot
 
 **Still OPEN from the checklist**
 
-- **M11 — Intel Reset Release IP (`ninit_done`) and optional PLL-lock.** Quartus Pro 25.3 / Platform Designer regeneration was not run here (the `alterafpga/quartuspro-v25.3:agilex5` image was not available). Exact steps when Quartus is available:
-  1. Open `quartus_a5e_nios` in Quartus Prime Pro 25.3 and the system in Platform Designer (`qsys/nios_caliptra_sys.tcl` is the regeneratable source).
-  2. Add **Reset Release Intel FPGA IP**. On Agilex 5, this IP consumes the device `ninit_done` handshake and holds user logic in reset until the fabric I/O is ready (`ninit_done` is high during configuration and goes low when init is done — wire the IP as in the Agilex 5 handbook / IP user guide so the output reset is asserted until init completes).
-  3. If the kit clock is not a free-running 50 MHz at the `clk` port, add a PLL and AND **`pll_locked`** with the Reset Release output and the board `reset_n`.
-  4. Feed that qualified reset to the Platform Designer `reset` input **and** to the raw side of `u_sync_pwrgood` / `u_sync_rst_b` (still `ctrl_pio` gated, then the 2FFs). Do not bypass the 2FFs.
-  5. Re-generate the PD system, update the QSF if the IP is new, and re-run synthesis.
 - **M8 — SRAM zero + repair on pwrgood, before `rst_b` deassert.** Not implemented as a walk of TCB SRAM ports (mailbox, ICCM, DCCM, ICache are owned by `caliptra_top` / the VeeR export; muxing them from SoC glue would be a TCB-adjacent change). FPGA mitigation only: `quartus/syn_src/caliptra_sram.sv` (synthesis only) has an `initial` zero-fill, so the **mailbox SRAM** (the only `caliptra_sram` instance; 32768 × 39) is 0 in the configuration bitstream (QSF `VERILOG_CONSTANT_LOOP_LIMIT 65536` lets Quartus elaborate the loop). ICCM / DCCM / ICache use VeeR `el2_ram` and get no explicit init. This happens once at FPGA configuration — a later pwrgood cycle does **not** re-zero anything — so it is not the spec's pwrgood-time zeroization and not ASIC SRAM repair. Verilator uses the upstream `libs/rtl/caliptra_sram.sv` model, not this override. ASIC-style repair is not applicable to M20K. A real fix is a pwrgood-triggered zeroization FSM muxed onto the mailbox / ICCM / DCCM ports ahead of `cptra_rst_b` release (glue would hold `ctrl_pio[1]` low until it finishes).
 - **Error IRQs (remaining part of M5).** `cptra_error_fatal` / `cptra_error_non_fatal` (and optionally `etrng_req`, `mailbox_data_avail`) are not Platform Designer IRQs. To add them: in Platform Designer, add PIO (or irq) conduits for those status bits, connect them to the Nios `irq` interface with unique irqNumbers, regenerate the BSP (`niosv-bsp`) so `system.h` has the IRQ macros, and service them in `main.c` in addition to the existing poll/recovery path.
 
@@ -691,14 +698,16 @@ Each of the **32** requirement rows is given one primary status (FAIL > OPEN > T
 | Path | Role |
 |---|---|
 | `rtl/caliptra_passive_top.sv` | Caliptra 1.x wrapper, memories, QSPI tie-offs |
-| `quartus_a5e_nios/rtl/nios_caliptra_top.sv` | Top: PD system, window decode, APB mux, 2FF reset requests, generic_input tie-off, straps |
+| `quartus_a5e_nios/rtl/nios_caliptra_top.sv` | Top: Reset Release gating, PD system, window decode, APB mux, 2FF reset requests + glue reset, generic_input tie-off, straps |
 | `quartus_a5e_nios/rtl/avmm_to_apb.sv` | Avalon → APB3, `pauser_i` (default 1) |
 | `quartus_a5e_nios/rtl/soc_fuse_ctrl.sv` | Fuse sequencer soft IP (START + START_DONE) |
 | `quartus_a5e_nios/rtl/reset_sync.sv` | 2FF `pwrgood_sync_async_assert` / `rst_sync_async_assert` |
 | `quartus_a5e_nios/rtl/soc_fw_store.sv` | FW-bundle M20K |
 | `quartus_a5e_nios/qsys/nios_caliptra_sys.tcl` | Regeneratable PD system |
 | `quartus_a5e_nios/sw/app/main.c` | Nios host: cold/warm boot, PAUSER locks, TIMER_CONFIG, WDT_CFG, fuse START/START_DONE, ETRNG, FW load, fatal/non-fatal handling |
-| `quartus_a5e_nios/nios_caliptra.sdc` | 50 MHz `clk`, false path on async `reset_n` (2FF outputs timed to clk) |
+| `quartus_a5e_nios/nios_caliptra.sdc` | 50 MHz `clk`, false paths on async `reset_n` and `u_rst_release` (2FF outputs timed to clk) |
+| `quartus_a5e_nios/ip/rst_release.ip` | Agilex 5 Reset Release IP (`ninit_done`) |
+| `sim/rst_release_stub.sv` | Verilator stand-in for the Reset Release IP |
 | `scripts/gen_fuse_image.py` / `fw/fuse_image.hex` | STUDY OTP image |
 | `fw/caliptra-rom.hex`, `fw/caliptra-fw-bundle.hex` | ROM 1.1.1 and signed 1.x bundle |
 | `sim/tb_nios_top_fw.sv`, `sim/run_nios_top_fw.sh` | Verilator TB: `+test=prod\|sync\|pauser\|warm\|fatal\|all` |
