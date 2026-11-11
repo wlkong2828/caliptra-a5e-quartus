@@ -128,8 +128,13 @@ for q, w in (("quote_ecc_before", "ecc"), ("quote_ecc_after", "ecc"), ("quote_ml
     # request bytes). ECC quote: first 48 B; MLDSA quote: dword-reversed register image = byte-reversed digest.
     nsw = b"".join(nonce[i:i + 4][::-1] for i in range(0, 32, 4))
     full = hashlib.sha512(pcrs + nsw).digest()
-    res = dict(nonce=Q["nonce"], digest=Q["digest"],
-               digest_recomputed_from_pcrs_and_nonce=(full[:48].hex() == Q["digest"]) if w == "ecc" else (full[::-1].hex() == Q["digest"]))
+    # RTL pv_gen_hash feeds NONCE[7]..NONCE[0] (pv_gen_hash.sv, GEN_HASH_NONCE state): request nonce with its
+    # 4-byte chunks in reverse order. The emulator feeds NONCE[0]..NONCE[7] (the bswap32 form above).
+    ndr = b"".join(nonce[i:i + 4] for i in range(28, -1, -4))
+    full_rtl = hashlib.sha512(pcrs + ndr).digest()
+    m = (lambda f: f[:48].hex() == Q["digest"]) if w == "ecc" else (lambda f: f[::-1].hex() == Q["digest"])
+    res = dict(nonce=Q["nonce"], digest=Q["digest"], digest_matches_emu_model=m(full), digest_matches_rtl_model=m(full_rtl),
+               digest_recomputed_from_pcrs_and_nonce=m(full) or m(full_rtl))
     sig = bytes.fromhex(Q["sig"]); dg = bytes.fromhex(Q["digest"])
     td = tempfile.mkdtemp()
     open(td + "/d", "wb").write(dg)

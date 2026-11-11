@@ -12,11 +12,11 @@ TEST/STUDY material only — nothing here is a product secret or product identit
 |---|---|---|---|
 | Caliptra RT accepts a SoC measurement (`STASH_MEASUREMENT`) | resp `dpe_result = 0`, mailbox `CMD_COMPLETE/DATA_READY`, checksum OK | PASS | PASS |
 | The measurement is **stored in PCR31** | `QUOTE_PCRS` PCR31 goes `0…0` → `SHA384(0^48 ‖ M)` | PASS | PASS |
-| PCR evidence is **signed by Caliptra** | ECC + ML-DSA quote signatures verify with the **FMC Alias** public key; digest recomputed from the 32 PCRs + nonce | PASS | PASS (FMC Alias sig); digest ≠ SHA-512(PCRs + bswap32(nonce)) |
+| PCR evidence is **signed by Caliptra** | ECC + ML-DSA quote signatures verify with the **FMC Alias** public key; digest recomputed from the 32 PCRs + nonce | PASS | PASS (FMC Alias sig; digest recomputes with the RTL nonce word order, see §7) |
 | The measurement is **in the DPE context tree** and attested | DPE `CertifyKey` leaf: MultiTcbInfo entry `type='NIOS'`, `svn=1`, `fwid sha384 = M`, `vendorInfo = 00000001` (locality = AxUSER 1); absent in the leaf certified *before* the stash | PASS | PASS |
 | Full DICE cert chain can be dumped over the mailbox | IDevID, LDevID, FMC Alias, RT Alias, DPE leaf, DPE `GetCertificateChain` — ECC P-384 **and** ML-DSA-87 | PASS (34/34 commands) | PASS (34/34 commands) |
 | Chain verifies cryptographically | `openssl verify` (OpenSSL 3.5.7) each link + full chain to the test mfg CA, strict (no `-ignore_critical`) | ECC OK, ML-DSA-87 OK | ECC OK, ML-DSA-87 OK |
-| Same device identity in emulator and RTL | byte-compare of every DER and every raw mailbox response | — | All DERs identical; mailbox responses identical except 3 QUOTE_PCRS (same PCRs/nonce; digest+sig differ) |
+| Same device identity in emulator and RTL | byte-compare of every DER and every raw mailbox response | — | All DERs identical; mailbox responses identical except 3 QUOTE_PCRS (same PCRs/nonce; digest+sig differ because the emulator and RTL feed the nonce words to SHA-512 in opposite order) |
 
 ## 2. Measurement used
 
@@ -132,6 +132,7 @@ and `analysis.json` (decoded TcbInfo/MultiTcbInfo/Ueid).
 | DPE GetCertificateChain == mailbox certs | 3/3 | 3/3 |
 | IDevID cert key == GET_IDEV_*_INFO | yes | yes |
 | Quote digest = SHA-512(PCR0‖…‖PCR31‖bswap32(nonce)) (ECC: first 48 B; ML-DSA: byte-reversed 64 B) | yes | yes |
+| Quote digest = SHA-512(PCR0‖…‖PCR31‖dword-reversed(nonce)) (RTL `pv_gen_hash` order) | no | yes (Step B) |
 | Quote signature key | **FMC Alias** (KV slot 7) — verifies; IDevID/LDevID/RT Alias do not | **FMC Alias** |
 
 Per-link checks use `openssl verify -partial_chain -CAfile <issuer>`; the full-chain check uses `-CAfile
@@ -209,7 +210,16 @@ Every DER certificate is **byte-identical** between Step A and Step B: IDevID, L
 
 Chain verification on the RTL artefacts is the same as §6: every ECC and ML-DSA-87 link verifies, and the full chain to the TEST mfg CA verifies strictly (no `-ignore_critical`). DPE `GetCertificateChain` matches the mailbox certs 3/3 for both algorithms. PCR31 after the stash is the expected `SHA-384(0^48 ‖ M)` = `bbd59944…72a1a2` on both sides, and that measurement appears as MultiTcbInfo entry 2 (`type='NIOS'`, `svn=1`) in the post-stash DPE leaves only.
 
-Quote signatures **verify with the FMC Alias** public key (IDevID, LDevID, and RT Alias do not), on both ECC quotes and the ML-DSA quote — same as Step A. `analyze.py`'s digest recomputation `SHA-512(PCR0‖…‖PCR31‖bswap32(nonce))` (ECC: first 48 B; ML-DSA: byte-reversed 64 B) matches the emulator quotes and does **not** match the digest field returned by RTL, even though the 32 PCR values and the nonce are byte-identical. No simple endianness transform of that SHA-512 (byte reverse, dword reverse, or hashing the nonce without `bswap32`) reproduces the RTL digest. The RTL quote is still a valid signature by the FMC Alias over the digest that RTL reported.
+Quote signatures **verify with the FMC Alias** public key (IDevID, LDevID, and RT Alias do not), on both ECC quotes and the ML-DSA quote — same as Step A. `analyze.py`'s digest recomputation `SHA-512(PCR0‖…‖PCR31‖bswap32(nonce))` (ECC: first 48 B; ML-DSA: byte-reversed 64 B) matches the emulator quotes and does **not** match the digest field returned by RTL, even though the 32 PCR values and the nonce are byte-identical. The RTL quote is still a valid signature by the FMC Alias over the digest that RTL reported.
+
+**Root cause (resolved Nov 11, 2026):** the emulator and RTL disagree on the order in which the 8 `SHA512_GEN_PCR_HASH_NONCE` registers are fed into the hash.
+
+- RTL, `caliptra-rtl/src/pcrvault/rtl/pv_gen_hash.sv` (state `GEN_HASH_NONCE`): `block_wr_data = nonce[NONCE_LEN_DWORD-1-nonce_offset_i]`, i.e. NONCE[7] first, NONCE[0] last. Seen from the request bytes this is the nonce with its eight 4-byte chunks in reverse order, each chunk's bytes unchanged.
+- Emulator, `caliptra-sw/sw-emulator/lib/periph/src/hash_sha512.rs` (`pcr_hash_op_complete`): `update_bytes(pcr_gen_hash_nonce.as_bytes())`, i.e. NONCE[0] first, each word byte-swapped, which is the `bswap32(nonce)` form above.
+
+A brute-force over PCR and nonce byte orders finds exactly one match per quote: RTL digest = SHA-512(PCR0‖…‖PCR31‖dword_reverse(nonce)), first 48 B for ECC and byte-reversed 64 B for ML-DSA, on all three RTL quotes. PCR handling is identical on both sides. `analyze.py` now reports `digest_matches_emu_model` and `digest_matches_rtl_model` separately.
+
+Implication: a verifier for quotes from real hardware (FPGA or silicon) must use the RTL order. A verifier built and tested only against the emulator will reject genuine hardware quotes. This looks like an emulator fidelity bug in `caliptra-sw` (rtl `4937026`, sw `a4b6bbf`) and could be reported upstream.
 
 
 ## 8. How to reproduce

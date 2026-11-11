@@ -1125,7 +1125,9 @@
   "quote_ecc_before": {
    "nonce": "6595f9487947af353379e77371e8c48bcd8409b3f674fe1449fe39df5e329577",
    "digest": "807932903bf4e5b678fec39ba7e45fde6e50fe69c915a092cc4cd520525fd932447610cfbb3fa222f664ae15a150f78e",
-   "digest_recomputed_from_pcrs_and_nonce": false,
+   "digest_matches_emu_model": false,
+   "digest_matches_rtl_model": true,
+   "digest_recomputed_from_pcrs_and_nonce": true,
    "sig_by_idevid_ecc384": false,
    "sig_by_ldevid_ecc384": false,
    "sig_by_fmc_alias_ecc384": true,
@@ -1134,7 +1136,9 @@
   "quote_ecc_after": {
    "nonce": "b3d0a203a6f636f1383e17f1dc33d2d0f016febfe43c0bd3cd39e14f3b73587f",
    "digest": "90664a5ca54a67cb2150637041c32617506655668923228ed8ae8ac779f730ea967665fe9aeed9d852b17d3ed6d3cbfb",
-   "digest_recomputed_from_pcrs_and_nonce": false,
+   "digest_matches_emu_model": false,
+   "digest_matches_rtl_model": true,
+   "digest_recomputed_from_pcrs_and_nonce": true,
    "sig_by_idevid_ecc384": false,
    "sig_by_ldevid_ecc384": false,
    "sig_by_fmc_alias_ecc384": true,
@@ -1143,7 +1147,9 @@
   "quote_mldsa_after": {
    "nonce": "b3d0a203a6f636f1383e17f1dc33d2d0f016febfe43c0bd3cd39e14f3b73587f",
    "digest": "f4be5ae963e161327ee09e6ae028c344fbcbd3d63e7db152d8d9ee9afe657696ea30f779c78aaed88e222389665566501726c34170635021cb674aa55c4a6690",
-   "digest_recomputed_from_pcrs_and_nonce": false,
+   "digest_matches_emu_model": false,
+   "digest_matches_rtl_model": true,
+   "digest_recomputed_from_pcrs_and_nonce": true,
    "sig_by_idevid_mldsa87": false,
    "sig_by_ldevid_mldsa87": false,
    "sig_by_fmc_alias_mldsa87": true,
