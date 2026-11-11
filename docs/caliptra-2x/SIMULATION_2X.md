@@ -9,7 +9,7 @@
 
 - **Scope:** Verilator simulation of the **real** 2.x glue RTL (`caliptra2x/rtl_2x/`) around caliptra-rtl v2.1.2 (`49370266`) core-only. It runs the real ROM `rom-2.1.3-1` and the real FW bundle `fw-2.1.4` (FMC + runtime), and boots from cold power-on to `ready_for_runtime`.
 - **Result:** **PASS**: `TB_NIOS2X PASS cyc=36617987 trng=217 (prod, debug locked)`.
-- **Attestation and DPE:** `+test=attest` continues after `ready_for_runtime` with 34 runtime mailbox commands (DICE cert chain, `STASH_MEASUREMENT`, PCR quotes, DPE GetProfile/CertifyKey/GetCertificateChain): **PASS** at cycle 59,280,395, certificates byte-identical to the sw-emulator. See [§8](#8-rom-boot-firmware-load-attestation-and-dpe-in-simulation).
+- **Attestation and DPE:** `+test=attest` continues after `ready_for_runtime` with 34 runtime mailbox commands (DICE cert chain, `STASH_MEASUREMENT`, PCR quotes, DPE GetProfile/CertifyKey/GetCertificateChain): **PASS** at cycle 59,280,395, certificates byte-identical to the sw-emulator. See [§8](#8-rom-boot-firmware-load-attestation-and-dpe-in-simulation). What the Nios model covers: [§8.1](#81-what-this-simulation-covers-nios-model). Quick start: [§8.2](#82-quick-start-run-it-yourself).
 - **Related:** [NIOS_CALIPTRA_2X_INTEGRATION.md](NIOS_CALIPTRA_2X_INTEGRATION.md) (design), [FIRMWARE_AND_KEYS_2X.md](FIRMWARE_AND_KEYS_2X.md) (ROM, bundle, fuse image). The raw record is in `caliptra2x/sim_2x/BOOT_NIOS2X.md` and `caliptra2x/sim_2x/nios2x_top_fw_run.log`.
 
 ---
@@ -25,7 +25,7 @@
 | Agilex Reset Release IP | Stub `caliptra2x/sim/rst_release_stub.sv` (`ninit_done` = 1 for 25 ns) |
 | Platform Designer system `nios_caliptra2x_sys` (Nios V + PIOs + window) | **Behavioral model** `module nios_caliptra2x_sys` in `tb_nios2x_top_fw.sv`. Ports: `clk_clk`, `reset_reset_n`, `caliptra_axi_address[19:0]`, `_read`, `_write`, `_writedata[31:0]`, `_byteenable[3:0]` (always `4'hF`), `_readdata[31:0]`, `_readdatavalid`, `_waitrequest`, `_burstcount`, `_debugaccess`, `ctrl_pio_export[31:0]` (out, initialized to 0), `status_pio_export[31:0]` (in), `magic_pio_export[31:0]` (out, initialized to 0). It issues the Avalon accesses the 2.x Nios firmware is meant to issue |
 
-The Nios V CPU, Platform Designer interconnect and C firmware are **not** in this sim. Compare the 1.x sim, which also used a behavioral host.
+The Nios V CPU, Platform Designer interconnect and C firmware are **not** in this sim. Compare the 1.x sim, which also used a behavioral host. §8.1 describes what the attestation run covers and what it does not, and the next step that would exercise the real Nios V.
 
 ---
 
@@ -237,7 +237,91 @@ This flow runs the same cold boot as §3 (real ROM `rom-2.1.3-1`, real FW bundle
 
 **Reference result (RTL, Verilator 5.054, 2026-11-10):** `TB_NIOS2X PASS cyc=59280395 trng=379 (prod, debug locked)`. All 34 commands returned `DATA_READY` with `fwerr=00000000` and a valid checksum. Every certificate is **byte-identical** to the caliptra-sw sw-emulator run, and both the ECC P-384 and ML-DSA-87 chains verify strictly with `openssl verify` up to a TEST manufacturing CA.
 
-### 8.1 How it works
+### 8.1 What this simulation covers (Nios model)
+
+The design under the Nios is the **real** RTL you would compile in Quartus: `caliptra2x/rtl_2x/nios_caliptra2x_top.sv`. That includes:
+
+- the window decode
+- `soc_fw_store`, which holds the 253,440-byte firmware bundle
+- the `soc_fuse_ctrl2x` fuse controller
+- the `avmm_to_axi` bridge, the AXI write-channel mux, and the 2FF reset synchronizers
+- `caliptra_passive_top`
+- unmodified Caliptra 2.x **v2.1.2** RTL, running the real ROM **2.1.3** and the FMC and runtime firmware **2.1.4**
+
+The Platform Designer system `nios_caliptra2x_sys` — the Nios V CPU, its on-chip RAM, the JTAG UART and the PIOs — is **not** simulated as RTL. In its place is a behavioral SystemVerilog module of the same name and ports, in `tb_nios2x_top_fw.sv`. It drives the Avalon window directly with read and write tasks, following the same register sequence as the Nios firmware:
+
+- AxUSER, timer and watchdog setup
+- fuse programming through the fuse controller
+- TRNG service
+- `FIRMWARE_LOAD` over the mailbox
+- the 34 runtime mailbox commands, which come from `attest/attest_driver.py`
+
+So the bus traffic Caliptra sees matches what the firmware should produce, but no Nios instructions execute. This run does **not** cover Nios V instruction execution, the 2.x `caliptra2x/quartus_a5e_2x_nios/sw/app/main.c` or `onchip_mem.hex`, or the JTAG UART. TRNG data is testbench `$urandom` (not a real entropy source). All keys are TEST/STUDY values. DPE Sign is not exercised.
+
+**Reference result.** `TB_NIOS2X PASS` at 59,280,395 cycles. All 34 mailbox commands returned status OK (`DATA_READY`, `fwerr=0`). There were no fatal or non-fatal errors. All 17 certificates were byte-identical to the caliptra-sw emulator. The three `QUOTE_PCRS` digest/signature values differ only because the emulator hashes the nonce in the opposite word order (see §8.8); that is not an RTL failure.
+
+| Milestone | Cycle |
+|---|---:|
+| Fuses done | 611 |
+| `ready_for_mb_processing` | 5,542,265 |
+| `FIRMWARE_LOAD` issued | 6,049,751 |
+| Firmware load complete | 21,319,057 |
+| ROM → FMC | 30,035,490 |
+| FMC → RT | 36,217,537 |
+| `ready_for_runtime` | 36,597,934 |
+
+The later mailbox-command cycles are in the §8.4 table.
+
+To close the gap and exercise the real Nios V and the 2.x `onchip_mem.hex`, the next step is a co-simulation that uses the Platform Designer simulation files for `nios_caliptra2x_sys` in place of the behavioral module. That will likely need Questa rather than Verilator, because the Nios V simulation model is typically encrypted.
+
+### 8.2 Quick start: run it yourself
+
+**Prerequisites.** Verilator 5.x (5.040 is fine), GCC, Python 3 and OpenSSL 3 (ideally ≥ 3.5, for ML-DSA-87) on `PATH`. On GCC 10–12 (for example SLES15 with GCC 12.2), set `export VERILATOR_CFLAGS=-fcoroutines`. The run script also applies the PCH and `-pthread` fixes in `scripts/verilator_cflags.sh` automatically (§7). You need a clone with the `external/caliptra-rtl-2x` submodule fetched.
+
+```bash
+# 1. Get the repo with its submodules (pinned 2.x RTL).
+git clone --recursive https://github.com/pwilliam282/caliptra-a5e-quartus.git
+cd caliptra-a5e-quartus
+# If you already have a clone:
+#   git pull && git submodule update --init --recursive
+
+# 2. Start the sim. The first run builds first (a few minutes).
+cd caliptra2x/sim_2x
+rm -rf attest_out/rtl && mkdir -p attest_out/rtl
+export VERILATOR_CFLAGS=-fcoroutines
+LOG=attest_run.log nohup setsid ./run_nios2x_top_fw.sh +test=attest +max_cycles=4000000000 > attest_run.out 2>&1 &
+# Optional: VERILATOR_BIN=/path/to/verilator/bin  (if verilator is not on PATH)
+#           THREADS=8                               (if you have the cores)
+#           BUILD=0                                 (skip the rebuild)
+
+# 3. Start the mailbox driver in the same folder, right after the sim.
+nohup setsid python3 attest/attest_driver.py attest_out/rtl > attest_out/rtl_driver.log 2>&1 &
+
+# 4. Watch the progress.
+grep -E 'MILESTONE|ATTEST (phase|resp|done)|PASS|FAIL|TIMEOUT' attest_run.log
+# Expect the fuse / ROM / firmware-load / FMC / runtime milestones, then 34
+# 'ATTEST resp ... status=1' lines, ending with TB_NIOS2X PASS at about
+# 59.3 M cycles (~8–9 h wall time on a typical 4-thread box).
+
+# 5. Check the result (after TB_NIOS2X PASS).
+python3 attest/analyze.py attest_out/rtl attest_ref/emu
+# Expect ANALYZE PASS, 17 matching certificates, and one expected
+# QUOTE_PCRS raw-response warning (the emulator nonce-order bug, §8.8).
+```
+
+Certificates and raw responses land in `attest_out/rtl/`. The default `+max_cycles` (300 M) covers the 59.3 M-cycle run, but the TB keeps clocking while it waits for the driver, so use `4000000000` so a late or slow driver never trips `TIMEOUT`. Keep the `attest_out/rtl` path the same for the TB (`+attest_dir=…`, default `attest_out/rtl`) and the driver.
+
+**Troubleshooting (short).** Build errors: look in `nios2x_build.log` (and §7 / §8.9). If the driver stops with a timeout (it waits at most six hours for any single response, for example if the machine slept), just rerun step 3; the sim picks up where it left off. More symptoms are in §8.9.
+
+**Other inputs already in the clone.**
+
+| Item | Notes |
+|---|---|
+| Sources | `git clone --recursive` (or `git submodule update --init --recursive`) fetches `external/caliptra-rtl-2x`. You can also run `scripts/fetch_deps.sh` or `scripts/get_caliptra_a5e.sh` from the repo root |
+| ROM / FW bundle / fuses | Prebuilt and committed: `caliptra2x/fw_2x/caliptra-rom.hex`, `caliptra-fw-bundle.hex`, `fuse_image_2x.hex` (checksums in `caliptra2x/fw_2x/SHA256SUMS`). To rebuild them, see [FIRMWARE_AND_KEYS_2X.md](FIRMWARE_AND_KEYS_2X.md). If you rebuild, the certificates change and will not match `attest_ref/` |
+| TEST mfg CA | Committed in `caliptra2x/sim_2x/attest/testca/`: CA certificates plus the IDevID TBS/certs cached by IDevID public key. With the committed fuses **no private key is needed**. The CA `*.key` files are never committed; see §8.8 to make a new local CA |
+
+### 8.3 How it works
 
 ```mermaid
 sequenceDiagram
@@ -257,55 +341,15 @@ sequenceDiagram
   TB-->>TB: 20,000 idle cycles, SUMMARY, TB_NIOS2X PASS
 ```
 
+The Nios host in this diagram is the behavioral model described in §8.1.
+
 - The testbench and the Python driver talk through files in `+attest_dir` (default `attest_out/rtl`, relative to `caliptra2x/sim_2x/`). The driver builds every request (header checksum `0 − Σ bytes`, DPE packets, IDevID TBS) and decodes every response. The TB only does the Nios register sequence, so the same driver also runs against the sw-emulator (`attest/emu/attest_emu.rs`).
 - Start the driver together with the sim. It waits for `resp_NNN.done` (up to 6 h per command), and it deletes stale `req_*`/`resp_*` files from an earlier run when it starts.
 - The TB keeps servicing `etrng_req` (TRNG) and checking `cptra_error_fatal` while it waits.
 
-### 8.2 Prerequisites
-
-| Item | Requirement |
-|---|---|
-| Sources | Repo clone with `external/caliptra-rtl-2x` fetched (`scripts/fetch_deps.sh` or `scripts/get_caliptra_a5e.sh`) |
-| Verilator | **≥ 5.040** (reference run: 5.054). Site 5.040 builds need the `scripts/verilator_cflags.sh` fixes (PCH `-include`, `-pthread`), which the run script applies automatically (§7) |
-| C++ compiler | GCC ≥ 13 or clang as is. **GCC 10–12: `-fcoroutines`** (added automatically when `${CXX:-c++}` is GCC 10–12; force it with `VERILATOR_CFLAGS=-fcoroutines`, e.g. when Verilator uses `/usr/intel/bin/c++` = GCC 12.2) |
-| Python | Python 3.8+ (standard library only) |
-| OpenSSL CLI | **≥ 3.5** on `PATH` (ML-DSA-87 support): the driver converts DER→PEM/text, and `analyze.py` verifies chains and quote signatures. Reference: OpenSSL 3.5.7 |
-| ROM / FW bundle / fuses | Prebuilt and committed: `caliptra2x/fw_2x/caliptra-rom.hex`, `caliptra-fw-bundle.hex`, `fuse_image_2x.hex` (checksums in `caliptra2x/fw_2x/SHA256SUMS`). To rebuild them, see [FIRMWARE_AND_KEYS_2X.md](FIRMWARE_AND_KEYS_2X.md) (`caliptra2x/fw_2x/build_rom.sh`, `caliptra2x/scripts/gen_fuse_image_2x.py`). If you rebuild, the certificates change and will not match `attest_ref/` |
-| TEST mfg CA | Committed in `caliptra2x/sim_2x/attest/testca/`: CA certificates plus the IDevID TBS/certs cached by IDevID public key. With the committed fuses **no private key is needed**. The CA `*.key` files are never committed; see §8.8 to make a new local CA |
-| Machine | 4 threads, about 2.2 GB RAM for the build and < 100 MB for the run; **about 2–3 h wall time** |
-
-### 8.3 Step by step
-
-```bash
-# 0. once, from the repo root
-scripts/fetch_deps.sh                       # external/caliptra-rtl-2x (+ adams-bridge)
-cd caliptra2x/sim_2x
-# site machines: put the right Verilator first and, for GCC 12, force -fcoroutines
-#   export PATH=/path/to/verilator-5.040/bin:$PATH  VERILATOR_CFLAGS=-fcoroutines
-
-# 1. clean output folder
-rm -rf attest_out/rtl && mkdir -p attest_out/rtl
-
-# 2. build (~6 min) + run the RTL sim with +test=attest, detached; sim log -> attest_run.log
-LOG=attest_run.log nohup setsid ./run_nios2x_top_fw.sh +test=attest +max_cycles=4000000000 > attest_run.out 2>&1 &
-#    (re-run without rebuilding: prefix BUILD=0)
-
-# 3. start the host-side driver right away (it waits for the runtime)
-nohup setsid python3 attest/attest_driver.py attest_out/rtl > attest_out/rtl_driver.log 2>&1 &
-
-# 4. watch progress
-grep -E 'MILESTONE|ATTEST (phase|resp|done)|PASS|FAIL|TIMEOUT' attest_run.log
-tail -f attest_out/rtl_driver.log
-
-# 5. after 'TB_NIOS2X PASS' and '[driver] done, 34 commands': decode, verify, compare with the reference
-python3 attest/analyze.py attest_out/rtl attest_ref/emu     # last line: ANALYZE PASS
-```
-
-The default `+max_cycles` (300 M) covers the 59.3 M-cycle run, but the TB keeps clocking while it waits for the driver, so use a large value (`4000000000`) so a late or slow driver never trips `TIMEOUT`. Keep the `attest_out/rtl` path the same for the TB (`+attest_dir=…`, default `attest_out/rtl`) and the driver.
-
 ### 8.4 What each phase does and what to expect in the log
 
-Cycle numbers are from the reference run (`attest_ref/rtl_tb_run.log`); a rerun should match within a few hundred cycles (TRNG timing).
+Cycle numbers are from the reference run (`attest_ref/rtl_tb_run.log`); a rerun should match within a few hundred cycles (TRNG timing). The boot milestones through `ready_for_runtime` are also summarized in §8.1.
 
 | Phase | What happens | Expected log line(s) | Cycle |
 |---|---|---|---:|
@@ -380,7 +424,7 @@ Expected: every `openssl verify` prints `OK`, and all 17 `.der` files are `same`
 | Cycles | — | `ready_for_runtime` 36,597,934; first command done 36,624,580; last 59,240,360; `$finish` 59,280,395 (593 ms sim) |
 | TRNG fills | — | 379 |
 
-Plan for **≈ 1.2–1.5 h to `ready_for_runtime`** and ≈ 2–3 h in total on a 4-thread run.
+The reference run was ≈ 3 h wall time on the development box (wrapper `wall_time_s=10639`). Plan for **≈ 8–9 h** on a typical 4-thread machine; `ready_for_runtime` is a bit over half of that.
 
 ### 8.8 Open items and limits
 
@@ -388,6 +432,7 @@ Plan for **≈ 1.2–1.5 h to `ready_for_runtime`** and ≈ 2–3 h in total on 
 - **IDevID certificate** is assembled from a TBS signed by a local **TEST** mfg CA (Caliptra holds only the key). A product IDevID comes from the manufacturer's CA, usually via the Manufacturing-lifecycle CSR flow (not exercised).
 - **New TEST CA.** Only needed if the IDevID key changes (other UDS/FE fuses): `ATTEST_CA_DIR=$PWD/attest_out/testca python3 attest/attest_driver.py attest_out/rtl` creates `test_mfg_ca_{ecc,mldsa}.{key,pem}` with `openssl genpkey` (P-384 / ML-DSA-87) and signs new TBSs; pass the same `ATTEST_CA_DIR` to `analyze.py`. Never commit the `*.key` files (git-ignored).
 - The TB TRNG model returns `$urandom` words; key derivation is deterministic and signing uses deterministic nonces (ECDSA HMAC-DRBG, ML-DSA `sign_rnd = 0`), which is why the certificates match the emulator byte-for-byte.
+- The Nios V CPU, 2.x `main.c` / `onchip_mem.hex` and JTAG UART are not in this sim (behavioral Avalon host only). A co-sim with the real Platform Designer Nios V model would close that gap; it will likely need Questa (§8.1).
 - Not exercised: warm reset, ROM-time stash, `EXTEND_PCR`, DPE Sign, exported CDIs, waveforms (too long to dump).
 
 ### 8.9 Troubleshooting
@@ -396,6 +441,7 @@ Plan for **≈ 1.2–1.5 h to `ready_for_runtime`** and ≈ 2–3 h in total on 
 |---|---|
 | Build errors (`-fcoroutines`, `__pch.h.fast`, `pthread_create`) | Same as §7: `VERILATOR_CFLAGS=-fcoroutines`, `git pull`, `rm -rf obj_nios2x`, rebuild |
 | Sim sits at `=== ATTEST phase: waiting …` with only heartbeats | Driver not running or writing to another folder. Start `attest_driver.py attest_out/rtl` from `caliptra2x/sim_2x/` (or pass the same path with `+attest_dir=`) |
+| Driver times out after six hours on one response | The driver waits at most 6 h per response. If the machine slept, or the sim was slower than expected, just rerun the driver (step 3 in §8.2); the sim resumes from the next request |
 | Driver log stays at `req 000 FW_INFO` for over an hour | Normal: the runtime is only ready at ≈ 36.6 M cycles. Check `MILESTONE` lines in `attest_run.log` |
 | `TB_NIOS2X TIMEOUT` | Raise `+max_cycles` (use `4000000000`) |
 | `ATTEST resp N status=3` or `fwerr` ≠ 0 | Command rejected. Check the `LOG [rt]` lines just before it; mailbox AxUSER must be 1 and locked; the request checksum must be correct (driver computes it) |

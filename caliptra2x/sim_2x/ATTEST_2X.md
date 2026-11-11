@@ -224,8 +224,10 @@ Implication: a verifier for quotes from real hardware (FPGA or silicon) must use
 
 ## 8. How to reproduce
 
-All commands run from `caliptra2x/sim_2x/` of a clone with `external/caliptra-rtl-2x` fetched. The step-by-step
-version, with expected log lines, is in [`docs/caliptra-2x/SIMULATION_2X.md` §8](../../docs/caliptra-2x/SIMULATION_2X.md).
+All commands run from `caliptra2x/sim_2x/` of a clone with `external/caliptra-rtl-2x` fetched. The **quick start**
+(clone, build, run, analyze) is in [`docs/caliptra-2x/SIMULATION_2X.md` §8.2](../../docs/caliptra-2x/SIMULATION_2X.md#82-quick-start-run-it-yourself).
+What the Nios model covers — real glue and Caliptra RTL, a behavioral Nios host, and the limits of this sim — is
+in [§8.1](../../docs/caliptra-2x/SIMULATION_2X.md#81-what-this-simulation-covers-nios-model).
 
 ```bash
 # Step B — RTL (Verilator >= 5.040), detached. Boot ≈ 36.6 M cycles, attestation ≈ 22.7 M more.

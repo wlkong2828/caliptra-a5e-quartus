@@ -5,7 +5,7 @@ These are the sources for the Caliptra 2.x (caliptra-rtl v2.1.2) study, copied f
 | Path | Contents |
 |---|---|
 | `rtl_2x/` | `nios_caliptra2x_top.sv`, `caliptra_passive_top.sv` (2.x core-only wrapper), `avmm_to_axi.sv`, `soc_fuse_ctrl2x.sv`, `soc_fw_store.sv`, `reset_sync.sv`, `caliptra_veer_sram_export.sv` |
-| `sim_2x/` | Verilator TB `tb_nios2x_top_fw.sv`, file list `boot2x.f`, `run_nios2x_top_fw.sh`, adams-bridge Verilator patch, PASS record `BOOT_NIOS2X.md` + full run log + build log. Attestation/DPE flow (`+test=attest`): `attest/` (driver, analyzer, emulator backend, TEST CA certs), `attest_ref/` (reference RTL + emulator results), `ATTEST_2X.md` |
+| `sim_2x/` | Verilator TB `tb_nios2x_top_fw.sv`, file list `boot2x.f`, `run_nios2x_top_fw.sh`, adams-bridge Verilator patch, PASS record `BOOT_NIOS2X.md` + full run log + build log. Attestation/DPE flow (`+test=attest`): `attest/` (driver, analyzer, emulator backend, TEST CA certs), `attest_ref/` (reference RTL + emulator results), `ATTEST_2X.md`. To run it yourself: [`docs/caliptra-2x/SIMULATION_2X.md` §8.2](../docs/caliptra-2x/SIMULATION_2X.md#82-quick-start-run-it-yourself) (what the Nios model covers: [§8.1](../docs/caliptra-2x/SIMULATION_2X.md#81-what-this-simulation-covers-nios-model)) |
 | `sim/rst_release_stub.sv` | Reset Release IP stand-in used by `boot2x.f` |
 | `fw_2x/` | 2.x ROM (`rom-2.1.3-1`, with log) and FW bundle (`fw-2.1.4`), `.bin` + `$readmemh` hex, `SHA256SUMS`, `build_rom.sh`, `fuse_image_2x.hex` |
 | `scripts/gen_fuse_image_2x.py` | Builds `fw_2x/fuse_image_2x.hex` from the bundle |
