@@ -77,13 +77,11 @@ module decompress_top
         .PISO_BUFFER_W(104),
         .PISO_ACT_INPUT_RATE(64),
         .PISO_ACT_OUTPUT_RATE(48),
-        `ifdef CLP_OLD_VERILATOR_WORKAROUND
-        .INPUT_RATES('{64, 64, 64, 64, 0}),
-        .OUTPUT_RATES('{4, 20, 44, 48, 0})
-        `else
-        .INPUT_RATES('{64, 64, 64, 64}),
-        .OUTPUT_RATES('{4, 20, 44, 48})
-        `endif
+        // Indexed pattern with default: legal whether the tool sizes the
+        // array from NUM_MODES (4) or from the module default (5), so it
+        // elaborates on every Verilator 5.x and Quartus.
+        .INPUT_RATES('{0:64, 1:64, 2:64, 3:64, default:0}),
+        .OUTPUT_RATES('{0:4, 1:20, 2:44, 3:48, default:0})
     ) abr_piso_inst (
         .clk(clk),
         .rst_b(reset_n),
