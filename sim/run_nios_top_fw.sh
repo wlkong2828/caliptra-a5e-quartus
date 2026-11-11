@@ -13,7 +13,8 @@ if [ ! -f ../external/caliptra-rtl-1x/src/integration/rtl/caliptra_top.sv ]; the
   exit 1
 fi
 N=../quartus_a5e_nios/rtl
-verilator --binary -j 8 -O3 -Wno-fatal -Wno-lint -Wno-style -Wno-UNOPTFLAT -Wno-MULTIDRIVEN -Wno-TIMESCALEMOD \
+VCFLAGS=$(../scripts/verilator_cflags.sh)  # -fcoroutines on GCC 10-12
+verilator --binary $VCFLAGS -j 8 -O3 -Wno-fatal -Wno-lint -Wno-style -Wno-UNOPTFLAT -Wno-MULTIDRIVEN -Wno-TIMESCALEMOD \
   --timing --top-module tb_nios_top_fw -Mdir obj_nios_top_fw -f boot_apb.f \
   rst_release_stub.sv $N/reset_sync.sv $N/avmm_to_apb.sv $N/soc_fuse_ctrl.sv $N/soc_fw_store.sv $N/nios_caliptra_top.sv tb_nios_top_fw.sv > nios_top_fw_build.log 2>&1
 start=$(date +%s)

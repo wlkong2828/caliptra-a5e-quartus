@@ -6,7 +6,8 @@ set -eo pipefail
 cd "$(dirname "$0")"
 VERILATOR_BIN=${VERILATOR_BIN:-}; [ -n "$VERILATOR_BIN" ] && [ -d "$VERILATOR_BIN" ] && export PATH="$VERILATOR_BIN:$PATH"
 if [ "${BUILD:-1}" = 1 ]; then
-  verilator --binary --threads ${THREADS:-4} -j 8 -O3 -Wno-fatal -Wno-lint -Wno-style -Wno-UNOPTFLAT \
+  VCFLAGS=$(../../scripts/verilator_cflags.sh)  # -fcoroutines on GCC 10-12
+  verilator --binary $VCFLAGS --threads ${THREADS:-4} -j 8 -O3 -Wno-fatal -Wno-lint -Wno-style -Wno-UNOPTFLAT \
     -Wno-MULTIDRIVEN -Wno-TIMESCALEMOD --top-module tb_nios2x_top_fw -Mdir obj_nios2x -f boot2x.f \
     -o Vtb_nios2x > nios2x_build.log 2>&1
 fi
