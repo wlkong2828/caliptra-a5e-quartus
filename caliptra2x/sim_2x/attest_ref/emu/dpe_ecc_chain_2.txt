@@ -1,0 +1,47 @@
+Certificate:
+    Data:
+        Version: 3 (0x2)
+        Serial Number:
+            66:1e:c4:c2:52:06:4a:0a:f7:a1:04:08:dd:d6:d2:91:f9:f1:66:6a
+        Signature Algorithm: ecdsa-with-SHA384
+        Issuer: CN=Caliptra 2.1 Ecc384 FMC Alias, serialNumber=CF64C9DDE91AB6A555139A29C15F24B3B10EE0FB38BAD3D9B90C690EEA7821C7
+        Validity
+            Not Before: Jan  1 00:00:00 2023 GMT
+            Not After : Dec 31 23:59:59 9999 GMT
+        Subject: CN=Caliptra 2.1 Ecc384 Rt Alias, serialNumber=E61EC4C252064A0AF7A10408DDD6D291F9F1666A5C24E76F4522F2B911F86627
+        Subject Public Key Info:
+            Public Key Algorithm: id-ecPublicKey
+                Public-Key: (384 bit)
+                pub:
+                    04:cf:50:5c:9b:68:59:6a:05:ef:a9:17:72:4b:17:
+                    bc:77:b9:7e:c9:e6:a5:7a:87:a6:8f:be:c0:b3:7d:
+                    55:8d:60:38:56:d0:a1:89:66:12:ca:e2:bc:16:2a:
+                    7f:70:0c:46:40:71:e9:94:9e:ad:01:df:9a:96:63:
+                    93:c2:74:69:0f:9c:8b:7a:b9:6b:13:cf:52:72:89:
+                    fc:8c:c6:f8:76:b1:73:6b:e2:58:b2:0b:4d:11:49:
+                    7a:b2:01:13:e1:e5:d4
+                ASN1 OID: secp384r1
+                NIST CURVE: P-384
+        X509v3 extensions:
+            X509v3 Basic Constraints: critical
+                CA:TRUE, pathlen:4
+            X509v3 Key Usage: critical
+                Digital Signature, Certificate Sign
+            2.23.133.5.4.4: 
+                0....................
+            X509v3 Extended Key Usage: 
+                2.23.133.5.4.100.12
+            2.23.133.5.4.1: 
+                0d.....?0=..`.H.e.....0.........<.....:.O{..P.7...v@}.L..x.<....9...L....CALIPTRA_2_X_RT_FIRMWARE_INFO
+            X509v3 Subject Key Identifier: 
+                E6:1E:C4:C2:52:06:4A:0A:F7:A1:04:08:DD:D6:D2:91:F9:F1:66:6A
+            X509v3 Authority Key Identifier: 
+                CF:64:C9:DD:E9:1A:B6:A5:55:13:9A:29:C1:5F:24:B3:B1:0E:E0:FB
+    Signature Algorithm: ecdsa-with-SHA384
+    Signature Value:
+        30:65:02:30:7f:28:f6:c9:59:b7:07:a9:28:9e:aa:a3:46:b8:
+        75:4a:19:d6:e2:77:59:bd:bc:59:f9:43:e2:0c:e0:b5:ef:d2:
+        f6:30:79:2d:bd:fe:df:63:30:b6:57:a7:c9:b7:68:33:02:31:
+        00:b8:c6:29:62:10:79:90:4a:82:57:3f:c8:ae:83:1f:35:1f:
+        fc:40:19:23:57:5a:a1:32:84:5b:6d:11:9d:b6:88:fa:b3:b4:
+        34:af:f8:e7:81:aa:02:64:e2:69:5c:53:60

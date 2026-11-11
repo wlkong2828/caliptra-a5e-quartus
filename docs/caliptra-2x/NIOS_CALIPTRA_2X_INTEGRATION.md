@@ -11,6 +11,7 @@
 - **RTL:** chipsalliance/caliptra-rtl **v2.1.2**, commit `49370266d12cb0c4a8f71b3a0ff7e54ba7d4866e`. `CALIPTRA_MODE_SUBSYSTEM` is **not** defined (core-only), and `CALIPTRA_INTERNAL_TRNG` is **not** defined (external TRNG).
 - **Firmware:** caliptra-sw `dd1e79d5bf55a9bd5bdb05915757eaf34844145d`, which carries tags `rom-2.1.3-1` and `fw-2.1.4`. See [FIRMWARE_AND_KEYS_2X.md](FIRMWARE_AND_KEYS_2X.md).
 - **Simulation:** Verilator 5.054, one cold boot to `ready_for_runtime`, **PASS**. See [SIMULATION_2X.md](SIMULATION_2X.md).
+- **Attestation / DPE in simulation:** ROM boot → FIRMWARE_LOAD → runtime, then 34 mailbox commands (IDevID/LDevID/FMC Alias/RT Alias certs, `STASH_MEASUREMENT`, PCR quotes, DPE GetProfile/CertifyKey/GetCertificateChain), **PASS** at 59,280,395 cycles with certificates byte-identical to the sw-emulator. Step-by-step commands: [SIMULATION_2X.md §8](SIMULATION_2X.md#8-rom-boot-firmware-load-attestation-and-dpe-in-simulation).
 - **Companion docs:** [docs/caliptra-2x/P1_FIT_RESULT_2X_A5E.md](P1_FIT_RESULT_2X_A5E.md) (Quartus fit gate), [docs/caliptra-2x/CALIPTRA_2X_INTEGRATION_PLAN.md](CALIPTRA_2X_INTEGRATION_PLAN.md) (1.x → 2.x delta and phased plan). The 1.x guide this one is modelled on is `docs/NIOS_CALIPTRA_INTEGRATION.md` (rev 3).
 - **Getting the sources / building:** §16 (clone with submodules; upstream RTL in `external/caliptra-rtl-2x/`) and §17 (Quartus Pro 25.3 build, Docker, license, measured results, known issues).
 - **Date:** 2026-11-10 (America/Chicago).

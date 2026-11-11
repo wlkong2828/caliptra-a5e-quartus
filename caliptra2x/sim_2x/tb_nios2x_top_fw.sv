@@ -3,7 +3,10 @@
 // rom-2.1.3-1 ROM + fw-2.1.4 FMC/RT bundle) with a behavioral stand-in for the Platform Designer
 // system (nios_caliptra2x_sys) that issues the same Avalon accesses as the Nios host firmware
 // (1.x sw/app/main.c flow, ported to the 2.x register names). TEST KEYS / ENTROPY ONLY.
-// Plusargs: +test=axiuser|prod|all (default all = axiuser checks + prod cold boot)
+// Plusargs: +test=axiuser|prod|all|attest (default all = axiuser checks + prod cold boot)
+//           attest = prod cold boot, then file-driven runtime mailbox commands (+attest_dir=DIR):
+//             reads DIR/req_NNN.hex (cmd, dlen, LE dwords), writes DIR/resp_NNN.hex + resp_NNN.done;
+//             cmd 0 ends the test. Requests come from sim_2x/attest/attest_driver.py.
 //           +max_cycles=N (default 300_000_000)   +hb=N heartbeat period (default 1_000_000)
 `timescale 1ns/1ps
 module nios_caliptra2x_sys (
@@ -19,7 +22,7 @@ module nios_caliptra2x_sys (
   // Nios address map (20-bit window)
   localparam logic [19:0] FUSEC = 20'h7F000, CPTRA = 20'h80000;
   localparam logic [19:0] MBOX_LOCK = CPTRA+20'h20000, MBOX_USER = CPTRA+20'h20004, MBOX_CMD = CPTRA+20'h20008,
-    MBOX_DLEN = CPTRA+20'h2000c, MBOX_DATAIN = CPTRA+20'h20010, MBOX_EXECUTE = CPTRA+20'h20018, MBOX_STATUS = CPTRA+20'h2001c;
+    MBOX_DLEN = CPTRA+20'h2000c, MBOX_DATAIN = CPTRA+20'h20010, MBOX_DATAOUT = CPTRA+20'h20014, MBOX_EXECUTE = CPTRA+20'h20018, MBOX_STATUS = CPTRA+20'h2001c;
   localparam logic [19:0] SOC = CPTRA+20'h30000;
   localparam logic [19:0] HW_ERR_FATAL = SOC+20'h000, HW_ERR_NF = SOC+20'h004, FW_ERR_FATAL = SOC+20'h008, FW_ERR_NF = SOC+20'h00c,
     BOOT_STATUS = SOC+20'h038, FLOW_STATUS = SOC+20'h03c, SEC_STATE = SOC+20'h044,
@@ -166,6 +169,52 @@ module nios_caliptra2x_sys (
     $display("TB_AXIUSER PASS");
   endtask
 
+  // ---- +test=attest: Nios-host runtime mailbox client (same register sequence as a Nios C driver) ----
+  string attest_dir = "attest_out/rtl";
+  int attest_cmds = 0;
+  task automatic mbox_cmd_from_file(input int n, output bit done);
+    int fd, r, words; logic [31:0] cmd, dlen, d, st, fwnf; string fn;
+    logic [31:0] buf_q[$];
+    done = 0;
+    fn = $sformatf("%s/req_%03d.hex", attest_dir, n);
+    fd = 0;
+    while (fd == 0) begin
+      fd = $fopen(fn, "r");
+      if (fd == 0) repeat (20000) begin check_fatal(); handle_non_fatal(); trng_svc(); @(posedge clk); end
+    end
+    r = $fscanf(fd, "%h\n", cmd); r = $fscanf(fd, "%h\n", dlen);
+    words = (dlen+3)/4;
+    for (int i=0;i<words;i++) begin r = $fscanf(fd, "%h\n", d); buf_q.push_back(d); end
+    $fclose(fd);
+    if (cmd == 0) begin done = 1; return; end
+    $display("[%0d] ATTEST req %0d cmd=%h ('%s') dlen=%0d", cyc, n, cmd, {cmd[31:24],cmd[23:16],cmd[15:8],cmd[7:0]}, dlen);
+    do begin trng_svc(); rd(MBOX_LOCK, d); end while (d[0]);     // acquire lock (read returns 0 when granted)
+    wr(MBOX_CMD, cmd); wr(MBOX_DLEN, dlen);
+    foreach (buf_q[i]) wr(MBOX_DATAIN, buf_q[i]);
+    wr(MBOX_EXECUTE, 1);
+    do begin repeat (200) @(posedge clk); check_fatal(); handle_non_fatal(); trng_svc(); rd(MBOX_STATUS, st); end while (st[3:0]==0);
+    rd(FW_ERR_NF, fwnf);
+    fd = $fopen($sformatf("%s/resp_%03d.hex", attest_dir, n), "w");
+    $fwrite(fd, "%08h\n", st[3:0]);
+    if (st[3:0]==1) begin   // DATA_READY: response in DATAOUT
+      rd(MBOX_DLEN, dlen); $fwrite(fd, "%08h\n", dlen);
+      for (int i=0;i<(dlen+3)/4;i++) begin rd(MBOX_DATAOUT, d); $fwrite(fd, "%08h\n", d); end
+    end else $fwrite(fd, "%08h\n", 0);
+    $fwrite(fd, "fwerr %08h\n", fwnf);
+    $fclose(fd);
+    fd = $fopen($sformatf("%s/resp_%03d.done", attest_dir, n), "w"); $fwrite(fd, "%0d\n", cyc); $fclose(fd);
+    $display("[%0d] ATTEST resp %0d status=%0d dlen=%0d fw_err_nf=%h", cyc, n, st[3:0], (st[3:0]==1)?dlen:0, fwnf);
+    wr(MBOX_EXECUTE, 0);
+    attest_cmds++;
+  endtask
+  task automatic attest_loop();
+    bit done; int n = 0;
+    void'($value$plusargs("attest_dir=%s", attest_dir));
+    $display("[%0d] === ATTEST phase: waiting for requests in %s ===", cyc, attest_dir);
+    forever begin mbox_cmd_from_file(n, done); if (done) break; n++; end
+    $display("[%0d] ATTEST done, %0d commands", cyc, attest_cmds);
+  endtask
+
   initial begin
     logic [31:0] d; longint maxc = 300_000_000, hb = 1_000_000;
     void'($value$plusargs("max_cycles=%d", maxc)); void'($value$plusargs("hb=%d", hb));
@@ -192,6 +241,7 @@ module nios_caliptra2x_sys (
     $display("[%0d] MILESTONE fuses done via soc_fuse_ctrl2x (COUNT=%0d)", cyc, fuse_count);
     load_fw_to_runtime();
     magic_pio_export = 32'hCA11F00D;
+    if (testname=="attest") attest_loop();
     repeat (20000) begin check_fatal(); handle_non_fatal(); trng_svc(); @(posedge clk); end
     dump();
     $display("SUMMARY ready_for_fuses=%0d fuses_done=%0d first_trng=%0d ready_for_mb_processing=%0d fw_load_issued=%0d mbox_complete=%0d rom_to_fmc=%0d fmc_to_rt=%0d ready_for_runtime=%0d trng_fills=%0d fuse_writes=%0d",

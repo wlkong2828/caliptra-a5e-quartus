@@ -1,0 +1,206 @@
+          0 writing to cptra_bootfsm_go
+    163,944 UART: 
+    163,958 UART: Running Caliptra ROM ...
+    164,316 UART: 
+    164,910 UART: [state] Starting the WD Timer 40000000 cycles
+    166,700 UART: [kat] AES-GCM
+    172,377 UART: [kat] KDF-CMAC
+    179,209 UART: [state] LifecycleState = Production
+    180,071 UART: [state] DebugLocked = Yes
+    180,764 UART: [state] Starting the WD Timer 40000000 cycles
+    182,411 UART: [kat] SHA2-256
+  1,735,285 UART: ROM Digest: AB0AEDDBE4F660DC3CDB6F3221DCE2ADA1F6D0593A403B0B12D9EB5CC5C632EB
+  1,737,589 UART: [kat] ++
+  1,737,723 UART: [kat] sha1
+  1,741,800 UART: [kat] SHA2-256
+  1,743,697 UART: [kat] SHA2-384
+  1,746,427 UART: [kat] SHA2-512
+  1,749,493 UART: [kat] SHA2-512-ACC
+  1,751,357 UART: [kat] SHAKE-256
+  1,752,576 UART: [kat] CSRNG
+  1,752,769 UART: [kat] ECC-384
+  1,765,069 UART: [kat] ECDH
+  1,767,546 UART: [kat] HMAC-384Kdf
+  1,772,348 UART: [kat] HMAC-512Kdf
+  1,777,216 UART: [kat] HKDF-384
+  1,786,867 UART: [kat] HKDF-512
+  1,797,093 UART: [kat] AES-GCM
+  1,802,420 UART: [kat] KDF-CMAC
+  1,806,666 UART: [kat] LMS
+  2,065,651 UART: [kat] MLDSA87
+  2,350,048 UART: [kat] --
+  2,351,063 UART: [cold-reset] ++
+  2,353,473 UART: [idev] ++
+  2,353,621 UART: [idev] CDI.KEYID = 6
+  2,353,946 UART: [idev] ECC SUBJECT.KEYID = 7, MLDSA SUBJECT.KEYID = 8
+  2,354,747 UART: [idev] UDS.KEYID = 0
+  2,355,052 ready_for_fw is high
+  2,355,052 mode passive
+  2,355,052 <<< Executing mbox cmd 0x46574c44 (253440 bytes) from SoC
+  2,363,114 UART: [idev] Erasing UDS.KEYID = 0
+  2,522,286 UART: [idev] Sha1 KeyId Algorithm
+  2,534,785 UART: [idev] Sha1 KeyId Algorithm
+  2,675,936 UART: [idev] --
+  2,683,680 UART: [ldev] ++
+  2,683,828 UART: [ldev] CDI.KEYID = 6
+  2,684,150 UART: [ldev] ECC SUBJECT.KEYID = 5, MLDSA SUBJECT.KEYID = 4
+  2,684,953 UART: [ldev] ECC AUTHORITY.KEYID = 7, MLDSA AUTHORITY.KEYID = 8
+  2,685,840 UART: [ldev] FE.KEYID = 1
+  2,686,224 UART: [ldev] Deriving DOT_STABLE_IDEV.KEYID = 0
+  2,695,529 UART: [ldev] Erasing FE.KEYID = 1
+  2,696,166 UART: [ldev] Deriving DOT_STABLE_LDEV.KEYID = 1
+  2,925,899 UART: [ldev] Signing Cert ECC AUTHORITY.KEYID = 7
+  2,998,274 UART: [ldev] Signing Cert MLDSA AUTHORITY.KEYID = 8
+  3,049,486 UART: [ldev] --
+  3,060,311 UART: [fwproc] Wait for Commands...
+  3,061,433 UART: [fwproc] Recv command 0x46574c44
+  3,062,282 UART: [fwproc] Received Image of size 253440 bytes
+  3,258,876 UART: [fwproc] Img verified ecc=0 MLDSA=0 svn=0 fuse_svn=0
+  3,288,062 UART: [fwproc] Load FMC at address 0x40000000 len 30760
+  3,327,507 UART: [fwproc] Load Runtime at address 0x40008000 len 205516
+  6,196,027 >>> mbox cmd response: success
+  6,196,268 UART: [fwproc] Initializing chain, length 128 (max 128)
+  6,634,440 UART: [fwproc] Chain initialized
+  6,635,217 UART: [afmc] ++
+  6,875,933 UART: [afmc] Signing Cert ECC AUTHORITY.KEYID = 5
+  6,985,694 UART: [afmc] Signing Cert MLDSA AUTHORITY.KEYID = 4
+  7,041,056 UART: [afmc] --
+  7,044,064 UART: [cold-reset] --
+  7,044,940 UART: [state] Locking Datavault
+  7,046,128 UART: [exit] Launching FMC @ 0x40000000
+  7,085,298 UART: 
+  7,085,312 UART: Running Caliptra FMC ...
+  7,085,670 UART: 
+  7,085,708 UART: [state] CFI Enabled
+  7,213,955 UART: [fht] FMC Alias ECC Private Key: 7
+  7,214,662 UART: [fht] FMC Alias MLDSA Key Pair Seed KV Slot: 8
+  7,360,864 UART: [alias rt] Extend RT PCRs
+  7,366,843 UART: [alias rt] Extend RT PCRs Done
+  7,367,285 UART: [alias rt] Lock RT PCRs
+  7,367,633 UART: [alias rt] Lock RT PCRs Done
+  7,368,079 UART: [fht] FMC Alias ECC Private Key: 7
+  7,368,783 UART: [fht] FMC Alias MLDSA Key Pair Seed KV Slot: 8
+  7,498,664 UART: [alias rt] Derive CDI
+  7,498,980 UART: [alias rt] Store it in slot 0x4
+  7,503,799 UART: [alias rt] Derive Key Pair
+  7,504,185 UART: [alias rt] Store ECC priv key in slot 0x5 and MLDSA key pair seed in slot 0x9
+  7,584,701 UART: [alias rt] Derive Key Pair - Done
+  7,714,575 UART: [alias rt] Signing ECC Cert with AUTHORITY.KEYID = 7
+  7,729,503 UART: [alias rt] Locking ECC AUTHORITY.KEYID = 7 & FMC CDI = 6
+  7,730,538 UART: [alias rt] ECC PUB.X = CF505C9B68596A05EFA917724B17BC77B97EC9E6A57A87A68FBEC0B37D558D603856D0A1896612CAE2BC162A7F700C46
+  7,733,615 UART: [alias rt] ECC PUB.Y = 4071E9949EAD01DF9A966393C274690F9C8B7AB96B13CF527289FC8CC6F876B1736BE258B20B4D11497AB20113E1E5D4
+  7,736,849 UART: [alias rt] ECC SIG.R = 7F28F6C959B707A9289EAAA346B8754A19D6E27759BDBC59F943E20CE0B5EFD2F630792DBDFEDF6330B657A7C9B76833
+  7,739,924 UART: [alias rt] ECC SIG.S = B8C629621079904A82573FC8AE831F351FFC401923575AA132845B6D119DB688FAB3B434AFF8E781AA0264E2695C5360
+  7,818,510 UART: [alias rt] Signing MLDSA Cert with AUTHORITY.KEYID = 8
+  7,853,116 UART: [alias rt] Locking MLDSA AUTHORITY.KEYID = 8 & FMC CDI = 6
+  7,883,020 UART: Caliptra RT
+  7,883,223 UART: [kat] AES-ECB
+  7,886,911 UART: [kat] AES-CBC
+  7,891,393 UART: [kat] AES-CTR
+  7,896,390 UART: [kat] AES-CMAC
+  7,900,270 UART: [kat] MLKEM1024
+  8,044,493 UART: [rt] OCP LOCK Unsupported
+  8,395,020 UART: [rt] Disable entropy source
+  8,395,424 UART: [rt] RT listening for mailbox commands...
+  8,396,022 <<< Executing mbox cmd 0x494e464f (4 bytes) from SoC
+  8,397,331 UART: [rt] Received command=0x494e464f (INFO), len=4
+  8,421,077 >>> mbox cmd response data (396 bytes)
+  8,421,078 <<< Executing mbox cmd 0x49444549 (4 bytes) from SoC
+  8,421,806 UART: [rt] Received command=0x49444549 (IDEI), len=4
+  8,443,061 >>> mbox cmd response data (104 bytes)
+  8,443,062 <<< Executing mbox cmd 0x49444d49 (4 bytes) from SoC
+  8,444,124 UART: [rt] Received command=0x49444d49 (IDMI), len=4
+  8,490,245 >>> mbox cmd response data (2600 bytes)
+  8,490,246 <<< Executing mbox cmd 0x4c444556 (4 bytes) from SoC
+  8,491,214 UART: [rt] Received command=0x4c444556 (LDEV), len=4
+  8,518,741 >>> mbox cmd response data (729 bytes)
+  8,518,742 <<< Executing mbox cmd 0x43455246 (4 bytes) from SoC
+  8,519,564 UART: [rt] Received command=0x43455246 (CERF), len=4
+  8,550,080 >>> mbox cmd response data (1052 bytes)
+  8,550,081 <<< Executing mbox cmd 0x43455252 (4 bytes) from SoC
+  8,551,071 UART: [rt] Received command=0x43455252 (CERR), len=4
+  8,579,940 >>> mbox cmd response data (841 bytes)
+  8,579,941 <<< Executing mbox cmd 0x4c444d43 (4 bytes) from SoC
+  8,581,069 UART: [rt] Received command=0x4c444d43 (LDMC), len=4
+  8,710,223 >>> mbox cmd response data (7753 bytes)
+  8,710,224 <<< Executing mbox cmd 0x434d4346 (4 bytes) from SoC
+  8,711,164 UART: [rt] Received command=0x434d4346 (CMCF), len=4
+  8,848,246 >>> mbox cmd response data (8076 bytes)
+  8,848,247 <<< Executing mbox cmd 0x434d4352 (4 bytes) from SoC
+  8,849,075 UART: [rt] Received command=0x434d4352 (CMCR), len=4
+  8,979,005 >>> mbox cmd response data (7865 bytes)
+  8,979,006 <<< Executing mbox cmd 0x50435251 (36 bytes) from SoC
+  8,979,806 UART: [rt] Received command=0x50435251 (PCRQ), len=36
+  9,157,784 >>> mbox cmd response data (1848 bytes)
+  9,157,785 <<< Executing mbox cmd 0x44504543 (20 bytes) from SoC
+  9,158,831 UART: [rt] Received command=0x44504543 (DPEC), len=20
+  9,187,364 >>> mbox cmd response data (44 bytes)
+  9,187,365 <<< Executing mbox cmd 0x44504543 (92 bytes) from SoC
+  9,188,815 UART: [rt] Received command=0x44504543 (DPEC), len=92
+  9,347,828 >>> mbox cmd response data (1160 bytes)
+  9,347,829 <<< Executing mbox cmd 0x4d454153 (108 bytes) from SoC
+  9,349,427 UART: [rt] Received command=0x4d454153 (MEAS), len=108
+  9,390,495 >>> mbox cmd response data (12 bytes)
+  9,390,496 <<< Executing mbox cmd 0x50435251 (36 bytes) from SoC
+  9,391,516 UART: [rt] Received command=0x50435251 (PCRQ), len=36
+  9,569,338 >>> mbox cmd response data (1848 bytes)
+  9,569,339 <<< Executing mbox cmd 0x44504543 (92 bytes) from SoC
+  9,570,977 UART: [rt] Received command=0x44504543 (DPEC), len=92
+  9,741,299 >>> mbox cmd response data (1317 bytes)
+  9,741,300 <<< Executing mbox cmd 0x44504543 (28 bytes) from SoC
+  9,742,414 UART: [rt] Received command=0x44504543 (DPEC), len=28
+  9,789,823 >>> mbox cmd response data (2076 bytes)
+  9,789,824 <<< Executing mbox cmd 0x44504543 (28 bytes) from SoC
+  9,791,008 UART: [rt] Received command=0x44504543 (DPEC), len=28
+  9,837,102 >>> mbox cmd response data (2076 bytes)
+  9,837,103 <<< Executing mbox cmd 0x4450454d (36 bytes) from SoC
+  9,838,233 UART: [rt] Received command=0x4450454d (DPEM), len=36
+ 10,055,959 >>> mbox cmd response data (44 bytes)
+ 10,055,960 <<< Executing mbox cmd 0x4450454d (108 bytes) from SoC
+ 10,057,624 UART: [rt] Received command=0x4450454d (DPEM), len=108
+ 10,728,647 >>> mbox cmd response data (10835 bytes)
+ 10,728,648 <<< Executing mbox cmd 0x4450454d (44 bytes) from SoC
+ 10,729,734 UART: [rt] Received command=0x4450454d (DPEM), len=44
+ 10,966,896 >>> mbox cmd response data (2076 bytes)
+ 10,966,897 <<< Executing mbox cmd 0x4450454d (44 bytes) from SoC
+ 10,967,959 UART: [rt] Received command=0x4450454d (DPEM), len=44
+ 11,203,917 >>> mbox cmd response data (2076 bytes)
+ 11,203,918 <<< Executing mbox cmd 0x4450454d (44 bytes) from SoC
+ 11,205,394 UART: [rt] Received command=0x4450454d (DPEM), len=44
+ 11,442,601 >>> mbox cmd response data (2076 bytes)
+ 11,442,602 <<< Executing mbox cmd 0x4450454d (44 bytes) from SoC
+ 11,443,468 UART: [rt] Received command=0x4450454d (DPEM), len=44
+ 11,680,103 >>> mbox cmd response data (2076 bytes)
+ 11,680,104 <<< Executing mbox cmd 0x4450454d (44 bytes) from SoC
+ 11,681,500 UART: [rt] Received command=0x4450454d (DPEM), len=44
+ 11,918,344 >>> mbox cmd response data (2076 bytes)
+ 11,918,345 <<< Executing mbox cmd 0x4450454d (44 bytes) from SoC
+ 11,919,659 UART: [rt] Received command=0x4450454d (DPEM), len=44
+ 12,156,449 >>> mbox cmd response data (2076 bytes)
+ 12,156,450 <<< Executing mbox cmd 0x4450454d (44 bytes) from SoC
+ 12,157,306 UART: [rt] Received command=0x4450454d (DPEM), len=44
+ 12,393,473 >>> mbox cmd response data (2076 bytes)
+ 12,393,474 <<< Executing mbox cmd 0x4450454d (44 bytes) from SoC
+ 12,394,834 UART: [rt] Received command=0x4450454d (DPEM), len=44
+ 12,631,726 >>> mbox cmd response data (2076 bytes)
+ 12,631,727 <<< Executing mbox cmd 0x4450454d (44 bytes) from SoC
+ 12,632,703 UART: [rt] Received command=0x4450454d (DPEM), len=44
+ 12,869,763 >>> mbox cmd response data (2076 bytes)
+ 12,869,764 <<< Executing mbox cmd 0x4450454d (44 bytes) from SoC
+ 12,870,922 UART: [rt] Received command=0x4450454d (DPEM), len=44
+ 13,108,085 >>> mbox cmd response data (2076 bytes)
+ 13,108,086 <<< Executing mbox cmd 0x4450454d (44 bytes) from SoC
+ 13,109,216 UART: [rt] Received command=0x4450454d (DPEM), len=44
+ 13,345,965 >>> mbox cmd response data (2076 bytes)
+ 13,345,966 <<< Executing mbox cmd 0x4450454d (44 bytes) from SoC
+ 13,347,132 UART: [rt] Received command=0x4450454d (DPEM), len=44
+ 13,582,830 >>> mbox cmd response data (2076 bytes)
+ 13,582,831 <<< Executing mbox cmd 0x5043524d (36 bytes) from SoC
+ 13,584,219 UART: [rt] Received command=0x5043524d (PCRM), len=36
+ 13,813,244 >>> mbox cmd response data (6396 bytes)
+ 13,813,245 <<< Executing mbox cmd 0x49444543 (565 bytes) from SoC
+ 13,816,824 UART: [rt] Received command=0x49444543 (IDEC), len=565
+ 13,845,425 >>> mbox cmd response data (595 bytes)
+ 13,845,426 <<< Executing mbox cmd 0x49444d43 (7455 bytes) from SoC
+ 13,883,623 UART: [rt] Received command=0x49444d43 (IDMC), len=7455
+ 14,002,445 >>> mbox cmd response data (7480 bytes)

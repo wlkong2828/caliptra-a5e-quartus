@@ -1,0 +1,45 @@
+Certificate:
+    Data:
+        Version: 3 (0x2)
+        Serial Number:
+            1f:84:10:80:77:7d:c4:dc:b5:3e:cc:49:b9:d2:ed:f8:3d:06:61:48
+        Signature Algorithm: ecdsa-with-SHA384
+        Issuer: CN=Caliptra 2.1 Ecc384 IDevID, serialNumber=465F26802558F7C19B96BED12F96C3A8EDFC0D5046793CDD89339F2B92F54880
+        Validity
+            Not Before: Jan  1 00:00:00 2023 GMT
+            Not After : Dec 31 23:59:59 9999 GMT
+        Subject: CN=Caliptra 2.1 Ecc384 LDevID, serialNumber=1F841080777DC4DCB53ECC49B9D2EDF83D06614881DA450B455B01291BCFE791
+        Subject Public Key Info:
+            Public Key Algorithm: id-ecPublicKey
+                Public-Key: (384 bit)
+                pub:
+                    04:cf:e3:13:fd:b4:5f:6b:09:53:5e:44:fe:ae:4c:
+                    ee:f1:5f:3a:d2:15:4e:d8:0b:f9:11:70:f7:f8:32:
+                    76:c3:f1:30:ca:ce:04:25:1a:4e:d7:29:84:ec:a7:
+                    bc:51:df:2e:38:6b:52:b7:56:ad:ed:b9:1d:fb:fd:
+                    fc:18:eb:c0:69:b7:55:c5:db:9a:f3:39:f3:e6:af:
+                    71:75:cd:98:34:e2:1f:01:b5:d6:79:1d:2e:88:cb:
+                    9e:03:ff:03:d5:81:59
+                ASN1 OID: secp384r1
+                NIST CURVE: P-384
+        X509v3 extensions:
+            X509v3 Basic Constraints: critical
+                CA:TRUE, pathlen:6
+            X509v3 Key Usage: critical
+                Certificate Sign
+            2.23.133.5.4.4: 
+                0....................
+            X509v3 Extended Key Usage: 
+                2.23.133.5.4.100.7, 2.23.133.5.4.100.12
+            X509v3 Subject Key Identifier: 
+                1F:84:10:80:77:7D:C4:DC:B5:3E:CC:49:B9:D2:ED:F8:3D:06:61:48
+            X509v3 Authority Key Identifier: 
+                B6:5D:CB:FD:F2:AE:91:E9:DF:FC:0E:E7:B6:95:A7:BD:A0:EE:7E:8C
+    Signature Algorithm: ecdsa-with-SHA384
+    Signature Value:
+        30:65:02:31:00:cd:ab:ef:84:a4:56:2f:78:4b:58:bb:a3:f3:
+        27:07:2a:ae:d0:dd:fa:d0:d1:78:71:50:af:13:54:5d:eb:a9:
+        ef:5a:d0:a0:bb:1f:37:32:8f:b7:c3:8a:ca:6e:23:23:c9:02:
+        30:42:99:2f:35:9a:6f:31:e5:67:71:88:9f:20:62:9d:1a:f9:
+        37:b5:a8:56:2d:8a:ae:25:2b:e5:8a:89:cc:a1:e8:ac:a1:9b:
+        93:cf:e0:3a:8f:e2:44:a3:a6:48:02:2a:1e

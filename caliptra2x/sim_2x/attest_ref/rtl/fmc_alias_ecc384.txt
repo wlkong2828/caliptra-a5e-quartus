@@ -1,0 +1,48 @@
+Certificate:
+    Data:
+        Version: 3 (0x2)
+        Serial Number:
+            4f:64:c9:dd:e9:1a:b6:a5:55:13:9a:29:c1:5f:24:b3:b1:0e:e0:fb
+        Signature Algorithm: ecdsa-with-SHA384
+        Issuer: CN=Caliptra 2.1 Ecc384 LDevID, serialNumber=1F841080777DC4DCB53ECC49B9D2EDF83D06614881DA450B455B01291BCFE791
+        Validity
+            Not Before: Jan  1 00:00:00 2023 GMT
+            Not After : Dec 31 23:59:59 9999 GMT
+        Subject: CN=Caliptra 2.1 Ecc384 FMC Alias, serialNumber=CF64C9DDE91AB6A555139A29C15F24B3B10EE0FB38BAD3D9B90C690EEA7821C7
+        Subject Public Key Info:
+            Public Key Algorithm: id-ecPublicKey
+                Public-Key: (384 bit)
+                pub:
+                    04:6d:85:09:2f:5b:2b:61:e9:4f:70:8a:c5:70:0e:
+                    ca:6f:89:22:fb:3f:1b:9a:41:e7:37:c9:1e:f0:bd:
+                    b9:c0:88:ec:5f:85:8e:e5:ff:d0:88:20:6a:89:fa:
+                    b9:70:4b:1d:1d:63:84:3c:ce:06:c3:fb:26:36:f8:
+                    22:66:50:7c:c7:57:0c:25:fd:aa:02:43:aa:c7:0b:
+                    f2:b0:fb:1b:ce:0b:91:b7:61:09:2d:0a:2d:ee:04:
+                    65:dd:5a:dd:59:1d:17
+                ASN1 OID: secp384r1
+                NIST CURVE: P-384
+        X509v3 extensions:
+            X509v3 Basic Constraints: critical
+                CA:TRUE, pathlen:5
+            X509v3 Key Usage: critical
+                Certificate Sign
+            2.23.133.5.4.4: 
+                0....................
+            X509v3 Extended Key Usage: 
+                2.23.133.5.4.100.12, 2.23.133.5.4.100.9
+            2.23.133.5.4.5: 
+                0..*0_.?0=..`.H.e.....0..2....[Q...............j.@G.8..wm=...}..\.nr_K...CALIPTRA_2_X_FUSE_OWNER_INFO0`.?0=..`.H.e.....0.*..".T.{.......7...r.
+.n...'$....V:..e..Q........CALIPTRA_2_X_FUSE_VENDOR_INFO0e.....?0=..`.H.e.....0...Ij..bZ:.)...3.w....T.x...>..f..G8HZ4..w....o...CALIPTRA_2_X_FMC_FIRMWARE_INFO
+            X509v3 Subject Key Identifier: 
+                CF:64:C9:DD:E9:1A:B6:A5:55:13:9A:29:C1:5F:24:B3:B1:0E:E0:FB
+            X509v3 Authority Key Identifier: 
+                1F:84:10:80:77:7D:C4:DC:B5:3E:CC:49:B9:D2:ED:F8:3D:06:61:48
+    Signature Algorithm: ecdsa-with-SHA384
+    Signature Value:
+        30:65:02:30:50:27:92:88:80:38:de:c9:88:17:f6:6a:e6:51:
+        ed:4c:5d:f8:71:b4:cb:68:36:57:7a:e8:9d:e0:ca:93:92:38:
+        eb:f5:72:a8:44:b6:e1:f7:9a:02:66:11:92:cd:1d:24:02:31:
+        00:c0:f0:70:10:db:e2:75:6f:90:49:34:72:24:a9:9a:20:8d:
+        cc:44:23:05:00:e1:fc:a1:fe:2a:bb:14:aa:34:96:ab:31:7c:
+        af:57:38:1b:d4:f1:02:ad:5c:c0:db:c6:bb

@@ -1,0 +1,105 @@
+[driver] req 000 FW_INFO                      cmd=494e464f dlen=4
+[driver]   -> status=1 len=396 fwerr=00000000 chk=True (4657.9s)
+[driver] req 001 GET_IDEV_ECC384_INFO         cmd=49444549 dlen=4
+[driver]   -> status=1 len=104 fwerr=00000000 chk=True (4.2s)
+[driver] req 002 GET_IDEV_MLDSA87_INFO        cmd=49444d49 dlen=4
+[driver]   -> status=1 len=2600 fwerr=00000000 chk=True (7.2s)
+[driver] req 003 ldevid_ecc384                cmd=4c444556 dlen=4
+[driver]   -> status=1 len=729 fwerr=00000000 chk=True (5.2s)
+[driver]   saved ldevid_ecc384.der (717 B)
+[driver] req 004 fmc_alias_ecc384             cmd=43455246 dlen=4
+[driver]   -> status=1 len=1052 fwerr=00000000 chk=True (5.7s)
+[driver]   saved fmc_alias_ecc384.der (1040 B)
+[driver] req 005 rt_alias_ecc384              cmd=43455252 dlen=4
+[driver]   -> status=1 len=841 fwerr=00000000 chk=True (5.2s)
+[driver]   saved rt_alias_ecc384.der (829 B)
+[driver] req 006 ldevid_mldsa87               cmd=4c444d43 dlen=4
+[driver]   -> status=1 len=7753 fwerr=00000000 chk=True (17.2s)
+[driver]   saved ldevid_mldsa87.der (7741 B)
+[driver] req 007 fmc_alias_mldsa87            cmd=434d4346 dlen=4
+[driver]   -> status=1 len=8076 fwerr=00000000 chk=True (17.7s)
+[driver]   saved fmc_alias_mldsa87.der (8064 B)
+[driver] req 008 rt_alias_mldsa87             cmd=434d4352 dlen=4
+[driver]   -> status=1 len=7865 fwerr=00000000 chk=True (17.2s)
+[driver]   saved rt_alias_mldsa87.der (7853 B)
+[driver] req 009 QUOTE_PCRS_ECC_before        cmd=50435251 dlen=36
+[driver]   -> status=1 len=1848 fwerr=00000000 chk=True (97.2s)
+[driver] req 010 DPE_ECC_GET_PROFILE          cmd=44504543 dlen=20
+[driver]   -> status=1 len=44 fwerr=00000000 chk=True (4.7s)
+[driver]   DPE resp magic=44504552 status=00000000 profile=4
+[driver] req 011 DPE_ECC_CERTIFY_KEY_before   cmd=44504543 dlen=92
+[driver]   -> status=1 len=1160 fwerr=00000000 chk=True (619.8s)
+[driver]   DPE resp magic=44504552 status=00000000 profile=4
+[driver]   saved dpe_ecc_leaf_before.der (1020 B)
+[driver] req 012 STASH_MEASUREMENT            cmd=4d454153 dlen=108
+[driver]   -> status=1 len=12 fwerr=00000000 chk=True (5.7s)
+[driver] req 013 QUOTE_PCRS_ECC_after         cmd=50435251 dlen=36
+[driver]   -> status=1 len=1848 fwerr=00000000 chk=True (97.7s)
+[driver] req 014 DPE_ECC_CERTIFY_KEY_after    cmd=44504543 dlen=92
+[driver]   -> status=1 len=1317 fwerr=00000000 chk=True (3529.8s)
+[driver]   DPE resp magic=44504552 status=00000000 profile=4
+[driver]   saved dpe_ecc_leaf_after.der (1177 B)
+[driver] req 015 DPE_ECC_GET_CERT_CHAIN_0     cmd=44504543 dlen=28
+[driver]   -> status=1 len=2076 fwerr=00000000 chk=True (7.7s)
+[driver]   DPE resp magic=44504552 status=00000000 profile=4
+[driver] req 016 DPE_ECC_GET_CERT_CHAIN_2048  cmd=44504543 dlen=28
+[driver]   -> status=1 len=2076 fwerr=00000000 chk=True (7.2s)
+[driver]   DPE resp magic=44504552 status=00000000 profile=4
+[driver]   saved dpe_ecc_chain_0.der (717 B)
+[driver]   saved dpe_ecc_chain_1.der (1040 B)
+[driver]   saved dpe_ecc_chain_2.der (829 B)
+[driver] req 017 DPE_MLDSA_GET_PROFILE        cmd=4450454d dlen=36
+[driver]   -> status=1 len=44 fwerr=00000000 chk=True (78.7s)
+[driver]   DPE resp magic=44504552 status=00000000 profile=5
+[driver] req 018 DPE_MLDSA_CERTIFY_KEY_after  cmd=4450454d dlen=108
+[driver]   -> status=1 len=10835 fwerr=00000000 chk=True (148.3s)
+[driver]   DPE resp magic=44504552 status=00000000 profile=5
+[driver]   saved dpe_mldsa_leaf_after.der (8199 B)
+[driver] req 019 DPE_MLDSA_GET_CERT_CHAIN_0   cmd=4450454d dlen=44
+[driver]   -> status=1 len=2076 fwerr=00000000 chk=True (71.7s)
+[driver]   DPE resp magic=44504552 status=00000000 profile=5
+[driver] req 020 DPE_MLDSA_GET_CERT_CHAIN_2048 cmd=4450454d dlen=44
+[driver]   -> status=1 len=2076 fwerr=00000000 chk=True (72.7s)
+[driver]   DPE resp magic=44504552 status=00000000 profile=5
+[driver] req 021 DPE_MLDSA_GET_CERT_CHAIN_4096 cmd=4450454d dlen=44
+[driver]   -> status=1 len=2076 fwerr=00000000 chk=True (74.2s)
+[driver]   DPE resp magic=44504552 status=00000000 profile=5
+[driver] req 022 DPE_MLDSA_GET_CERT_CHAIN_6144 cmd=4450454d dlen=44
+[driver]   -> status=1 len=2076 fwerr=00000000 chk=True (74.7s)
+[driver]   DPE resp magic=44504552 status=00000000 profile=5
+[driver] req 023 DPE_MLDSA_GET_CERT_CHAIN_8192 cmd=4450454d dlen=44
+[driver]   -> status=1 len=2076 fwerr=00000000 chk=True (73.2s)
+[driver]   DPE resp magic=44504552 status=00000000 profile=5
+[driver] req 024 DPE_MLDSA_GET_CERT_CHAIN_10240 cmd=4450454d dlen=44
+[driver]   -> status=1 len=2076 fwerr=00000000 chk=True (74.7s)
+[driver]   DPE resp magic=44504552 status=00000000 profile=5
+[driver] req 025 DPE_MLDSA_GET_CERT_CHAIN_12288 cmd=4450454d dlen=44
+[driver]   -> status=1 len=2076 fwerr=00000000 chk=True (72.2s)
+[driver]   DPE resp magic=44504552 status=00000000 profile=5
+[driver] req 026 DPE_MLDSA_GET_CERT_CHAIN_14336 cmd=4450454d dlen=44
+[driver]   -> status=1 len=2076 fwerr=00000000 chk=True (72.2s)
+[driver]   DPE resp magic=44504552 status=00000000 profile=5
+[driver] req 027 DPE_MLDSA_GET_CERT_CHAIN_16384 cmd=4450454d dlen=44
+[driver]   -> status=1 len=2076 fwerr=00000000 chk=True (72.2s)
+[driver]   DPE resp magic=44504552 status=00000000 profile=5
+[driver] req 028 DPE_MLDSA_GET_CERT_CHAIN_18432 cmd=4450454d dlen=44
+[driver]   -> status=1 len=2076 fwerr=00000000 chk=True (70.7s)
+[driver]   DPE resp magic=44504552 status=00000000 profile=5
+[driver] req 029 DPE_MLDSA_GET_CERT_CHAIN_20480 cmd=4450454d dlen=44
+[driver]   -> status=1 len=2076 fwerr=00000000 chk=True (71.7s)
+[driver]   DPE resp magic=44504552 status=00000000 profile=5
+[driver] req 030 DPE_MLDSA_GET_CERT_CHAIN_22528 cmd=4450454d dlen=44
+[driver]   -> status=1 len=2076 fwerr=00000000 chk=True (73.7s)
+[driver]   DPE resp magic=44504552 status=00000000 profile=5
+[driver]   saved dpe_mldsa_chain_0.der (7741 B)
+[driver]   saved dpe_mldsa_chain_1.der (8064 B)
+[driver]   saved dpe_mldsa_chain_2.der (7853 B)
+[driver] req 031 QUOTE_PCRS_MLDSA_after       cmd=5043524d dlen=36
+[driver]   -> status=1 len=6396 fwerr=00000000 chk=True (60.2s)
+[driver] req 032 GET_IDEV_ECC384_CERT         cmd=49444543 dlen=565
+[driver]   -> status=1 len=595 fwerr=00000000 chk=True (6.2s)
+[driver]   saved idevid_ecc384.der (583 B)
+[driver] req 033 GET_IDEV_MLDSA87_CERT        cmd=49444d43 dlen=7455
+[driver]   -> status=1 len=7480 fwerr=00000000 chk=True (26.7s)
+[driver]   saved idevid_mldsa87.der (7468 B)
+[driver] done, 34 commands

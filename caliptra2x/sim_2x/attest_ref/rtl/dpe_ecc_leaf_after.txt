@@ -1,0 +1,46 @@
+Certificate:
+    Data:
+        Version: 3 (0x2)
+        Serial Number:
+            46:31:39:30:42:41:38:32:38:34:44:41:34:39:39:30:45:46:44:34
+        Signature Algorithm: ecdsa-with-SHA384
+        Issuer: CN=Caliptra 2.1 Ecc384 Rt Alias, serialNumber=E61EC4C252064A0AF7A10408DDD6D291F9F1666A5C24E76F4522F2B911F86627
+        Validity
+            Not Before: Jan  1 00:00:00 2023 GMT
+            Not After : Dec 31 23:59:59 9999 GMT
+        Subject: CN=DPE Leaf, serialNumber=F190BA8284DA4990EFD45F7E1BD69660FD09E8A7EAB0ADB8D39E76589ECDAC28
+        Subject Public Key Info:
+            Public Key Algorithm: id-ecPublicKey
+                Public-Key: (384 bit)
+                pub:
+                    04:1f:4e:39:a0:74:d4:57:6c:3a:45:2d:4d:e0:43:
+                    f7:19:5f:c9:63:28:94:b8:fb:df:74:fc:86:e1:3f:
+                    17:23:ed:c0:5e:43:07:32:48:ee:a7:81:1e:ee:7d:
+                    ae:a1:77:65:6a:65:96:e1:52:72:98:95:da:07:59:
+                    3e:d6:6f:18:c9:d1:5c:f3:1d:65:13:7a:4c:b6:26:
+                    c6:05:bf:69:65:cc:30:a1:d9:1a:0e:59:5c:f8:79:
+                    ae:7a:25:51:18:c9:dd
+                ASN1 OID: secp384r1
+                NIST CURVE: P-384
+        X509v3 extensions:
+            2.23.133.5.4.5: 
+                0...0......?0=..`.H.e.....0....5....~3..:.=Q...q....CX...{.I.I........ic.A........RMTR.F0D....?0=..`.H.e.....0....5....~3..:.=Q...q....CX...{.I.I........ic.A0......?0=..`.H.e.....0...O......&..L..IK....,.E.Z.G...?.};(cB} ..'..r.........VICC.F0D....?0=..`.H.e.....0u3tm...k(X..Ae.P":{i..&/~*.}..hci)...UOohH.j..x.0......?0=..`.H.e.....0...(.....~ 0ksVg.^...6.P........pS"...dR^...(.w........NIOS.F0D....?0=..`.H.e.....0...D-d.j..T.`fE<AS.1
+.Zl...!.'........;....i+r..
+            2.23.133.5.4.4: 
+                02.0..W2.!...t..A.j.uJ..r;.TUl]}.K...`.......j.$..N.
+            X509v3 Basic Constraints: critical
+                CA:FALSE
+            X509v3 Key Usage: critical
+                Digital Signature
+            X509v3 Extended Key Usage: critical
+                2.23.133.5.4.100.9
+            X509v3 Authority Key Identifier: 
+                E6:1E:C4:C2:52:06:4A:0A:F7:A1:04:08:DD:D6:D2:91:F9:F1:66:6A
+    Signature Algorithm: ecdsa-with-SHA384
+    Signature Value:
+        30:66:02:31:00:a8:8c:9a:dd:63:86:d6:0c:2b:37:5d:72:4d:
+        59:05:6c:d6:d8:bd:87:18:23:c4:d9:21:54:4b:c9:43:32:2e:
+        83:a4:bb:0f:fa:8f:28:19:c0:21:76:fe:79:33:1e:93:41:02:
+        31:00:b7:42:5f:88:ff:7d:47:c4:40:cd:c4:49:12:c0:82:6d:
+        e3:30:03:58:83:10:bc:a2:3e:bd:30:95:91:4b:e8:12:f6:ef:
+        b5:0e:9c:da:d2:f1:e9:6a:c8:32:88:cb:c4:d3

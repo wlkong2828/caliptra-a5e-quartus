@@ -1,0 +1,45 @@
+Certificate:
+    Data:
+        Version: 3 (0x2)
+        Serial Number:
+            37:34:36:38:44:43:32:44:41:30:39:35:43:36:33:31:34:33:45:36
+        Signature Algorithm: ecdsa-with-SHA384
+        Issuer: CN=Caliptra 2.1 Ecc384 Rt Alias, serialNumber=E61EC4C252064A0AF7A10408DDD6D291F9F1666A5C24E76F4522F2B911F86627
+        Validity
+            Not Before: Jan  1 00:00:00 2023 GMT
+            Not After : Dec 31 23:59:59 9999 GMT
+        Subject: CN=DPE Leaf, serialNumber=7468DC2DA095C63143E6B199B4D63314C6177338C8CD7716D2E9FE8F4F97A8D8
+        Subject Public Key Info:
+            Public Key Algorithm: id-ecPublicKey
+                Public-Key: (384 bit)
+                pub:
+                    04:63:55:81:b4:24:0a:fc:83:8e:e3:1a:f8:26:1b:
+                    0e:22:2d:8a:3a:c2:7d:3a:b3:2f:f8:92:e4:5e:6a:
+                    da:ba:d9:0f:19:2e:ca:23:cd:23:3a:ab:43:81:2f:
+                    dc:b2:c3:90:bc:30:01:0b:19:fc:06:07:e2:d7:62:
+                    42:d5:13:89:49:8b:d4:e9:19:07:b1:ac:f1:cd:a3:
+                    aa:77:42:a1:67:1d:05:89:82:d8:bd:4b:76:21:de:
+                    9f:14:fc:89:87:41:5c
+                ASN1 OID: secp384r1
+                NIST CURVE: P-384
+        X509v3 extensions:
+            2.23.133.5.4.5: 
+                0..60......?0=..`.H.e.....0....5....~3..:.=Q...q....CX...{.I.I........ic.A........RMTR.F0D....?0=..`.H.e.....0....5....~3..:.=Q...q....CX...{.I.I........ic.A0......?0=..`.H.e.....0...O......&..L..IK....,.E.Z.G...?.};(cB} ..'..r.........VICC.F0D....?0=..`.H.e.....0u3tm...k(X..Ae.P":{i..&/~*.}..hci)...UOohH.j..x.
+            2.23.133.5.4.4: 
+                02.0..W2.!...t..A.j.uJ..r;.TUl]}.K...`.......j.$..N.
+            X509v3 Basic Constraints: critical
+                CA:FALSE
+            X509v3 Key Usage: critical
+                Digital Signature
+            X509v3 Extended Key Usage: critical
+                2.23.133.5.4.100.9
+            X509v3 Authority Key Identifier: 
+                E6:1E:C4:C2:52:06:4A:0A:F7:A1:04:08:DD:D6:D2:91:F9:F1:66:6A
+    Signature Algorithm: ecdsa-with-SHA384
+    Signature Value:
+        30:64:02:30:7f:ab:f2:2c:6b:48:d8:19:5f:9d:e4:65:ef:c0:
+        33:0e:f4:44:74:bb:1e:06:0a:cd:d2:a7:fc:ac:e7:e4:69:ef:
+        07:76:90:90:64:11:15:cb:27:29:0a:53:62:20:42:45:02:30:
+        3f:ca:23:a6:1e:2e:ea:f8:d1:8d:d1:b6:ea:72:f0:01:2a:5d:
+        dd:94:15:a2:c7:20:3a:3c:3f:63:39:28:5e:bc:65:4d:ea:48:
+        3d:88:86:63:b5:8a:da:8a:cc:6c:e6:3f

@@ -1,0 +1,1 @@
+emu_backend_wall_s≈25 (boot to ready_for_runtime + 34 commands, sw-emulator, release build)

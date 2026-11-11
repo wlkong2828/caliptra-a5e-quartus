@@ -1,0 +1,5 @@
+[v3]
+basicConstraints=critical,CA:TRUE
+keyUsage=critical,keyCertSign
+subjectKeyIdentifier=B6:5D:CB:FD:F2:AE:91:E9:DF:FC:0E:E7:B6:95:A7:BD:A0:EE:7E:8C
+authorityKeyIdentifier=keyid

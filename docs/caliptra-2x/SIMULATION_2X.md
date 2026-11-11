@@ -9,6 +9,7 @@
 
 - **Scope:** Verilator simulation of the **real** 2.x glue RTL (`caliptra2x/rtl_2x/`) around caliptra-rtl v2.1.2 (`49370266`) core-only. It runs the real ROM `rom-2.1.3-1` and the real FW bundle `fw-2.1.4` (FMC + runtime), and boots from cold power-on to `ready_for_runtime`.
 - **Result:** **PASS**: `TB_NIOS2X PASS cyc=36617987 trng=217 (prod, debug locked)`.
+- **Attestation and DPE:** `+test=attest` continues after `ready_for_runtime` with 34 runtime mailbox commands (DICE cert chain, `STASH_MEASUREMENT`, PCR quotes, DPE GetProfile/CertifyKey/GetCertificateChain): **PASS** at cycle 59,280,395, certificates byte-identical to the sw-emulator. See [§8](#8-rom-boot-firmware-load-attestation-and-dpe-in-simulation).
 - **Related:** [NIOS_CALIPTRA_2X_INTEGRATION.md](NIOS_CALIPTRA_2X_INTEGRATION.md) (design), [FIRMWARE_AND_KEYS_2X.md](FIRMWARE_AND_KEYS_2X.md) (ROM, bundle, fuse image). The raw record is in `caliptra2x/sim_2x/BOOT_NIOS2X.md` and `caliptra2x/sim_2x/nios2x_top_fw_run.log`.
 
 ---
@@ -68,6 +69,7 @@ grep -E 'MILESTONE|PASS|FAIL|TIMEOUT' nios2x_top_fw_run.log
 | `BUILD` | `1` | `0` skips the Verilator build |
 | `THREADS` | `4` | Verilator `--threads` |
 | `VERILATOR_BIN` | unset | Directory prepended to `PATH` if set; otherwise `verilator` from `PATH` |
+| `LOG` | `nios2x_top_fw_run.log` | Sim log file name (the attestation flow uses `LOG=attest_run.log`) |
 
 - The script runs the binary under `stdbuf -oL -eL`, so the log is line-buffered and `tail -f` works. When the run ends, it appends `wall_time_s=<s> end <date>`.
 - **Measured costs** on this box:
@@ -81,6 +83,8 @@ grep -E 'MILESTONE|PASS|FAIL|TIMEOUT' nios2x_top_fw_run.log
 | `+test=axiuser` | — | Cold release, `ready_for_fuses`, AxUSER programming, then the AxUSER checks (§4.1), then `$finish`. Takes a few hundred cycles |
 | `+test=prod` | — | Cold boot to `ready_for_runtime` **without** the AxUSER checks |
 | `+test=all` | **default** | AxUSER checks, then the prod cold boot. **Not** a multi-boot suite: there is no warm or fatal second boot, unlike 1.x `+test=all` |
+| `+test=attest` | — | Prod cold boot, then the file-driven runtime mailbox loop for `attest/attest_driver.py` (§8) |
+| `+attest_dir=DIR` | `attest_out/rtl` | Folder for the `req_NNN.hex` / `resp_NNN.hex` protocol files (`+test=attest`) |
 | `+max_cycles=N` | 300,000,000 | Prints `TB_NIOS2X TIMEOUT magic=… trng=…` and stops |
 | `+hb=N` | 1,000,000 | Heartbeat line period: `[cyc] heartbeat status=<pio[7:0]> trng=<n>` |
 
@@ -181,7 +185,7 @@ Environment:
 
 **Final dump:** `CPTRA_BOOT_STATUS=00000000`, `CPTRA_FLOW_STATUS=b8000000`, `HW_ERROR_FATAL = FW_ERROR_FATAL = HW_ERROR_NON_FATAL = FW_ERROR_NON_FATAL = 00000000`.
 
-**Not covered by this run:** warm reset (START_DONE), fatal-error pwrgood recovery, mailbox commands after runtime, the real Nios V / PD interconnect, and the A5E Reset Release IP model.
+**Not covered by this run:** warm reset (START_DONE), fatal-error pwrgood recovery, mailbox commands after runtime (see §8 for the `+test=attest` run that covers them), the real Nios V / PD interconnect, and the A5E Reset Release IP model.
 
 ---
 
@@ -224,3 +228,179 @@ The 1.x project's waveform flow (FST + GTKWave screenshots) is in the 1.x repo h
 | Link: `undefined reference to 'pthread_create'` / `pthread_setaffinity_np` in `verilated_threads.o` | Site Verilator configured without `CFG_LDLIBS_THREADS`. `scripts/verilator_cflags.sh` now adds `-CFLAGS -pthread -LDFLAGS -pthread -LDFLAGS -lpthread` (disable with `VERILATOR_PTHREAD_FIX=0`). `git pull`, `rm -rf obj_nios2x`, rebuild |
 | Build: `decompress_top.sv:84: Assignment pattern missed initializing elements: 4` | Old copy of `patches/decompress_top.sv` from before `bc3a381`; `git pull` and rebuild |
 | `TIMEOUT` with no progress | Check heartbeats (`status=` bits) and `trng=` count; the run is long (≈ 36.6 M cycles) |
+
+---
+
+## 8. ROM boot, firmware load, attestation and DPE in simulation
+
+This flow runs the same cold boot as §3 (real ROM `rom-2.1.3-1`, real FW bundle `fw-2.1.4`, production straps, debug locked), then keeps the runtime alive and acts as the Nios host: it sends **34 runtime mailbox commands** that dump the full DICE certificate chain, stash a Nios measurement, quote the PCRs and drive DPE. It is the `+test=attest` mode of `tb_nios2x_top_fw.sv`. The detailed record (command payloads, certificate decode, measurement path) is [`caliptra2x/sim_2x/ATTEST_2X.md`](../../caliptra2x/sim_2x/ATTEST_2X.md).
+
+**Reference result (RTL, Verilator 5.054, 2026-11-10):** `TB_NIOS2X PASS cyc=59280395 trng=379 (prod, debug locked)`. All 34 commands returned `DATA_READY` with `fwerr=00000000` and a valid checksum. Every certificate is **byte-identical** to the caliptra-sw sw-emulator run, and both the ECC P-384 and ML-DSA-87 chains verify strictly with `openssl verify` up to a TEST manufacturing CA.
+
+### 8.1 How it works
+
+```mermaid
+sequenceDiagram
+  participant D as attest_driver.py
+  participant F as attest_out/rtl/ (files)
+  participant TB as tb_nios2x_top_fw (Nios host model)
+  participant C as Caliptra 2.x (ROM, FMC, RT)
+  TB->>C: fuses via soc_fuse_ctrl2x, TRNG, FIRMWARE_LOAD (253,440 B)
+  C-->>TB: ready_for_runtime (cycle ~36.6 M)
+  D->>F: req_000.hex (cmd, dlen, dwords incl. checksum)
+  TB->>F: poll req_NNN.hex every 20,000 cycles
+  TB->>C: MBOX_LOCK, CMD, DLEN, DATAIN..., EXECUTE=1
+  C-->>TB: MBOX_STATUS DATA_READY, DLEN, DATAOUT...
+  TB->>F: resp_NNN.hex + resp_NNN.done (completion cycle)
+  D->>F: parse, save certs (.der/.pem/.txt), next request
+  D->>F: req_034.hex = cmd 0 (end)
+  TB-->>TB: 20,000 idle cycles, SUMMARY, TB_NIOS2X PASS
+```
+
+- The testbench and the Python driver talk through files in `+attest_dir` (default `attest_out/rtl`, relative to `caliptra2x/sim_2x/`). The driver builds every request (header checksum `0 − Σ bytes`, DPE packets, IDevID TBS) and decodes every response. The TB only does the Nios register sequence, so the same driver also runs against the sw-emulator (`attest/emu/attest_emu.rs`).
+- Start the driver together with the sim. It waits for `resp_NNN.done` (up to 6 h per command), and it deletes stale `req_*`/`resp_*` files from an earlier run when it starts.
+- The TB keeps servicing `etrng_req` (TRNG) and checking `cptra_error_fatal` while it waits.
+
+### 8.2 Prerequisites
+
+| Item | Requirement |
+|---|---|
+| Sources | Repo clone with `external/caliptra-rtl-2x` fetched (`scripts/fetch_deps.sh` or `scripts/get_caliptra_a5e.sh`) |
+| Verilator | **≥ 5.040** (reference run: 5.054). Site 5.040 builds need the `scripts/verilator_cflags.sh` fixes (PCH `-include`, `-pthread`), which the run script applies automatically (§7) |
+| C++ compiler | GCC ≥ 13 or clang as is. **GCC 10–12: `-fcoroutines`** (added automatically when `${CXX:-c++}` is GCC 10–12; force it with `VERILATOR_CFLAGS=-fcoroutines`, e.g. when Verilator uses `/usr/intel/bin/c++` = GCC 12.2) |
+| Python | Python 3.8+ (standard library only) |
+| OpenSSL CLI | **≥ 3.5** on `PATH` (ML-DSA-87 support): the driver converts DER→PEM/text, and `analyze.py` verifies chains and quote signatures. Reference: OpenSSL 3.5.7 |
+| ROM / FW bundle / fuses | Prebuilt and committed: `caliptra2x/fw_2x/caliptra-rom.hex`, `caliptra-fw-bundle.hex`, `fuse_image_2x.hex` (checksums in `caliptra2x/fw_2x/SHA256SUMS`). To rebuild them, see [FIRMWARE_AND_KEYS_2X.md](FIRMWARE_AND_KEYS_2X.md) (`caliptra2x/fw_2x/build_rom.sh`, `caliptra2x/scripts/gen_fuse_image_2x.py`). If you rebuild, the certificates change and will not match `attest_ref/` |
+| TEST mfg CA | Committed in `caliptra2x/sim_2x/attest/testca/`: CA certificates plus the IDevID TBS/certs cached by IDevID public key. With the committed fuses **no private key is needed**. The CA `*.key` files are never committed; see §8.8 to make a new local CA |
+| Machine | 4 threads, about 2.2 GB RAM for the build and < 100 MB for the run; **about 2–3 h wall time** |
+
+### 8.3 Step by step
+
+```bash
+# 0. once, from the repo root
+scripts/fetch_deps.sh                       # external/caliptra-rtl-2x (+ adams-bridge)
+cd caliptra2x/sim_2x
+# site machines: put the right Verilator first and, for GCC 12, force -fcoroutines
+#   export PATH=/path/to/verilator-5.040/bin:$PATH  VERILATOR_CFLAGS=-fcoroutines
+
+# 1. clean output folder
+rm -rf attest_out/rtl && mkdir -p attest_out/rtl
+
+# 2. build (~6 min) + run the RTL sim with +test=attest, detached; sim log -> attest_run.log
+LOG=attest_run.log nohup setsid ./run_nios2x_top_fw.sh +test=attest +max_cycles=4000000000 > attest_run.out 2>&1 &
+#    (re-run without rebuilding: prefix BUILD=0)
+
+# 3. start the host-side driver right away (it waits for the runtime)
+nohup setsid python3 attest/attest_driver.py attest_out/rtl > attest_out/rtl_driver.log 2>&1 &
+
+# 4. watch progress
+grep -E 'MILESTONE|ATTEST (phase|resp|done)|PASS|FAIL|TIMEOUT' attest_run.log
+tail -f attest_out/rtl_driver.log
+
+# 5. after 'TB_NIOS2X PASS' and '[driver] done, 34 commands': decode, verify, compare with the reference
+python3 attest/analyze.py attest_out/rtl attest_ref/emu     # last line: ANALYZE PASS
+```
+
+The default `+max_cycles` (300 M) covers the 59.3 M-cycle run, but the TB keeps clocking while it waits for the driver, so use a large value (`4000000000`) so a late or slow driver never trips `TIMEOUT`. Keep the `attest_out/rtl` path the same for the TB (`+attest_dir=…`, default `attest_out/rtl`) and the driver.
+
+### 8.4 What each phase does and what to expect in the log
+
+Cycle numbers are from the reference run (`attest_ref/rtl_tb_run.log`); a rerun should match within a few hundred cycles (TRNG timing).
+
+| Phase | What happens | Expected log line(s) | Cycle |
+|---|---|---|---:|
+| Power-on, fuses | Cold release; Nios programs and locks AxUSERs (fuse = 2, TRNG = 1, mailbox = 1); `soc_fuse_ctrl2x` writes 117 fuse words + owner PK hash/lock + `FUSE_WR_DONE` | `MILESTONE ready_for_fuses`, `FUSE_CTRL STATUS=00000002 COUNT=118`, `MILESTONE fuses done via soc_fuse_ctrl2x (COUNT=118)` | 40 / 611 |
+| ROM boot | ROM starts, takes TRNG from the host, checks lifecycle (Production, debug locked), runs KATs, derives IDevID/LDevID (ECC + ML-DSA) | `LOG Running Caliptra ROM ...`, `TRNG request 1 serviced`, `LOG LifecycleState = Production`, `MILESTONE ready_for_mb_processing trng=21` | 5,542,265 |
+| FIRMWARE_LOAD | Nios streams the 253,440-byte bundle from `soc_fw_store` into the mailbox (`FWLD`); ROM verifies the manifest (vendor ECC+ML-DSA keys, owner key, PQC type, SVN) and loads FMC + RT | `MILESTONE FIRMWARE_LOAD issued, 253440 bytes`, `LOG [fwproc] Img verified ecc=0 MLDSA=0 …`, `MILESTONE MBOX_STATUS=2 (2=CMD_COMPLETE)` | 6,049,751 / 21,319,057 |
+| ROM → FMC | ROM builds the LDevID→FMC Alias certs and jumps to FMC | `MILESTONE first FMC log line (ROM -> FMC handoff)` | 30,035,490 |
+| FMC → RT | FMC derives the RT Alias, launches the runtime; RT runs KATs, initializes DPE (default context) | `MILESTONE first RT log line (FMC -> RT handoff)`, `LOG [rt] RT listening for mailbox commands...` | 36,217,537 |
+| Runtime ready | `ready_for_runtime`; the TB enters the attestation loop | `MILESTONE ready_for_runtime`, `=== ATTEST phase: waiting for requests in attest_out/rtl ===` | 36,597,934 |
+| Firmware info, identity keys | `FW_INFO`, `GET_IDEV_ECC384_INFO`, `GET_IDEV_MLDSA87_INFO` | `ATTEST req 0 cmd=494e464f ('INFO')` … `ATTEST resp 2 status=1 dlen=2600` | 36,624,580 – 36,739,042 |
+| Cert chain | `GET_LDEV_*_CERT`, `GET_FMC_ALIAS_*_CERT`, `GET_RT_ALIAS_*_CERT` (ECC P-384 and ML-DSA-87) | `ATTEST req 3 … ('LDEV')` … `ATTEST resp 8` | 36,789,582 – 37,387,350 |
+| PCR quote (before) | `QUOTE_PCRS_ECC384` with nonce 1; PCR31 = 0 | `ATTEST req 9 … ('PCRQ')` | 38,327,090 |
+| DPE (ECC) | `INVOKE_DPE_ECC384` **GetProfile** (0x01), **CertifyKey** (0x09, default context, X.509) | `ATTEST req 10/11 … ('DPEC')` | 38,375,977 / 42,659,941 |
+| Measurement | `STASH_MEASUREMENT` of the Nios image digest M (tag `NIOS`, svn 1): extends PCR31 and runs a DPE **DeriveContext** (make-default, locality = AxUSER 1) inside Caliptra | `ATTEST req 12 … ('MEAS')`, `LOG [rt] Received command=0x4d454153 (MEAS)` | 42,720,549 |
+| PCR quote + DPE (after) | `QUOTE_PCRS_ECC384` nonce 2 (PCR31 = SHA-384(0⁴⁸‖M)); `CertifyKey` again (leaf now has TCB `NIOS`); **GetCertificateChain** (0x10) ×2 (2,586 B) | `ATTEST req 13 … 16` | 43,660,293 – 48,097,509 |
+| DPE (ML-DSA) | `INVOKE_DPE_MLDSA87` GetProfile, CertifyKey, GetCertificateChain ×12 (23,658 B), `QUOTE_PCRS_MLDSA87` | `ATTEST req 17 … ('DPEM')` … `req 31 … ('PCRM')` | 48,765,037 – 58,932,857 |
+| IDevID certs | Driver signs the IDevID TBS with the TEST mfg CA; `GET_IDEV_ECC384_CERT` / `GET_IDEV_MLDSA87_CERT` assemble the certs | `ATTEST req 32 … ('IDEC')`, `req 33 … ('IDMC')` | 58,991,424 / 59,240,360 |
+| End | Driver writes cmd 0; TB idles 20,000 cycles, dumps status and error registers (all 0) | `ATTEST done, 34 commands`, `SUMMARY …`, **`TB_NIOS2X PASS cyc=59280395 trng=379 (prod, debug locked)`** | 59,280,395 |
+
+The longest commands are the two ECC `CertifyKey` calls (≈ 4.3 M cycles each) and ML-DSA `CertifyKey` (≈ 1.3 M cycles). The driver log shows each command as `[driver]   -> status=1 len=… fwerr=00000000 chk=True`, ending with `[driver] done, 34 commands`.
+
+**DPE commands exercised:** GetProfile, CertifyKey (before and after the stash), GetCertificateChain, plus DeriveContext through `STASH_MEASUREMENT`. InitializeContext is done by the runtime at boot (default context). DPE **Sign**, an explicit DeriveContext/RotateContext/DestroyContext, `CERTIFY_KEY_EXTENDED` and exported CDIs are **not** issued by this testbench.
+
+### 8.5 Outputs
+
+| Path (under `caliptra2x/sim_2x/`) | Content |
+|---|---|
+| `attest_run.log` | Sim log: milestones, ROM/FMC/RT `LOG` lines, `ATTEST req/resp` per command, `SUMMARY`, PASS line, Verilator stats, `wall_time_s` |
+| `attest_out/rtl/req_NNN.hex`, `resp_NNN.hex`, `resp_NNN.done` | Raw protocol files (`.done` = completion cycle) |
+| `attest_out/rtl/resp_NNN_<name>.bin` | Raw response bytes per command |
+| `attest_out/rtl/{idevid,ldevid,fmc_alias,rt_alias}_{ecc384,mldsa87}.{der,pem,txt}` | DICE certificate chain (both algorithms) |
+| `attest_out/rtl/dpe_{ecc,mldsa}_leaf_*.{der,pem,txt}`, `dpe_*_chain_N.*`, `dpe_*_cert_chain.bin` | DPE leaves and the DPE GetCertificateChain output |
+| `attest_out/rtl/attest_summary.json` | Measurement, nonces, quotes (PCRs, digest, signature), per-command log |
+| `attest_out/rtl/analysis.json` | Written by `analyze.py`: decoded DICE extensions, verification, compare |
+| `attest_ref/{rtl,emu}/` | Committed reference results (RTL run and sw-emulator run) |
+
+`attest_out/`, `attest_run.log` and `attest_run.out` are git-ignored.
+
+### 8.6 Verify the certificate chain
+
+`analyze.py` does all of the following and prints `ANALYZE PASS` (exit 0) or `ANALYZE FAIL: …` (exit 1). To check by hand:
+
+```bash
+cd caliptra2x/sim_2x/attest_out/rtl
+CA=../../attest/testca
+for alg in ecc384:ecc mldsa87:mldsa; do a=${alg%%:*}; c=${alg##*:}
+  dpe=dpe_${c}_leaf_after.pem
+  # each link
+  openssl verify -partial_chain -CAfile $CA/test_mfg_ca_$c.pem idevid_$a.pem
+  openssl verify -partial_chain -CAfile idevid_$a.pem    ldevid_$a.pem
+  openssl verify -partial_chain -CAfile ldevid_$a.pem    fmc_alias_$a.pem
+  openssl verify -partial_chain -CAfile fmc_alias_$a.pem rt_alias_$a.pem
+  openssl verify -partial_chain -CAfile rt_alias_$a.pem  $dpe
+  # full chain, strict: TEST CA > IDevID > LDevID > FMC Alias > RT Alias > DPE leaf
+  cat idevid_$a.pem ldevid_$a.pem fmc_alias_$a.pem rt_alias_$a.pem > /tmp/untrusted_$c.pem
+  openssl verify -CAfile $CA/test_mfg_ca_$c.pem -untrusted /tmp/untrusted_$c.pem $dpe
+done
+# DICE extensions (TcbInfo / MultiTcbInfo): the post-stash DPE leaf has a TCB entry type 'NIOS', svn 1, fwid = M
+openssl x509 -in dpe_ecc_leaf_after.pem -noout -text | less
+# compare with the emulator / reference run
+for f in *.der; do cmp -s $f ../../attest_ref/emu/$f && echo "same $f" || echo "DIFF $f"; done
+```
+
+Expected: every `openssl verify` prints `OK`, and all 17 `.der` files are `same`. `analyze.py` also checks that the DPE GetCertificateChain certs equal the mailbox certs (3/3 per algorithm), the IDevID cert key equals `GET_IDEV_*_INFO`, PCR31 = SHA-384(0⁴⁸‖M) after the stash, M appears only in the post-stash DPE leaves, and all quote signatures verify with the **FMC Alias** key.
+
+### 8.7 Runtime and reference numbers
+
+| | sw-emulator (Step A) | RTL (Step B, reference) |
+|---|---|---|
+| Wall time | ≈ 25 s | Verilator walltime 7,518 s (cpu 29,963 s on 4 threads, 78.9 µs sim/s); wrapper `wall_time_s=10639` (5:16:55 PM – 8:14:14 PM CST) |
+| Build | — | ≈ 6 min |
+| Cycles | — | `ready_for_runtime` 36,597,934; first command done 36,624,580; last 59,240,360; `$finish` 59,280,395 (593 ms sim) |
+| TRNG fills | — | 379 |
+
+Plan for **≈ 1.2–1.5 h to `ready_for_runtime`** and ≈ 2–3 h in total on a 4-thread run.
+
+### 8.8 Open items and limits
+
+- **QUOTE_PCRS digest mismatch (open).** The RTL and emulator return identical PCRs, nonce and reset counters, but the RTL `digest` field (and hence the signature) differs. `analyze.py` recomputes `SHA-512(PCR0‖…‖PCR31‖bswap32(nonce))` (ECC: first 48 B; ML-DSA: byte-reversed 64 B); that matches the emulator but **not** the RTL. No simple byte/dword reordering reproduces the RTL value. The RTL quote signature still verifies with the FMC Alias key over the digest it reports. `analyze.py` prints this as `ANALYZE WARN` (3 quotes) and lists the 3 `resp_*QUOTE_PCRS*.bin` files as raw-response mismatches; it does not fail on it.
+- **IDevID certificate** is assembled from a TBS signed by a local **TEST** mfg CA (Caliptra holds only the key). A product IDevID comes from the manufacturer's CA, usually via the Manufacturing-lifecycle CSR flow (not exercised).
+- **New TEST CA.** Only needed if the IDevID key changes (other UDS/FE fuses): `ATTEST_CA_DIR=$PWD/attest_out/testca python3 attest/attest_driver.py attest_out/rtl` creates `test_mfg_ca_{ecc,mldsa}.{key,pem}` with `openssl genpkey` (P-384 / ML-DSA-87) and signs new TBSs; pass the same `ATTEST_CA_DIR` to `analyze.py`. Never commit the `*.key` files (git-ignored).
+- The TB TRNG model returns `$urandom` words; key derivation is deterministic and signing uses deterministic nonces (ECDSA HMAC-DRBG, ML-DSA `sign_rnd = 0`), which is why the certificates match the emulator byte-for-byte.
+- Not exercised: warm reset, ROM-time stash, `EXTEND_PCR`, DPE Sign, exported CDIs, waveforms (too long to dump).
+
+### 8.9 Troubleshooting
+
+| Symptom | Likely cause / fix |
+|---|---|
+| Build errors (`-fcoroutines`, `__pch.h.fast`, `pthread_create`) | Same as §7: `VERILATOR_CFLAGS=-fcoroutines`, `git pull`, `rm -rf obj_nios2x`, rebuild |
+| Sim sits at `=== ATTEST phase: waiting …` with only heartbeats | Driver not running or writing to another folder. Start `attest_driver.py attest_out/rtl` from `caliptra2x/sim_2x/` (or pass the same path with `+attest_dir=`) |
+| Driver log stays at `req 000 FW_INFO` for over an hour | Normal: the runtime is only ready at ≈ 36.6 M cycles. Check `MILESTONE` lines in `attest_run.log` |
+| `TB_NIOS2X TIMEOUT` | Raise `+max_cycles` (use `4000000000`) |
+| `ATTEST resp N status=3` or `fwerr` ≠ 0 | Command rejected. Check the `LOG [rt]` lines just before it; mailbox AxUSER must be 1 and locked; the request checksum must be correct (driver computes it) |
+| Driver: `IDevID key not in the TBS cache … TEST CA private key … not available` | UDS/FE or ROM/bundle changed, so the IDevID key changed. Use a new local TEST CA with `ATTEST_CA_DIR` (§8.8); certificates will no longer match `attest_ref/` |
+| `openssl: … ML-DSA-87 … unsupported` or ML-DSA verifies fail | OpenSSL < 3.5 on `PATH`. Install OpenSSL ≥ 3.5 and put it first on `PATH` |
+| `analyze.py`: `ANALYZE FAIL: DER mismatch` | You rebuilt the ROM/bundle/fuses, or changed straps. Compare against your own emulator run instead of `attest_ref/emu` |
+| `ANALYZE WARN … digest != … recomputation` (3×) | Known open item (§8.8); not a failure |
+| Second run replays old answers | Use `rm -rf attest_out/rtl` before starting (the driver also clears stale `req_*`/`resp_*` at start) |

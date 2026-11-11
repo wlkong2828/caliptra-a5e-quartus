@@ -34,3 +34,8 @@ keys/
 *.p8
 *.p12
 *.pfx
+
+# 2.x attestation sim: per-run outputs (reference results are in caliptra2x/sim_2x/attest_ref/)
+caliptra2x/sim_2x/attest_out/
+caliptra2x/sim_2x/attest_run.log
+caliptra2x/sim_2x/attest_run.out

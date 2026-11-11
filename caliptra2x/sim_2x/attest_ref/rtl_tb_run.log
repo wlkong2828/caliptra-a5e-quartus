@@ -1,0 +1,1053 @@
+TB_NIOS2X test=attest max_cycles=4000000000
+[40] MILESTONE ready_for_fuses
+[45] HW_REV_ID=00000212
+[50] HW_CONFIG=00000010 (iTRNG_en=0 SUBSYSTEM_MODE_en=0)
+[55] CPTRA_SECURITY_STATE=00000007 (lifecycle=3 debug_locked=1)
+[111] FUSE_CTRL ID=46555345
+[113] FUSE_CTRL NUM_FUSES=117 (image entries)
+[591] FUSE_CTRL STATUS=00000002 COUNT=118
+[596] FUSE_WR_DONE=00000001
+  FUSE_PQC_KEY_TYPE readback=00000000
+  CPTRA_OWNER_PK_HASH_LOCK readback=00000001
+  CPTRA_OWNER_PK_HASH[0] readback=48afdb07
+[611] MILESTONE fuses done via soc_fuse_ctrl2x (COUNT=118)
+[377832] LOG 
+[378815] LOG Running Caliptra ROM ...
+[378892] LOG 
+[379056] etrng_req rise
+[379134] TRNG request 1 serviced
+[379322] etrng_req rise
+[379401] TRNG request 2 serviced
+[379558] etrng_req rise
+[379636] TRNG request 3 serviced
+[384554] LOG [state] Starting the WD Timer 100000000 cycles
+[386294] etrng_req rise
+[386372] TRNG request 4 serviced
+[387733] LOG [kat] AES-GCM
+[412639] LOG [kat] KDF-CMAC
+[427785] etrng_req rise
+[427864] TRNG request 5 serviced
+[428596] etrng_req rise
+[428674] TRNG request 6 serviced
+[442154] LOG [state] LifecycleState = Production
+[445281] LOG [state] DebugLocked = Yes
+[450835] LOG [state] Starting the WD Timer 100000000 cycles
+[451971] LOG [kat] SHA2-256
+[794326] LOG ROM Digest: AB0AEDDBE4F660DC3CDB6F3221DCE2ADA1F6D0593A403B0B12D9EB5CC5C632EB
+[795389] LOG [kat] ++
+[795846] LOG [kat] sha1
+[806940] LOG [kat] SHA2-256
+[809552] LOG [kat] SHA2-384
+[816090] LOG [kat] SHA2-512
+[822137] LOG [kat] SHA2-512-ACC
+[824373] LOG [kat] SHAKE-256
+[828771] LOG [kat] CSRNG
+[829395] LOG [kat] ECC-384
+[837023] etrng_req rise
+[837101] TRNG request 7 serviced
+[999999] heartbeat status=00 trng=7
+[1558031] etrng_req rise
+[1558110] TRNG request 8 serviced
+[1999999] heartbeat status=00 trng=8
+[2999999] heartbeat status=00 trng=8
+[3269133] LOG [kat] ECDH
+[3270332] etrng_req rise
+[3270410] TRNG request 9 serviced
+[3989590] LOG [kat] HMAC-384Kdf
+[3991077] etrng_req rise
+[3991155] TRNG request 10 serviced
+[3999999] heartbeat status=00 trng=10
+[4003111] LOG [kat] HMAC-512Kdf
+[4005589] etrng_req rise
+[4005668] TRNG request 11 serviced
+[4017213] LOG [kat] HKDF-384
+[4019145] etrng_req rise
+[4019223] TRNG request 12 serviced
+[4030955] etrng_req rise
+[4031033] TRNG request 13 serviced
+[4043065] LOG [kat] HKDF-512
+[4047225] etrng_req rise
+[4047304] TRNG request 14 serviced
+[4059946] etrng_req rise
+[4060024] TRNG request 15 serviced
+[4071934] LOG [kat] AES-GCM
+[4094269] LOG [kat] KDF-CMAC
+[4108850] LOG [kat] LMS
+[4615185] LOG [kat] MLDSA87
+[4632869] etrng_req rise
+[4632947] TRNG request 16 serviced
+[4633658] etrng_req rise
+[4633736] TRNG request 17 serviced
+[4741183] etrng_req rise
+[4741262] TRNG request 18 serviced
+[4741991] etrng_req rise
+[4742069] TRNG request 19 serviced
+[4999999] heartbeat status=00 trng=19
+[5187001] etrng_req rise
+[5187079] TRNG request 20 serviced
+[5187825] etrng_req rise
+[5187903] TRNG request 21 serviced
+[5524365] LOG [kat] --
+[5528545] LOG [cold-reset] ++
+[5538183] LOG [idev] ++
+[5539096] LOG [idev] CDI.KEYID = 6
+[5541346] LOG [idev] ECC SUBJECT.KEYID = 7, MLDSA SUBJECT.KEYID = 8
+[5542232] LOG [idev] UDS.KEYID = 0
+[5542265] MILESTONE ready_for_mb_processing trng=21
+  MBOX_USER=00000001
+[5554027] etrng_req rise
+[5554664] TRNG request 22 serviced
+[5561998] LOG [idev] Erasing UDS.KEYID = 0
+[5567104] etrng_req rise
+[5569190] TRNG request 23 serviced
+[5578739] etrng_req rise
+[5579621] TRNG request 24 serviced
+[5999999] heartbeat status=02 trng=24
+[6049751] MILESTONE FIRMWARE_LOAD issued, 253440 bytes from soc_fw_store
+[6300384] etrng_req rise
+[6300824] TRNG request 25 serviced
+[6999999] heartbeat status=02 trng=25
+[7999999] heartbeat status=02 trng=25
+[8008369] etrng_req rise
+[8008816] TRNG request 26 serviced
+[8015384] etrng_req rise
+[8016037] TRNG request 27 serviced
+[8016730] etrng_req rise
+[8017231] TRNG request 28 serviced
+[8078060] etrng_req rise
+[8078669] TRNG request 29 serviced
+[8079370] etrng_req rise
+[8079872] TRNG request 30 serviced
+[8661909] LOG [idev] Sha1 KeyId Algorithm
+[8699039] LOG [idev] Sha1 KeyId Algorithm
+[8999999] heartbeat status=02 trng=30
+[9038852] LOG [idev] --
+[9062226] LOG [ldev] ++
+[9063136] LOG [ldev] CDI.KEYID = 6
+[9065412] LOG [ldev] ECC SUBJECT.KEYID = 5, MLDSA SUBJECT.KEYID = 4
+[9067930] LOG [ldev] ECC AUTHORITY.KEYID = 7, MLDSA AUTHORITY.KEYID = 8
+[9068787] LOG [ldev] FE.KEYID = 1
+[9071082] LOG [ldev] Deriving DOT_STABLE_IDEV.KEYID = 0
+[9072512] etrng_req rise
+[9073024] TRNG request 31 serviced
+[9085451] etrng_req rise
+[9086264] TRNG request 32 serviced
+[9091829] etrng_req rise
+[9092477] TRNG request 33 serviced
+[9096444] LOG [ldev] Erasing FE.KEYID = 1
+[9099757] LOG [ldev] Deriving DOT_STABLE_LDEV.KEYID = 1
+[9101861] etrng_req rise
+[9102717] TRNG request 34 serviced
+[9115671] etrng_req rise
+[9115965] TRNG request 35 serviced
+[9123703] etrng_req rise
+[9124191] TRNG request 36 serviced
+[9845421] etrng_req rise
+[9846255] TRNG request 37 serviced
+[9999999] heartbeat status=02 trng=37
+[10999999] heartbeat status=02 trng=37
+[11555686] etrng_req rise
+[11556263] TRNG request 38 serviced
+[11564228] etrng_req rise
+[11564491] TRNG request 39 serviced
+[11565202] etrng_req rise
+[11565689] TRNG request 40 serviced
+[11626495] etrng_req rise
+[11627124] TRNG request 41 serviced
+[11627819] etrng_req rise
+[11628320] TRNG request 42 serviced
+[11999999] heartbeat status=02 trng=42
+[12115397] LOG [ldev] Signing Cert ECC AUTHORITY.KEYID = 7
+[12125614] etrng_req rise
+[12126497] TRNG request 43 serviced
+[12999999] heartbeat status=02 trng=43
+[13882926] LOG [ldev] Signing Cert MLDSA AUTHORITY.KEYID = 8
+[13883436] etrng_req rise
+[13883698] TRNG request 44 serviced
+[13884451] etrng_req rise
+[13884896] TRNG request 45 serviced
+[13999999] heartbeat status=02 trng=45
+[14246698] LOG [ldev] --
+[14279246] etrng_req rise
+[14279668] TRNG request 46 serviced
+[14280594] etrng_req rise
+[14280896] TRNG request 47 serviced
+[14283384] LOG [fwproc] Wait for Commands...
+[14288545] LOG [fwproc] Recv command 0x46574c44
+[14292612] LOG [fwproc] Received Image of size 253440 bytes
+[14999999] heartbeat status=02 trng=47
+[15999999] heartbeat status=02 trng=47
+[16999999] heartbeat status=02 trng=47
+[17010234] LOG [fwproc] Img verified ecc=0 MLDSA=0 svn=0 fuse_svn=0
+[17085880] LOG [fwproc] Load FMC at address 0x40000000 len 30760
+[17304341] LOG [fwproc] Load Runtime at address 0x40008000 len 205516
+[17999999] heartbeat status=02 trng=47
+[18999999] heartbeat status=02 trng=47
+[19999999] heartbeat status=02 trng=47
+[20999999] heartbeat status=02 trng=47
+[21319057] MILESTONE MBOX_STATUS=2 (2=CMD_COMPLETE)
+[21322024] LOG [fwproc] Initializing chain, length 128 (max 128)
+[21324455] etrng_req rise
+[21324533] TRNG request 48 serviced
+[21333726] etrng_req rise
+[21333804] TRNG request 49 serviced
+[21342192] etrng_req rise
+[21342270] TRNG request 50 serviced
+[21351110] etrng_req rise
+[21351188] TRNG request 51 serviced
+[21360273] etrng_req rise
+[21360351] TRNG request 52 serviced
+[21368624] etrng_req rise
+[21368702] TRNG request 53 serviced
+[21375253] etrng_req rise
+[21375331] TRNG request 54 serviced
+[21383072] etrng_req rise
+[21383150] TRNG request 55 serviced
+[21390947] etrng_req rise
+[21391025] TRNG request 56 serviced
+[21399326] etrng_req rise
+[21399404] TRNG request 57 serviced
+[21407411] etrng_req rise
+[21407489] TRNG request 58 serviced
+[21414068] etrng_req rise
+[21414146] TRNG request 59 serviced
+[21421089] etrng_req rise
+[21421167] TRNG request 60 serviced
+[21428362] etrng_req rise
+[21428440] TRNG request 61 serviced
+[21434781] etrng_req rise
+[21434859] TRNG request 62 serviced
+[21442951] etrng_req rise
+[21443029] TRNG request 63 serviced
+[21451190] etrng_req rise
+[21451268] TRNG request 64 serviced
+[21457637] etrng_req rise
+[21457715] TRNG request 65 serviced
+[21464686] etrng_req rise
+[21464764] TRNG request 66 serviced
+[21473275] etrng_req rise
+[21473353] TRNG request 67 serviced
+[21481332] etrng_req rise
+[21481410] TRNG request 68 serviced
+[21488577] etrng_req rise
+[21488655] TRNG request 69 serviced
+[21494982] etrng_req rise
+[21495060] TRNG request 70 serviced
+[21502717] etrng_req rise
+[21502795] TRNG request 71 serviced
+[21509458] etrng_req rise
+[21509536] TRNG request 72 serviced
+[21517963] etrng_req rise
+[21518041] TRNG request 73 serviced
+[21524886] etrng_req rise
+[21524964] TRNG request 74 serviced
+[21532481] etrng_req rise
+[21532559] TRNG request 75 serviced
+[21539796] etrng_req rise
+[21539874] TRNG request 76 serviced
+[21547447] etrng_req rise
+[21547525] TRNG request 77 serviced
+[21555126] etrng_req rise
+[21555204] TRNG request 78 serviced
+[21562847] etrng_req rise
+[21562925] TRNG request 79 serviced
+[21569322] etrng_req rise
+[21569400] TRNG request 80 serviced
+[21576960] etrng_req rise
+[21577038] TRNG request 81 serviced
+[21584779] etrng_req rise
+[21584857] TRNG request 82 serviced
+[21592640] etrng_req rise
+[21592718] TRNG request 83 serviced
+[21600893] etrng_req rise
+[21600971] TRNG request 84 serviced
+[21608362] etrng_req rise
+[21608440] TRNG request 85 serviced
+[21616867] etrng_req rise
+[21616945] TRNG request 86 serviced
+[21623762] etrng_req rise
+[21623840] TRNG request 87 serviced
+[21631665] etrng_req rise
+[21631743] TRNG request 88 serviced
+[21639624] etrng_req rise
+[21639702] TRNG request 89 serviced
+[21646673] etrng_req rise
+[21646751] TRNG request 90 serviced
+[21653344] etrng_req rise
+[21653422] TRNG request 91 serviced
+[21661905] etrng_req rise
+[21661983] TRNG request 92 serviced
+[21671082] etrng_req rise
+[21671160] TRNG request 93 serviced
+[21680441] etrng_req rise
+[21680519] TRNG request 94 serviced
+[21686650] etrng_req rise
+[21686728] TRNG request 95 serviced
+[21694693] etrng_req rise
+[21694771] TRNG request 96 serviced
+[21703156] etrng_req rise
+[21703234] TRNG request 97 serviced
+[21711353] etrng_req rise
+[21711431] TRNG request 98 serviced
+[21719088] etrng_req rise
+[21719166] TRNG request 99 serviced
+[21727117] etrng_req rise
+[21727195] TRNG request 100 serviced
+[21734782] etrng_req rise
+[21734860] TRNG request 101 serviced
+[21741943] etrng_req rise
+[21742021] TRNG request 102 serviced
+[21750280] etrng_req rise
+[21750358] TRNG request 103 serviced
+[21757637] etrng_req rise
+[21757715] TRNG request 104 serviced
+[21765554] etrng_req rise
+[21765632] TRNG request 105 serviced
+[21773863] etrng_req rise
+[21773941] TRNG request 106 serviced
+[21782998] etrng_req rise
+[21783076] TRNG request 107 serviced
+[21792301] etrng_req rise
+[21792379] TRNG request 108 serviced
+[21800274] etrng_req rise
+[21800352] TRNG request 109 serviced
+[21809017] etrng_req rise
+[21809095] TRNG request 110 serviced
+[21816332] etrng_req rise
+[21816410] TRNG request 111 serviced
+[21824137] etrng_req rise
+[21824215] TRNG request 112 serviced
+[21832292] etrng_req rise
+[21832370] TRNG request 113 serviced
+[21838753] etrng_req rise
+[21838831] TRNG request 114 serviced
+[21846740] etrng_req rise
+[21846818] TRNG request 115 serviced
+[21854699] etrng_req rise
+[21854777] TRNG request 116 serviced
+[21860979] etrng_req rise
+[21861057] TRNG request 117 serviced
+[21868896] etrng_req rise
+[21868974] TRNG request 118 serviced
+[21876575] etrng_req rise
+[21876653] TRNG request 119 serviced
+[21885122] etrng_req rise
+[21885200] TRNG request 120 serviced
+[21894173] etrng_req rise
+[21894251] TRNG request 121 serviced
+[21901614] etrng_req rise
+[21901692] TRNG request 122 serviced
+[21909601] etrng_req rise
+[21909679] TRNG request 123 serviced
+[21917980] etrng_req rise
+[21918058] TRNG request 124 serviced
+[21927003] etrng_req rise
+[21927081] TRNG request 125 serviced
+[21934766] etrng_req rise
+[21934844] TRNG request 126 serviced
+[21942585] etrng_req rise
+[21942663] TRNG request 127 serviced
+[21950110] etrng_req rise
+[21950188] TRNG request 128 serviced
+[21957803] etrng_req rise
+[21957881] TRNG request 129 serviced
+[21966014] etrng_req rise
+[21966092] TRNG request 130 serviced
+[21972489] etrng_req rise
+[21972567] TRNG request 131 serviced
+[21979370] etrng_req rise
+[21979448] TRNG request 132 serviced
+[21988743] etrng_req rise
+[21988821] TRNG request 133 serviced
+[21996618] etrng_req rise
+[21996696] TRNG request 134 serviced
+[21999999] heartbeat status=02 trng=134
+[22004549] etrng_req rise
+[22004627] TRNG request 135 serviced
+[22013362] etrng_req rise
+[22013440] TRNG request 136 serviced
+[22019977] etrng_req rise
+[22020055] TRNG request 137 serviced
+[22027671] etrng_req rise
+[22027749] TRNG request 138 serviced
+[22034944] etrng_req rise
+[22035022] TRNG request 139 serviced
+[22041811] etrng_req rise
+[22041889] TRNG request 140 serviced
+[22049994] etrng_req rise
+[22050072] TRNG request 141 serviced
+[22058009] etrng_req rise
+[22058087] TRNG request 142 serviced
+[22065884] etrng_req rise
+[22065962] TRNG request 143 serviced
+[22072933] etrng_req rise
+[22073011] TRNG request 144 serviced
+[22082292] etrng_req rise
+[22082370] TRNG request 145 serviced
+[22089915] etrng_req rise
+[22089993] TRNG request 146 serviced
+[22097622] etrng_req rise
+[22097700] TRNG request 147 serviced
+[22105455] etrng_req rise
+[22105533] TRNG request 148 serviced
+[22114086] etrng_req rise
+[22114164] TRNG request 149 serviced
+[22121933] etrng_req rise
+[22122011] TRNG request 150 serviced
+[22129990] etrng_req rise
+[22130068] TRNG request 151 serviced
+[22138159] etrng_req rise
+[22138237] TRNG request 152 serviced
+[22146398] etrng_req rise
+[22146476] TRNG request 153 serviced
+[22154077] etrng_req rise
+[22154155] TRNG request 154 serviced
+[22162904] etrng_req rise
+[22162982] TRNG request 155 serviced
+[22170597] etrng_req rise
+[22170675] TRNG request 156 serviced
+[22178556] etrng_req rise
+[22178634] TRNG request 157 serviced
+[22186123] etrng_req rise
+[22186201] TRNG request 158 serviced
+[22194348] etrng_req rise
+[22194426] TRNG request 159 serviced
+[22202951] etrng_req rise
+[22203029] TRNG request 160 serviced
+[22212436] etrng_req rise
+[22212514] TRNG request 161 serviced
+[22220535] etrng_req rise
+[22220613] TRNG request 162 serviced
+[22227136] etrng_req rise
+[22227214] TRNG request 163 serviced
+[22234773] etrng_req rise
+[22234851] TRNG request 164 serviced
+[22242116] etrng_req rise
+[22242194] TRNG request 165 serviced
+[22250243] etrng_req rise
+[22250321] TRNG request 166 serviced
+[22257964] etrng_req rise
+[22258042] TRNG request 167 serviced
+[22265825] etrng_req rise
+[22265903] TRNG request 168 serviced
+[22273463] etrng_req rise
+[22273541] TRNG request 169 serviced
+[22282906] etrng_req rise
+[22282984] TRNG request 170 serviced
+[22290515] etrng_req rise
+[22290593] TRNG request 171 serviced
+[22297536] etrng_req rise
+[22297614] TRNG request 172 serviced
+[22305440] etrng_req rise
+[22305518] TRNG request 173 serviced
+[22312783] etrng_req rise
+[22312861] TRNG request 174 serviced
+[22320672] etrng_req rise
+[22320750] TRNG request 175 serviced
+[22328827] etrng_req rise
+[22328905] TRNG request 176 serviced
+[22339368] LOG [fwproc] Chain initialized
+[22342113] LOG [afmc] ++
+[22344259] etrng_req rise
+[22344337] TRNG request 177 serviced
+[22357787] etrng_req rise
+[22357865] TRNG request 178 serviced
+[22368392] etrng_req rise
+[22368470] TRNG request 179 serviced
+[22999999] heartbeat status=02 trng=179
+[23089135] etrng_req rise
+[23089213] TRNG request 180 serviced
+[23999999] heartbeat status=02 trng=180
+[24798526] etrng_req rise
+[24798604] TRNG request 181 serviced
+[24806321] etrng_req rise
+[24806399] TRNG request 182 serviced
+[24807112] etrng_req rise
+[24807190] TRNG request 183 serviced
+[24868087] etrng_req rise
+[24868166] TRNG request 184 serviced
+[24868887] etrng_req rise
+[24868965] TRNG request 185 serviced
+[24999999] heartbeat status=02 trng=185
+[25380818] LOG [afmc] Signing Cert ECC AUTHORITY.KEYID = 5
+[25395648] etrng_req rise
+[25395726] TRNG request 186 serviced
+[25999999] heartbeat status=02 trng=186
+[26999999] heartbeat status=02 trng=186
+[27251884] LOG [afmc] Signing Cert MLDSA AUTHORITY.KEYID = 4
+[27252408] etrng_req rise
+[27252486] TRNG request 187 serviced
+[27253203] etrng_req rise
+[27253281] TRNG request 188 serviced
+[27794508] LOG [afmc] --
+[27808875] LOG [cold-reset] --
+[27811638] LOG [state] Locking Datavault
+[27820622] LOG [exit] Launching FMC @ 0x40000000
+[27874628] LOG 
+[27875403] LOG Running Caliptra FMC ...
+[27875443] LOG 
+[27876107] LOG [state] CFI Enabled
+[27876152] etrng_req rise
+[27876231] TRNG request 189 serviced
+[27876355] etrng_req rise
+[27876433] TRNG request 190 serviced
+[27876542] etrng_req rise
+[27876620] TRNG request 191 serviced
+[27930944] LOG [fht] FMC Alias ECC Private Key: 7
+[27932637] LOG [fht] FMC Alias MLDSA Key Pair Seed KV Slot: 8
+[27958402] etrng_req rise
+[27958481] TRNG request 192 serviced
+[27999999] heartbeat status=02 trng=192
+[28999999] heartbeat status=02 trng=192
+[29693221] etrng_req rise
+[29693299] TRNG request 193 serviced
+[29693597] etrng_req rise
+[29693675] TRNG request 194 serviced
+[29999999] heartbeat status=02 trng=194
+[30035490] LOG [alias rt] Extend RT PCRs
+[30035490] MILESTONE first FMC log line (ROM -> FMC handoff)
+[30040071] LOG [alias rt] Extend RT PCRs Done
+[30040824] LOG [alias rt] Lock RT PCRs
+[30041734] LOG [alias rt] Lock RT PCRs Done
+[30042903] LOG [fht] FMC Alias ECC Private Key: 7
+[30044577] LOG [fht] FMC Alias MLDSA Key Pair Seed KV Slot: 8
+[30099119] LOG [alias rt] Derive CDI
+[30100175] LOG [alias rt] Store it in slot 0x4
+[30100801] etrng_req rise
+[30100879] TRNG request 195 serviced
+[30105140] LOG [alias rt] Derive Key Pair
+[30107656] LOG [alias rt] Store ECC priv key in slot 0x5 and MLDSA key pair seed in slot 0x9
+[30108257] etrng_req rise
+[30108335] TRNG request 196 serviced
+[30111214] etrng_req rise
+[30111292] TRNG request 197 serviced
+[30829287] etrng_req rise
+[30829365] TRNG request 198 serviced
+[30999999] heartbeat status=02 trng=198
+[31999999] heartbeat status=02 trng=198
+[32527730] etrng_req rise
+[32527808] TRNG request 199 serviced
+[32530463] etrng_req rise
+[32530542] TRNG request 200 serviced
+[32530838] etrng_req rise
+[32530917] TRNG request 201 serviced
+[32561034] etrng_req rise
+[32561112] TRNG request 202 serviced
+[32561397] etrng_req rise
+[32561475] TRNG request 203 serviced
+[32827127] LOG [alias rt] Derive Key Pair - Done
+[32882572] LOG [alias rt] Signing ECC Cert with AUTHORITY.KEYID = 7
+[32886979] etrng_req rise
+[32887058] TRNG request 204 serviced
+[32999999] heartbeat status=02 trng=204
+[33999999] heartbeat status=02 trng=204
+[34585701] LOG [alias rt] Locking ECC AUTHORITY.KEYID = 7 & FMC CDI = 6
+[34589618] LOG [alias rt] ECC PUB.X = CF505C9B68596A05EFA917724B17BC77B97EC9E6A57A87A68FBEC0B37D558D603856D0A1896612CAE2BC162A7F700C46
+[34593343] LOG [alias rt] ECC PUB.Y = 4071E9949EAD01DF9A966393C274690F9C8B7AB96B13CF527289FC8CC6F876B1736BE258B20B4D11497AB20113E1E5D4
+[34597231] LOG [alias rt] ECC SIG.R = 7F28F6C959B707A9289EAAA346B8754A19D6E27759BDBC59F943E20CE0B5EFD2F630792DBDFEDF6330B657A7C9B76833
+[34600958] LOG [alias rt] ECC SIG.S = B8C629621079904A82573FC8AE831F351FFC401923575AA132845B6D119DB688FAB3B434AFF8E781AA0264E2695C5360
+[34999999] heartbeat status=02 trng=204
+[35598253] LOG [alias rt] Signing MLDSA Cert with AUTHORITY.KEYID = 8
+[35598453] etrng_req rise
+[35598532] TRNG request 205 serviced
+[35598828] etrng_req rise
+[35598907] TRNG request 206 serviced
+[35955617] LOG [alias rt] Locking MLDSA AUTHORITY.KEYID = 8 & FMC CDI = 6
+[35999999] heartbeat status=02 trng=206
+[36003110] LOG Caliptra RT
+[36003588] LOG [kat] AES-ECB
+[36010197] LOG [kat] AES-CBC
+[36017887] LOG [kat] AES-CTR
+[36027445] LOG [kat] AES-CMAC
+[36028711] etrng_req rise
+[36028789] TRNG request 207 serviced
+[36029085] etrng_req rise
+[36029164] TRNG request 208 serviced
+[36030157] etrng_req rise
+[36030235] TRNG request 209 serviced
+[36030910] etrng_req rise
+[36030989] TRNG request 210 serviced
+[36032931] LOG [kat] MLKEM1024
+[36215778] etrng_req rise
+[36215856] TRNG request 211 serviced
+[36216096] etrng_req rise
+[36216175] TRNG request 212 serviced
+[36216417] etrng_req rise
+[36216495] TRNG request 213 serviced
+[36217537] LOG [rt] OCP LOCK Unsupported
+[36217537] MILESTONE first RT log line (FMC -> RT handoff)
+[36472083] etrng_req rise
+[36472161] TRNG request 214 serviced
+[36472508] etrng_req rise
+[36472587] TRNG request 215 serviced
+[36472954] etrng_req rise
+[36473032] TRNG request 216 serviced
+[36473394] etrng_req rise
+[36473473] TRNG request 217 serviced
+[36596579] LOG [rt] Disable entropy source
+[36597900] LOG [rt] RT listening for mailbox commands...
+[36597934] MILESTONE ready_for_runtime
+[36597934] === ATTEST phase: waiting for requests in attest_out/rtl ===
+[36597934] ATTEST req 0 cmd=494e464f ('INFO') dlen=4
+[36600936] LOG [rt] Received command=0x494e464f (INFO), len=4
+[36624580] ATTEST resp 0 status=1 dlen=396 fw_err_nf=00000000
+[36644585] ATTEST req 1 cmd=49444549 ('IDEI') dlen=4
+[36646910] LOG [rt] Received command=0x49444549 (IDEI), len=4
+[36667806] ATTEST resp 1 status=1 dlen=104 fw_err_nf=00000000
+[36687811] ATTEST req 2 cmd=49444d49 ('IDMI') dlen=4
+[36690165] LOG [rt] Received command=0x49444d49 (IDMI), len=4
+[36739042] ATTEST resp 2 status=1 dlen=2600 fw_err_nf=00000000
+[36759047] ATTEST req 3 cmd=4c444556 ('LDEV') dlen=4
+[36761629] LOG [rt] Received command=0x4c444556 (LDEV), len=4
+[36789582] ATTEST resp 3 status=1 dlen=729 fw_err_nf=00000000
+[36809587] ATTEST req 4 cmd=43455246 ('CERF') dlen=4
+[36812032] LOG [rt] Received command=0x43455246 (CERF), len=4
+[36843174] ATTEST resp 4 status=1 dlen=1052 fw_err_nf=00000000
+[36863179] ATTEST req 5 cmd=43455252 ('CERR') dlen=4
+[36865714] LOG [rt] Received command=0x43455252 (CERR), len=4
+[36895078] ATTEST resp 5 status=1 dlen=841 fw_err_nf=00000000
+[36915083] ATTEST req 6 cmd=4c444d43 ('LDMC') dlen=4
+[36917605] LOG [rt] Received command=0x4c444d43 (LDMC), len=4
+[36999999] heartbeat status=06 trng=217
+[37055792] ATTEST resp 6 status=1 dlen=7753 fw_err_nf=00000000
+[37075797] ATTEST req 7 cmd=434d4346 ('CMCF') dlen=4
+[37078335] LOG [rt] Received command=0x434d4346 (CMCF), len=4
+[37225271] ATTEST resp 7 status=1 dlen=8076 fw_err_nf=00000000
+[37245276] ATTEST req 8 cmd=434d4352 ('CMCR') dlen=4
+[37248053] LOG [rt] Received command=0x434d4352 (CMCR), len=4
+[37387350] ATTEST resp 8 status=1 dlen=7865 fw_err_nf=00000000
+[37407355] ATTEST req 9 cmd=50435251 ('PCRQ') dlen=36
+[37410179] LOG [rt] Received command=0x50435251 (PCRQ), len=36
+[37570529] etrng_req rise
+[37570707] TRNG request 218 serviced
+[37999999] heartbeat status=06 trng=218
+[38327090] ATTEST resp 9 status=1 dlen=1848 fw_err_nf=00000000
+[38347095] ATTEST req 10 cmd=44504543 ('DPEC') dlen=20
+[38349712] LOG [rt] Received command=0x44504543 (DPEC), len=20
+[38375977] ATTEST resp 10 status=1 dlen=44 fw_err_nf=00000000
+[38395982] ATTEST req 11 cmd=44504543 ('DPEC') dlen=92
+[38399309] LOG [rt] Received command=0x44504543 (DPEC), len=92
+[38443338] etrng_req rise
+[38443546] TRNG request 219 serviced
+[38447624] etrng_req rise
+[38447784] TRNG request 220 serviced
+[38451497] etrng_req rise
+[38451611] TRNG request 221 serviced
+[38999999] heartbeat status=06 trng=221
+[39169859] etrng_req rise
+[39170049] TRNG request 222 serviced
+[39999999] heartbeat status=06 trng=222
+[40945156] etrng_req rise
+[40945408] TRNG request 223 serviced
+[40999999] heartbeat status=06 trng=223
+[41999999] heartbeat status=06 trng=223
+[42659941] ATTEST resp 11 status=1 dlen=1160 fw_err_nf=00000000
+[42679946] ATTEST req 12 cmd=4d454153 ('MEAS') dlen=108
+[42683816] LOG [rt] Received command=0x4d454153 (MEAS), len=108
+[42720549] ATTEST resp 12 status=1 dlen=12 fw_err_nf=00000000
+[42740554] ATTEST req 13 cmd=50435251 ('PCRQ') dlen=36
+[42743549] LOG [rt] Received command=0x50435251 (PCRQ), len=36
+[42904006] etrng_req rise
+[42904108] TRNG request 224 serviced
+[42999999] heartbeat status=06 trng=224
+[43660293] ATTEST resp 13 status=1 dlen=1848 fw_err_nf=00000000
+[43680298] ATTEST req 14 cmd=44504543 ('DPEC') dlen=92
+[43683862] LOG [rt] Received command=0x44504543 (DPEC), len=92
+[43731192] etrng_req rise
+[43731329] TRNG request 225 serviced
+[43735486] etrng_req rise
+[43735762] TRNG request 226 serviced
+[43739472] etrng_req rise
+[43739586] TRNG request 227 serviced
+[43999999] heartbeat status=06 trng=227
+[44457724] etrng_req rise
+[44457822] TRNG request 228 serviced
+[44999999] heartbeat status=06 trng=228
+[45999999] heartbeat status=06 trng=228
+[46240938] etrng_req rise
+[46241135] TRNG request 229 serviced
+[46999999] heartbeat status=06 trng=229
+[47956275] ATTEST resp 14 status=1 dlen=1317 fw_err_nf=00000000
+[47976280] ATTEST req 15 cmd=44504543 ('DPEC') dlen=28
+[47978761] LOG [rt] Received command=0x44504543 (DPEC), len=28
+[47999999] heartbeat status=06 trng=229
+[48027708] ATTEST resp 15 status=1 dlen=2076 fw_err_nf=00000000
+[48047713] ATTEST req 16 cmd=44504543 ('DPEC') dlen=28
+[48050799] LOG [rt] Received command=0x44504543 (DPEC), len=28
+[48097509] ATTEST resp 16 status=1 dlen=2076 fw_err_nf=00000000
+[48117514] ATTEST req 17 cmd=4450454d ('DPEM') dlen=36
+[48120524] LOG [rt] Received command=0x4450454d (DPEM), len=36
+[48141824] etrng_req rise
+[48141940] TRNG request 230 serviced
+[48144930] etrng_req rise
+[48145158] TRNG request 231 serviced
+[48145449] etrng_req rise
+[48145718] TRNG request 232 serviced
+[48179082] etrng_req rise
+[48179323] TRNG request 233 serviced
+[48179609] etrng_req rise
+[48179882] TRNG request 234 serviced
+[48446936] etrng_req rise
+[48447066] TRNG request 235 serviced
+[48449946] etrng_req rise
+[48450071] TRNG request 236 serviced
+[48450360] etrng_req rise
+[48450634] TRNG request 237 serviced
+[48483986] etrng_req rise
+[48484239] TRNG request 238 serviced
+[48484522] etrng_req rise
+[48484797] TRNG request 239 serviced
+[48765037] ATTEST resp 17 status=1 dlen=44 fw_err_nf=00000000
+[48785042] ATTEST req 18 cmd=4450454d ('DPEM') dlen=108
+[48788593] LOG [rt] Received command=0x4450454d (DPEM), len=108
+[48810358] etrng_req rise
+[48810597] TRNG request 240 serviced
+[48813496] etrng_req rise
+[48813601] TRNG request 241 serviced
+[48813888] etrng_req rise
+[48814163] TRNG request 242 serviced
+[48847510] etrng_req rise
+[48847769] TRNG request 243 serviced
+[48848058] etrng_req rise
+[48848333] TRNG request 244 serviced
+[48999999] heartbeat status=06 trng=244
+[49114798] etrng_req rise
+[49114906] TRNG request 245 serviced
+[49117934] etrng_req rise
+[49118115] TRNG request 246 serviced
+[49118407] etrng_req rise
+[49118681] TRNG request 247 serviced
+[49152028] etrng_req rise
+[49152291] TRNG request 248 serviced
+[49152575] etrng_req rise
+[49152850] TRNG request 249 serviced
+[49454770] etrng_req rise
+[49454919] TRNG request 250 serviced
+[49458945] etrng_req rise
+[49459151] TRNG request 251 serviced
+[49462451] etrng_req rise
+[49462569] TRNG request 252 serviced
+[49462855] etrng_req rise
+[49463129] TRNG request 253 serviced
+[49496478] etrng_req rise
+[49496736] TRNG request 254 serviced
+[49497026] etrng_req rise
+[49497301] TRNG request 255 serviced
+[49837981] etrng_req rise
+[49838130] TRNG request 256 serviced
+[49838420] etrng_req rise
+[49838688] TRNG request 257 serviced
+[49999999] heartbeat status=06 trng=257
+[50097743] ATTEST resp 18 status=1 dlen=10835 fw_err_nf=00000000
+[50117748] ATTEST req 19 cmd=4450454d ('DPEM') dlen=44
+[50120758] LOG [rt] Received command=0x4450454d (DPEM), len=44
+[50142158] etrng_req rise
+[50142394] TRNG request 258 serviced
+[50145275] etrng_req rise
+[50145401] TRNG request 259 serviced
+[50145693] etrng_req rise
+[50145963] TRNG request 260 serviced
+[50179321] etrng_req rise
+[50179575] TRNG request 261 serviced
+[50179866] etrng_req rise
+[50180139] TRNG request 262 serviced
+[50446937] etrng_req rise
+[50447120] TRNG request 263 serviced
+[50449974] etrng_req rise
+[50450126] TRNG request 264 serviced
+[50450411] etrng_req rise
+[50450685] TRNG request 265 serviced
+[50484038] etrng_req rise
+[50484295] TRNG request 266 serviced
+[50484586] etrng_req rise
+[50484861] TRNG request 267 serviced
+[50786403] ATTEST resp 19 status=1 dlen=2076 fw_err_nf=00000000
+[50806408] ATTEST req 20 cmd=4450454d ('DPEM') dlen=44
+[50809393] LOG [rt] Received command=0x4450454d (DPEM), len=44
+[50831002] etrng_req rise
+[50831255] TRNG request 268 serviced
+[50834296] etrng_req rise
+[50834470] TRNG request 269 serviced
+[50834754] etrng_req rise
+[50835028] TRNG request 270 serviced
+[50868374] etrng_req rise
+[50868634] TRNG request 271 serviced
+[50868922] etrng_req rise
+[50869197] TRNG request 272 serviced
+[50999999] heartbeat status=06 trng=272
+[51135962] etrng_req rise
+[51136186] TRNG request 273 serviced
+[51139035] etrng_req rise
+[51139194] TRNG request 274 serviced
+[51139483] etrng_req rise
+[51139757] TRNG request 275 serviced
+[51173103] etrng_req rise
+[51173367] TRNG request 276 serviced
+[51173650] etrng_req rise
+[51173925] TRNG request 277 serviced
+[51475876] ATTEST resp 20 status=1 dlen=2076 fw_err_nf=00000000
+[51495881] ATTEST req 21 cmd=4450454d ('DPEM') dlen=44
+[51498825] LOG [rt] Received command=0x4450454d (DPEM), len=44
+[51520162] etrng_req rise
+[51520320] TRNG request 278 serviced
+[51523352] etrng_req rise
+[51523535] TRNG request 279 serviced
+[51523820] etrng_req rise
+[51524095] TRNG request 280 serviced
+[51557440] etrng_req rise
+[51557701] TRNG request 281 serviced
+[51557988] etrng_req rise
+[51558263] TRNG request 282 serviced
+[51824963] etrng_req rise
+[51825244] TRNG request 283 serviced
+[51828240] etrng_req rise
+[51828453] TRNG request 284 serviced
+[51828743] etrng_req rise
+[51829017] TRNG request 285 serviced
+[51862364] etrng_req rise
+[51862627] TRNG request 286 serviced
+[51862912] etrng_req rise
+[51863187] TRNG request 287 serviced
+[51999999] heartbeat status=06 trng=287
+[52164729] ATTEST resp 21 status=1 dlen=2076 fw_err_nf=00000000
+[52184734] ATTEST req 22 cmd=4450454d ('DPEM') dlen=44
+[52187729] LOG [rt] Received command=0x4450454d (DPEM), len=44
+[52209258] etrng_req rise
+[52209378] TRNG request 288 serviced
+[52212238] etrng_req rise
+[52212391] TRNG request 289 serviced
+[52212674] etrng_req rise
+[52212948] TRNG request 290 serviced
+[52246293] etrng_req rise
+[52246555] TRNG request 291 serviced
+[52246842] etrng_req rise
+[52247117] TRNG request 292 serviced
+[52513695] etrng_req rise
+[52513902] TRNG request 293 serviced
+[52516842] etrng_req rise
+[52517111] TRNG request 294 serviced
+[52517400] etrng_req rise
+[52517674] TRNG request 295 serviced
+[52551017] etrng_req rise
+[52551281] TRNG request 296 serviced
+[52551565] etrng_req rise
+[52551840] TRNG request 297 serviced
+[52853790] ATTEST resp 22 status=1 dlen=2076 fw_err_nf=00000000
+[52873795] ATTEST req 23 cmd=4450454d ('DPEM') dlen=44
+[52876810] LOG [rt] Received command=0x4450454d (DPEM), len=44
+[52898231] etrng_req rise
+[52898438] TRNG request 298 serviced
+[52901304] etrng_req rise
+[52901451] TRNG request 299 serviced
+[52901739] etrng_req rise
+[52902014] TRNG request 300 serviced
+[52935358] etrng_req rise
+[52935620] TRNG request 301 serviced
+[52935907] etrng_req rise
+[52936183] TRNG request 302 serviced
+[52999999] heartbeat status=06 trng=302
+[53202840] etrng_req rise
+[53202969] TRNG request 303 serviced
+[53205932] etrng_req rise
+[53206178] TRNG request 304 serviced
+[53206469] etrng_req rise
+[53206743] TRNG request 305 serviced
+[53240088] etrng_req rise
+[53240351] TRNG request 306 serviced
+[53240636] etrng_req rise
+[53240911] TRNG request 307 serviced
+[53543065] ATTEST resp 23 status=1 dlen=2076 fw_err_nf=00000000
+[53563070] ATTEST req 24 cmd=4450454d ('DPEM') dlen=44
+[53565832] LOG [rt] Received command=0x4450454d (DPEM), len=44
+[53587252] etrng_req rise
+[53587510] TRNG request 308 serviced
+[53590493] etrng_req rise
+[53590722] TRNG request 309 serviced
+[53591006] etrng_req rise
+[53591280] TRNG request 310 serviced
+[53624625] etrng_req rise
+[53624887] TRNG request 311 serviced
+[53625174] etrng_req rise
+[53625449] TRNG request 312 serviced
+[53892339] etrng_req rise
+[53892438] TRNG request 313 serviced
+[53895311] etrng_req rise
+[53895451] TRNG request 314 serviced
+[53895737] etrng_req rise
+[53896010] TRNG request 315 serviced
+[53929356] etrng_req rise
+[53929620] TRNG request 316 serviced
+[53929903] etrng_req rise
+[53930178] TRNG request 317 serviced
+[53999999] heartbeat status=06 trng=317
+[54232129] ATTEST resp 24 status=1 dlen=2076 fw_err_nf=00000000
+[54252134] ATTEST req 25 cmd=4450454d ('DPEM') dlen=44
+[54255621] LOG [rt] Received command=0x4450454d (DPEM), len=44
+[54276902] etrng_req rise
+[54276981] TRNG request 318 serviced
+[54279866] etrng_req rise
+[54279990] TRNG request 319 serviced
+[54280278] etrng_req rise
+[54280553] TRNG request 320 serviced
+[54313896] etrng_req rise
+[54314158] TRNG request 321 serviced
+[54314445] etrng_req rise
+[54314721] TRNG request 322 serviced
+[54581711] etrng_req rise
+[54581915] TRNG request 323 serviced
+[54584785] etrng_req rise
+[54584921] TRNG request 324 serviced
+[54585211] etrng_req rise
+[54585485] TRNG request 325 serviced
+[54618832] etrng_req rise
+[54619095] TRNG request 326 serviced
+[54619380] etrng_req rise
+[54619655] TRNG request 327 serviced
+[54921401] ATTEST resp 25 status=1 dlen=2076 fw_err_nf=00000000
+[54941406] ATTEST req 26 cmd=4450454d ('DPEM') dlen=44
+[54944489] LOG [rt] Received command=0x4450454d (DPEM), len=44
+[54965565] etrng_req rise
+[54965845] TRNG request 328 serviced
+[54968865] etrng_req rise
+[54969056] TRNG request 329 serviced
+[54969345] etrng_req rise
+[54969619] TRNG request 330 serviced
+[54999999] heartbeat status=06 trng=330
+[55002964] etrng_req rise
+[55003226] TRNG request 331 serviced
+[55003513] etrng_req rise
+[55003788] TRNG request 332 serviced
+[55270655] etrng_req rise
+[55270777] TRNG request 333 serviced
+[55273681] etrng_req rise
+[55273788] TRNG request 334 serviced
+[55274072] etrng_req rise
+[55274345] TRNG request 335 serviced
+[55307691] etrng_req rise
+[55307955] TRNG request 336 serviced
+[55308239] etrng_req rise
+[55308514] TRNG request 337 serviced
+[55610261] ATTEST resp 26 status=1 dlen=2076 fw_err_nf=00000000
+[55630266] ATTEST req 27 cmd=4450454d ('DPEM') dlen=44
+[55633264] LOG [rt] Received command=0x4450454d (DPEM), len=44
+[55654580] etrng_req rise
+[55654705] TRNG request 338 serviced
+[55657711] etrng_req rise
+[55657916] TRNG request 339 serviced
+[55658201] etrng_req rise
+[55658476] TRNG request 340 serviced
+[55691820] etrng_req rise
+[55692082] TRNG request 341 serviced
+[55692369] etrng_req rise
+[55692645] TRNG request 342 serviced
+[55959647] etrng_req rise
+[55959839] TRNG request 343 serviced
+[55962852] etrng_req rise
+[55963050] TRNG request 344 serviced
+[55963334] etrng_req rise
+[55963608] TRNG request 345 serviced
+[55996955] etrng_req rise
+[55997218] TRNG request 346 serviced
+[55997502] etrng_req rise
+[55997777] TRNG request 347 serviced
+[55999999] heartbeat status=06 trng=347
+[56299523] ATTEST resp 27 status=1 dlen=2076 fw_err_nf=00000000
+[56319528] ATTEST req 28 cmd=4450454d ('DPEM') dlen=44
+[56322559] LOG [rt] Received command=0x4450454d (DPEM), len=44
+[56343872] etrng_req rise
+[56343968] TRNG request 348 serviced
+[56346946] etrng_req rise
+[56347177] TRNG request 349 serviced
+[56347460] etrng_req rise
+[56347734] TRNG request 350 serviced
+[56381078] etrng_req rise
+[56381340] TRNG request 351 serviced
+[56381627] etrng_req rise
+[56381902] TRNG request 352 serviced
+[56648770] etrng_req rise
+[56648891] TRNG request 353 serviced
+[56651752] etrng_req rise
+[56651904] TRNG request 354 serviced
+[56652189] etrng_req rise
+[56652462] TRNG request 355 serviced
+[56685808] etrng_req rise
+[56686072] TRNG request 356 serviced
+[56686355] etrng_req rise
+[56686630] TRNG request 357 serviced
+[56988580] ATTEST resp 28 status=1 dlen=2076 fw_err_nf=00000000
+[56999999] heartbeat status=16 trng=357
+[57008585] ATTEST req 29 cmd=4450454d ('DPEM') dlen=44
+[57011718] LOG [rt] Received command=0x4450454d (DPEM), len=44
+[57033016] etrng_req rise
+[57033229] TRNG request 358 serviced
+[57036181] etrng_req rise
+[57036440] TRNG request 359 serviced
+[57036727] etrng_req rise
+[57037002] TRNG request 360 serviced
+[57070345] etrng_req rise
+[57070607] TRNG request 361 serviced
+[57070894] etrng_req rise
+[57071170] TRNG request 362 serviced
+[57337822] etrng_req rise
+[57337956] TRNG request 363 serviced
+[57340998] etrng_req rise
+[57341169] TRNG request 364 serviced
+[57341456] etrng_req rise
+[57341730] TRNG request 365 serviced
+[57375077] etrng_req rise
+[57375340] TRNG request 366 serviced
+[57375624] etrng_req rise
+[57375899] TRNG request 367 serviced
+[57677645] ATTEST resp 29 status=1 dlen=2076 fw_err_nf=00000000
+[57697650] ATTEST req 30 cmd=4450454d ('DPEM') dlen=44
+[57700767] LOG [rt] Received command=0x4450454d (DPEM), len=44
+[57722063] etrng_req rise
+[57722293] TRNG request 368 serviced
+[57725235] etrng_req rise
+[57725510] TRNG request 369 serviced
+[57725793] etrng_req rise
+[57726067] TRNG request 370 serviced
+[57759411] etrng_req rise
+[57759673] TRNG request 371 serviced
+[57759960] etrng_req rise
+[57760235] TRNG request 372 serviced
+[57999999] heartbeat status=06 trng=372
+[58026889] etrng_req rise
+[58027020] TRNG request 373 serviced
+[58029964] etrng_req rise
+[58030238] TRNG request 374 serviced
+[58030523] etrng_req rise
+[58030797] TRNG request 375 serviced
+[58064140] etrng_req rise
+[58064404] TRNG request 376 serviced
+[58064688] etrng_req rise
+[58064963] TRNG request 377 serviced
+[58366098] ATTEST resp 30 status=1 dlen=2076 fw_err_nf=00000000
+[58386103] ATTEST req 31 cmd=5043524d ('PCRM') dlen=36
+[58389120] LOG [rt] Received command=0x5043524d (PCRM), len=36
+[58549705] etrng_req rise
+[58549862] TRNG request 378 serviced
+[58550150] etrng_req rise
+[58550425] TRNG request 379 serviced
+[58932857] ATTEST resp 31 status=1 dlen=6396 fw_err_nf=00000000
+[58952862] ATTEST req 32 cmd=49444543 ('IDEC') dlen=565
+[58961831] LOG [rt] Received command=0x49444543 (IDEC), len=565
+[58991424] ATTEST resp 32 status=1 dlen=595 fw_err_nf=00000000
+[58999999] heartbeat status=16 trng=379
+[59011429] ATTEST req 33 cmd=49444d43 ('IDMC') dlen=7455
+[59099703] LOG [rt] Received command=0x49444d43 (IDMC), len=7455
+[59240360] ATTEST resp 33 status=1 dlen=7480 fw_err_nf=00000000
+[59260365] ATTEST done, 34 commands
+  CPTRA_BOOT_STATUS        = 00000000
+  CPTRA_FLOW_STATUS        = b8000000
+  CPTRA_HW_ERROR_FATAL     = 00000000
+  CPTRA_FW_ERROR_FATAL     = 00000000
+  CPTRA_HW_ERROR_NON_FATAL = 00000000
+  CPTRA_FW_ERROR_NON_FATAL = 00000000
+SUMMARY ready_for_fuses=40 fuses_done=591 first_trng=379134 ready_for_mb_processing=5542265 fw_load_issued=6049751 mbox_complete=21319057 rom_to_fmc=30035490 fmc_to_rt=36217537 ready_for_runtime=36597934 trng_fills=379 fuse_writes=118
+TB_NIOS2X PASS cyc=59280395 trng=379 (prod, debug locked)
+- /workspace/exports/caliptra-a5e-2x-quartus-repo/sim_2x/tb_nios2x_top_fw.sv:250: Verilog $finish
+- S i m u l a t i o n   R e p o r t: Verilator 5.054 2026-11-01
+- Verilator: $finish at 593ms; walltime 7517.801 s; speed 78.853 us/s
+- Verilator: cpu 29963.309 s on 4 threads; allocated 18 MB
+wall_time_s=10639 end Tue Nov 10 20:14:14 CST 2026

@@ -1,0 +1,1185 @@
+{
+ "certs": {
+  "idevid_ecc384": {
+   "file": "idevid_ecc384.der",
+   "size": 583,
+   "sha256": "20625364fa4abebf524701e4ad7aeade9dec7c5b40075878d63d18a38fda743b",
+   "subject": "serialNumber=465F26802558F7C19B96BED12F96C3A8EDFC0D5046793CDD89339F2B92F54880,CN=Caliptra 2.1 Ecc384 IDevID",
+   "issuer": "CN=TEST Mfg CA ECC,O=TEST ONLY Nios-A5E Mfg",
+   "serial": "2937CB49210C1A87",
+   "not_before": "Nov 10 23:20:12 2026 GMT",
+   "not_after": "Oct 17 23:20:12 2126 GMT",
+   "key_alg": "id-ecPublicKey",
+   "sig_alg": "ecdsa-with-SHA384",
+   "basic_constraints": "CA:TRUE",
+   "key_usage": [
+    "Certificate Sign"
+   ],
+   "extensions": [
+    {
+     "oid": "2.5.29.19",
+     "name": "",
+     "critical": true
+    },
+    {
+     "oid": "2.5.29.15",
+     "name": "",
+     "critical": true
+    },
+    {
+     "oid": "2.5.29.14",
+     "name": "",
+     "critical": false
+    },
+    {
+     "oid": "2.5.29.35",
+     "name": "",
+     "critical": false
+    }
+   ]
+  },
+  "ldevid_ecc384": {
+   "file": "ldevid_ecc384.der",
+   "size": 717,
+   "sha256": "6fb950be62b4c72003fe15172a02307bbb963874a18f319816aed4106cb1e827",
+   "subject": "serialNumber=1F841080777DC4DCB53ECC49B9D2EDF83D06614881DA450B455B01291BCFE791,CN=Caliptra 2.1 Ecc384 LDevID",
+   "issuer": "serialNumber=465F26802558F7C19B96BED12F96C3A8EDFC0D5046793CDD89339F2B92F54880,CN=Caliptra 2.1 Ecc384 IDevID",
+   "serial": "1F841080777DC4DCB53ECC49B9D2EDF83D066148",
+   "not_before": "Jan  1 00:00:00 2023 GMT",
+   "not_after": "Dec 31 23:59:59 9999 GMT",
+   "key_alg": "id-ecPublicKey",
+   "sig_alg": "ecdsa-with-SHA384",
+   "basic_constraints": "CA:TRUE, pathlen:6",
+   "key_usage": [
+    "Certificate Sign"
+   ],
+   "extensions": [
+    {
+     "oid": "2.5.29.19",
+     "name": "",
+     "critical": true
+    },
+    {
+     "oid": "2.5.29.15",
+     "name": "",
+     "critical": true
+    },
+    {
+     "oid": "2.23.133.5.4.4",
+     "name": "tcg-dice-Ueid",
+     "critical": false,
+     "ueid": "0000000000000000000000000000000000"
+    },
+    {
+     "oid": "2.5.29.37",
+     "name": "",
+     "critical": false
+    },
+    {
+     "oid": "2.5.29.14",
+     "name": "",
+     "critical": false
+    },
+    {
+     "oid": "2.5.29.35",
+     "name": "",
+     "critical": false
+    }
+   ]
+  },
+  "fmc_alias_ecc384": {
+   "file": "fmc_alias_ecc384.der",
+   "size": 1040,
+   "sha256": "cadef79e862bc416c1ac8e375fe1827f654c61d5c9b1b25f2b613be4a3459e86",
+   "subject": "serialNumber=CF64C9DDE91AB6A555139A29C15F24B3B10EE0FB38BAD3D9B90C690EEA7821C7,CN=Caliptra 2.1 Ecc384 FMC Alias",
+   "issuer": "serialNumber=1F841080777DC4DCB53ECC49B9D2EDF83D06614881DA450B455B01291BCFE791,CN=Caliptra 2.1 Ecc384 LDevID",
+   "serial": "4F64C9DDE91AB6A555139A29C15F24B3B10EE0FB",
+   "not_before": "Jan  1 00:00:00 2023 GMT",
+   "not_after": "Dec 31 23:59:59 9999 GMT",
+   "key_alg": "id-ecPublicKey",
+   "sig_alg": "ecdsa-with-SHA384",
+   "basic_constraints": "CA:TRUE, pathlen:5",
+   "key_usage": [
+    "Certificate Sign"
+   ],
+   "extensions": [
+    {
+     "oid": "2.5.29.19",
+     "name": "",
+     "critical": true
+    },
+    {
+     "oid": "2.5.29.15",
+     "name": "",
+     "critical": true
+    },
+    {
+     "oid": "2.23.133.5.4.4",
+     "name": "tcg-dice-Ueid",
+     "critical": false,
+     "ueid": "0000000000000000000000000000000000"
+    },
+    {
+     "oid": "2.5.29.37",
+     "name": "",
+     "critical": false
+    },
+    {
+     "oid": "2.23.133.5.4.5",
+     "name": "tcg-dice-MultiTcbInfo",
+     "critical": false,
+     "multi_tcb_info": [
+      {
+       "fwids": [
+        {
+         "alg": "sha384",
+         "digest": "f3f332e1fbf3b75b5192cdf0b594f61afbf7f91710c306b46a1940470938dda7776d3dc180f47da18c5c036e725f4bf1"
+        }
+       ],
+       "type": "43414c49505452415f325f585f465553455f4f574e45525f494e464f ('CALIPTRA_2_X_FUSE_OWNER_INFO')"
+      },
+      {
+       "fwids": [
+        {
+         "alg": "sha384",
+         "digest": "e52a189b220954d57bcfbbcbfbd3f40137019390729f0ab36e9705842724a19305b7563a8bff6594925110a7858693b0"
+        }
+       ],
+       "type": "43414c49505452415f325f585f465553455f56454e444f525f494e464f ('CALIPTRA_2_X_FUSE_VENDOR_INFO')"
+      },
+      {
+       "svn": 256,
+       "fwids": [
+        {
+         "alg": "sha384",
+         "digest": "13ab82496a0cb5625a3af929cfe6a233bc7701d5cd9054187883fa033ee99566f2a44738485a349b9e7709c3bb856f9f"
+        }
+       ],
+       "type": "43414c49505452415f325f585f464d435f4649524d574152455f494e464f ('CALIPTRA_2_X_FMC_FIRMWARE_INFO')"
+      }
+     ]
+    },
+    {
+     "oid": "2.5.29.14",
+     "name": "",
+     "critical": false
+    },
+    {
+     "oid": "2.5.29.35",
+     "name": "",
+     "critical": false
+    }
+   ]
+  },
+  "rt_alias_ecc384": {
+   "file": "rt_alias_ecc384.der",
+   "size": 829,
+   "sha256": "604af936a6b7b3193e60fcc6ed7dca9643c50f0e819f52431021ae2e12dd751a",
+   "subject": "serialNumber=E61EC4C252064A0AF7A10408DDD6D291F9F1666A5C24E76F4522F2B911F86627,CN=Caliptra 2.1 Ecc384 Rt Alias",
+   "issuer": "serialNumber=CF64C9DDE91AB6A555139A29C15F24B3B10EE0FB38BAD3D9B90C690EEA7821C7,CN=Caliptra 2.1 Ecc384 FMC Alias",
+   "serial": "661EC4C252064A0AF7A10408DDD6D291F9F1666A",
+   "not_before": "Jan  1 00:00:00 2023 GMT",
+   "not_after": "Dec 31 23:59:59 9999 GMT",
+   "key_alg": "id-ecPublicKey",
+   "sig_alg": "ecdsa-with-SHA384",
+   "basic_constraints": "CA:TRUE, pathlen:4",
+   "key_usage": [
+    "Digital Signature, Certificate Sign"
+   ],
+   "extensions": [
+    {
+     "oid": "2.5.29.19",
+     "name": "",
+     "critical": true
+    },
+    {
+     "oid": "2.5.29.15",
+     "name": "",
+     "critical": true
+    },
+    {
+     "oid": "2.23.133.5.4.4",
+     "name": "tcg-dice-Ueid",
+     "critical": false,
+     "ueid": "0000000000000000000000000000000000"
+    },
+    {
+     "oid": "2.5.29.37",
+     "name": "",
+     "critical": false
+    },
+    {
+     "oid": "2.23.133.5.4.1",
+     "name": "tcg-dice-TcbInfo",
+     "critical": false,
+     "tcb_info": {
+      "svn": 256,
+      "fwids": [
+       {
+        "alg": "sha384",
+        "digest": "e3dc800c1fb2ee2e953c07c5eec2f23a1e4f7b09c050c63795d49976407df74cb19978cd3cbb0ef1fc399edee14cc1a2"
+       }
+      ],
+      "type": "43414c49505452415f325f585f52545f4649524d574152455f494e464f ('CALIPTRA_2_X_RT_FIRMWARE_INFO')"
+     }
+    },
+    {
+     "oid": "2.5.29.14",
+     "name": "",
+     "critical": false
+    },
+    {
+     "oid": "2.5.29.35",
+     "name": "",
+     "critical": false
+    }
+   ]
+  },
+  "dpe_ecc_leaf_after": {
+   "file": "dpe_ecc_leaf_after.der",
+   "size": 1177,
+   "sha256": "6b763ff6c00083151469df512c43e264e404802437e20e9fcae02b99073e6b75",
+   "subject": "serialNumber=F190BA8284DA4990EFD45F7E1BD69660FD09E8A7EAB0ADB8D39E76589ECDAC28,CN=DPE Leaf",
+   "issuer": "serialNumber=E61EC4C252064A0AF7A10408DDD6D291F9F1666A5C24E76F4522F2B911F86627,CN=Caliptra 2.1 Ecc384 Rt Alias",
+   "serial": "4631393042413832383444413439393045464434",
+   "not_before": "Jan  1 00:00:00 2023 GMT",
+   "not_after": "Dec 31 23:59:59 9999 GMT",
+   "key_alg": "id-ecPublicKey",
+   "sig_alg": "ecdsa-with-SHA384",
+   "basic_constraints": "CA:FALSE",
+   "key_usage": [
+    "Digital Signature"
+   ],
+   "extensions": [
+    {
+     "oid": "2.23.133.5.4.5",
+     "name": "tcg-dice-MultiTcbInfo",
+     "critical": false,
+     "multi_tcb_info": [
+      {
+       "svn": 0,
+       "fwids": [
+        {
+         "alg": "sha384",
+         "digest": "12b8f5b035d78baee97e33cea33ab03d51a7c0af71e9ed9fb243589dee117bd2490def4987b7e7abb4f0c2ee6963fc41"
+        }
+       ],
+       "vendorInfo": "ffffffff",
+       "type": "524d5452 ('RMTR')"
+      },
+      {
+       "svn": 0,
+       "fwids": [
+        {
+         "alg": "sha384",
+         "digest": "0c10074f98db85d2ca992692854cac0f494bff9dc97f2cac45c65ada47e6c4ae3fe37d3b2863427d20fbd327d8fb7215"
+        }
+       ],
+       "vendorInfo": "00000001",
+       "type": "56494343 ('VICC')"
+      },
+      {
+       "svn": 1,
+       "fwids": [
+        {
+         "alg": "sha384",
+         "digest": "a206a828e5aa1592be7e20300d6b735667df5ed305fa3603501a04ff9286fce00870532215cb9664525e8ae7c5281877"
+        }
+       ],
+       "vendorInfo": "00000001",
+       "type": "4e494f53 ('NIOS')"
+      }
+     ]
+    },
+    {
+     "oid": "2.23.133.5.4.4",
+     "name": "tcg-dice-Ueid",
+     "critical": false,
+     "ueid": "9d825732a621bb96d074bf8941fa6a0c754af818723b9d54556c5d7d954b15e91360f88a1bb29b1af96ac124a8924e0f"
+    },
+    {
+     "oid": "2.5.29.19",
+     "name": "",
+     "critical": true
+    },
+    {
+     "oid": "2.5.29.15",
+     "name": "",
+     "critical": true
+    },
+    {
+     "oid": "2.5.29.37",
+     "name": "",
+     "critical": true
+    },
+    {
+     "oid": "2.5.29.35",
+     "name": "",
+     "critical": false
+    }
+   ]
+  },
+  "idevid_mldsa87": {
+   "file": "idevid_mldsa87.der",
+   "size": 7468,
+   "sha256": "1153094f2f90d96a697440f418f165220090d50c0800cee2dc202589c6832af9",
+   "subject": "serialNumber=27A9FFCB5D54F6A01DF66BDBE778666169F9BEF7FFF5164026A936B66C7FF274,CN=Caliptra 2.1 MlDsa87 IDevID",
+   "issuer": "CN=CA",
+   "serial": "01",
+   "not_before": "Nov 10 23:28:08 2026 GMT",
+   "not_after": "Nov  7 23:28:08 2036 GMT",
+   "key_alg": "ML-DSA-87",
+   "sig_alg": "ML-DSA-87",
+   "basic_constraints": "CA:TRUE",
+   "key_usage": [],
+   "extensions": [
+    {
+     "oid": "2.5.29.19",
+     "name": "",
+     "critical": false
+    }
+   ]
+  },
+  "ldevid_mldsa87": {
+   "file": "ldevid_mldsa87.der",
+   "size": 7741,
+   "sha256": "3de536d81f3046c3ceaae4e6cbcabcae7b923d920c62ec1c9a34ea03bcd2b465",
+   "subject": "serialNumber=7DC585CDEEB418B0E8445BCB8166E5A3C00A8A02FAA099DDBB28D1AF6F797741,CN=Caliptra 2.1 MlDsa87 LDevID",
+   "issuer": "serialNumber=27A9FFCB5D54F6A01DF66BDBE778666169F9BEF7FFF5164026A936B66C7FF274,CN=Caliptra 2.1 MlDsa87 IDevID",
+   "serial": "7DC585CDEEB418B0E8445BCB8166E5A3C00A8A02",
+   "not_before": "Jan  1 00:00:00 2023 GMT",
+   "not_after": "Dec 31 23:59:59 9999 GMT",
+   "key_alg": "ML-DSA-87",
+   "sig_alg": "ML-DSA-87",
+   "basic_constraints": "CA:TRUE, pathlen:6",
+   "key_usage": [
+    "Certificate Sign"
+   ],
+   "extensions": [
+    {
+     "oid": "2.5.29.19",
+     "name": "",
+     "critical": true
+    },
+    {
+     "oid": "2.5.29.15",
+     "name": "",
+     "critical": true
+    },
+    {
+     "oid": "2.23.133.5.4.4",
+     "name": "tcg-dice-Ueid",
+     "critical": false,
+     "ueid": "0000000000000000000000000000000000"
+    },
+    {
+     "oid": "2.5.29.37",
+     "name": "",
+     "critical": false
+    },
+    {
+     "oid": "2.5.29.14",
+     "name": "",
+     "critical": false
+    },
+    {
+     "oid": "2.5.29.35",
+     "name": "",
+     "critical": false
+    }
+   ]
+  },
+  "fmc_alias_mldsa87": {
+   "file": "fmc_alias_mldsa87.der",
+   "size": 8064,
+   "sha256": "8a423599ae08bc0d89659897d762a8019394b03f790eb31b0948d804008d6476",
+   "subject": "serialNumber=DC224A78710479BF3CB2823EBF74EAFAA38AF89558D21C54BA5D94ED9A9D5183,CN=Caliptra 2.1 MlDsa87 FMC Alias",
+   "issuer": "serialNumber=7DC585CDEEB418B0E8445BCB8166E5A3C00A8A02FAA099DDBB28D1AF6F797741,CN=Caliptra 2.1 MlDsa87 LDevID",
+   "serial": "5C224A78710479BF3CB2823EBF74EAFAA38AF895",
+   "not_before": "Jan  1 00:00:00 2023 GMT",
+   "not_after": "Dec 31 23:59:59 9999 GMT",
+   "key_alg": "ML-DSA-87",
+   "sig_alg": "ML-DSA-87",
+   "basic_constraints": "CA:TRUE, pathlen:5",
+   "key_usage": [
+    "Certificate Sign"
+   ],
+   "extensions": [
+    {
+     "oid": "2.5.29.19",
+     "name": "",
+     "critical": true
+    },
+    {
+     "oid": "2.5.29.15",
+     "name": "",
+     "critical": true
+    },
+    {
+     "oid": "2.23.133.5.4.4",
+     "name": "tcg-dice-Ueid",
+     "critical": false,
+     "ueid": "0000000000000000000000000000000000"
+    },
+    {
+     "oid": "2.5.29.37",
+     "name": "",
+     "critical": false
+    },
+    {
+     "oid": "2.23.133.5.4.5",
+     "name": "tcg-dice-MultiTcbInfo",
+     "critical": false,
+     "multi_tcb_info": [
+      {
+       "fwids": [
+        {
+         "alg": "sha384",
+         "digest": "f3f332e1fbf3b75b5192cdf0b594f61afbf7f91710c306b46a1940470938dda7776d3dc180f47da18c5c036e725f4bf1"
+        }
+       ],
+       "type": "43414c49505452415f325f585f465553455f4f574e45525f494e464f ('CALIPTRA_2_X_FUSE_OWNER_INFO')"
+      },
+      {
+       "fwids": [
+        {
+         "alg": "sha384",
+         "digest": "e52a189b220954d57bcfbbcbfbd3f40137019390729f0ab36e9705842724a19305b7563a8bff6594925110a7858693b0"
+        }
+       ],
+       "type": "43414c49505452415f325f585f465553455f56454e444f525f494e464f ('CALIPTRA_2_X_FUSE_VENDOR_INFO')"
+      },
+      {
+       "svn": 256,
+       "fwids": [
+        {
+         "alg": "sha384",
+         "digest": "13ab82496a0cb5625a3af929cfe6a233bc7701d5cd9054187883fa033ee99566f2a44738485a349b9e7709c3bb856f9f"
+        }
+       ],
+       "type": "43414c49505452415f325f585f464d435f4649524d574152455f494e464f ('CALIPTRA_2_X_FMC_FIRMWARE_INFO')"
+      }
+     ]
+    },
+    {
+     "oid": "2.5.29.14",
+     "name": "",
+     "critical": false
+    },
+    {
+     "oid": "2.5.29.35",
+     "name": "",
+     "critical": false
+    }
+   ]
+  },
+  "rt_alias_mldsa87": {
+   "file": "rt_alias_mldsa87.der",
+   "size": 7853,
+   "sha256": "95bb4be9ddc97a285a4c0e84f5c245b90947a3767cd41a7876f381daaea603cf",
+   "subject": "serialNumber=8371DD71B63F6F978FDDD2DF976398F484A055741BD36B5798115D695D3143CF,CN=Caliptra 2.1 MlDsa87 Rt Alias",
+   "issuer": "serialNumber=DC224A78710479BF3CB2823EBF74EAFAA38AF89558D21C54BA5D94ED9A9D5183,CN=Caliptra 2.1 MlDsa87 FMC Alias",
+   "serial": "0771DD71B63F6F978FDDD2DF976398F484A05574",
+   "not_before": "Jan  1 00:00:00 2023 GMT",
+   "not_after": "Dec 31 23:59:59 9999 GMT",
+   "key_alg": "ML-DSA-87",
+   "sig_alg": "ML-DSA-87",
+   "basic_constraints": "CA:TRUE, pathlen:4",
+   "key_usage": [
+    "Digital Signature, Certificate Sign"
+   ],
+   "extensions": [
+    {
+     "oid": "2.5.29.19",
+     "name": "",
+     "critical": true
+    },
+    {
+     "oid": "2.5.29.15",
+     "name": "",
+     "critical": true
+    },
+    {
+     "oid": "2.23.133.5.4.4",
+     "name": "tcg-dice-Ueid",
+     "critical": false,
+     "ueid": "0000000000000000000000000000000000"
+    },
+    {
+     "oid": "2.5.29.37",
+     "name": "",
+     "critical": false
+    },
+    {
+     "oid": "2.23.133.5.4.1",
+     "name": "tcg-dice-TcbInfo",
+     "critical": false,
+     "tcb_info": {
+      "svn": 256,
+      "fwids": [
+       {
+        "alg": "sha384",
+        "digest": "e3dc800c1fb2ee2e953c07c5eec2f23a1e4f7b09c050c63795d49976407df74cb19978cd3cbb0ef1fc399edee14cc1a2"
+       }
+      ],
+      "type": "43414c49505452415f325f585f52545f4649524d574152455f494e464f ('CALIPTRA_2_X_RT_FIRMWARE_INFO')"
+     }
+    },
+    {
+     "oid": "2.5.29.14",
+     "name": "",
+     "critical": false
+    },
+    {
+     "oid": "2.5.29.35",
+     "name": "",
+     "critical": false
+    }
+   ]
+  },
+  "dpe_mldsa_leaf_after": {
+   "file": "dpe_mldsa_leaf_after.der",
+   "size": 8199,
+   "sha256": "e68326e2d6593ac5e5842c58a2e8342f71559f8f74f12e66380c4ca6211f97f6",
+   "subject": "serialNumber=BB08DAA2C0F98A0E7EF8A1C40DBA8151E597D286D375DB0D0DB646ADECBE9A03,CN=DPE Leaf",
+   "issuer": "serialNumber=8371DD71B63F6F978FDDD2DF976398F484A055741BD36B5798115D695D3143CF,CN=Caliptra 2.1 MlDsa87 Rt Alias",
+   "serial": "4242303844414132433046393841304537454638",
+   "not_before": "Jan  1 00:00:00 2023 GMT",
+   "not_after": "Dec 31 23:59:59 9999 GMT",
+   "key_alg": "ML-DSA-87",
+   "sig_alg": "ML-DSA-87",
+   "basic_constraints": "CA:FALSE",
+   "key_usage": [
+    "Digital Signature"
+   ],
+   "extensions": [
+    {
+     "oid": "2.23.133.5.4.5",
+     "name": "tcg-dice-MultiTcbInfo",
+     "critical": false,
+     "multi_tcb_info": [
+      {
+       "svn": 0,
+       "fwids": [
+        {
+         "alg": "sha384",
+         "digest": "12b8f5b035d78baee97e33cea33ab03d51a7c0af71e9ed9fb243589dee117bd2490def4987b7e7abb4f0c2ee6963fc41"
+        }
+       ],
+       "vendorInfo": "ffffffff",
+       "type": "524d5452 ('RMTR')"
+      },
+      {
+       "svn": 0,
+       "fwids": [
+        {
+         "alg": "sha384",
+         "digest": "0c10074f98db85d2ca992692854cac0f494bff9dc97f2cac45c65ada47e6c4ae3fe37d3b2863427d20fbd327d8fb7215"
+        }
+       ],
+       "vendorInfo": "00000001",
+       "type": "56494343 ('VICC')"
+      },
+      {
+       "svn": 1,
+       "fwids": [
+        {
+         "alg": "sha384",
+         "digest": "a206a828e5aa1592be7e20300d6b735667df5ed305fa3603501a04ff9286fce00870532215cb9664525e8ae7c5281877"
+        }
+       ],
+       "vendorInfo": "00000001",
+       "type": "4e494f53 ('NIOS')"
+      }
+     ]
+    },
+    {
+     "oid": "2.23.133.5.4.4",
+     "name": "tcg-dice-Ueid",
+     "critical": false,
+     "ueid": "9d825732a621bb96d074bf8941fa6a0c754af818723b9d54556c5d7d954b15e91360f88a1bb29b1af96ac124a8924e0f"
+    },
+    {
+     "oid": "2.5.29.19",
+     "name": "",
+     "critical": true
+    },
+    {
+     "oid": "2.5.29.15",
+     "name": "",
+     "critical": true
+    },
+    {
+     "oid": "2.5.29.37",
+     "name": "",
+     "critical": true
+    },
+    {
+     "oid": "2.5.29.35",
+     "name": "",
+     "critical": false
+    }
+   ]
+  },
+  "dpe_ecc_leaf_before": {
+   "file": "dpe_ecc_leaf_before.der",
+   "size": 1020,
+   "sha256": "24b49eaf28671be39ebf12e4614673815834b5233316dfc8b8e9a50a5317960a",
+   "subject": "serialNumber=7468DC2DA095C63143E6B199B4D63314C6177338C8CD7716D2E9FE8F4F97A8D8,CN=DPE Leaf",
+   "issuer": "serialNumber=E61EC4C252064A0AF7A10408DDD6D291F9F1666A5C24E76F4522F2B911F86627,CN=Caliptra 2.1 Ecc384 Rt Alias",
+   "serial": "3734363844433244413039354336333134334536",
+   "not_before": "Jan  1 00:00:00 2023 GMT",
+   "not_after": "Dec 31 23:59:59 9999 GMT",
+   "key_alg": "id-ecPublicKey",
+   "sig_alg": "ecdsa-with-SHA384",
+   "basic_constraints": "CA:FALSE",
+   "key_usage": [
+    "Digital Signature"
+   ],
+   "extensions": [
+    {
+     "oid": "2.23.133.5.4.5",
+     "name": "tcg-dice-MultiTcbInfo",
+     "critical": false,
+     "multi_tcb_info": [
+      {
+       "svn": 0,
+       "fwids": [
+        {
+         "alg": "sha384",
+         "digest": "12b8f5b035d78baee97e33cea33ab03d51a7c0af71e9ed9fb243589dee117bd2490def4987b7e7abb4f0c2ee6963fc41"
+        }
+       ],
+       "vendorInfo": "ffffffff",
+       "type": "524d5452 ('RMTR')"
+      },
+      {
+       "svn": 0,
+       "fwids": [
+        {
+         "alg": "sha384",
+         "digest": "0c10074f98db85d2ca992692854cac0f494bff9dc97f2cac45c65ada47e6c4ae3fe37d3b2863427d20fbd327d8fb7215"
+        }
+       ],
+       "vendorInfo": "00000001",
+       "type": "56494343 ('VICC')"
+      }
+     ]
+    },
+    {
+     "oid": "2.23.133.5.4.4",
+     "name": "tcg-dice-Ueid",
+     "critical": false,
+     "ueid": "9d825732a621bb96d074bf8941fa6a0c754af818723b9d54556c5d7d954b15e91360f88a1bb29b1af96ac124a8924e0f"
+    },
+    {
+     "oid": "2.5.29.19",
+     "name": "",
+     "critical": true
+    },
+    {
+     "oid": "2.5.29.15",
+     "name": "",
+     "critical": true
+    },
+    {
+     "oid": "2.5.29.37",
+     "name": "",
+     "critical": true
+    },
+    {
+     "oid": "2.5.29.35",
+     "name": "",
+     "critical": false
+    }
+   ]
+  },
+  "dpe_ecc_chain_0": {
+   "file": "dpe_ecc_chain_0.der",
+   "size": 717,
+   "sha256": "6fb950be62b4c72003fe15172a02307bbb963874a18f319816aed4106cb1e827",
+   "subject": "serialNumber=1F841080777DC4DCB53ECC49B9D2EDF83D06614881DA450B455B01291BCFE791,CN=Caliptra 2.1 Ecc384 LDevID",
+   "issuer": "serialNumber=465F26802558F7C19B96BED12F96C3A8EDFC0D5046793CDD89339F2B92F54880,CN=Caliptra 2.1 Ecc384 IDevID",
+   "serial": "1F841080777DC4DCB53ECC49B9D2EDF83D066148",
+   "not_before": "Jan  1 00:00:00 2023 GMT",
+   "not_after": "Dec 31 23:59:59 9999 GMT",
+   "key_alg": "id-ecPublicKey",
+   "sig_alg": "ecdsa-with-SHA384",
+   "basic_constraints": "CA:TRUE, pathlen:6",
+   "key_usage": [
+    "Certificate Sign"
+   ],
+   "extensions": [
+    {
+     "oid": "2.5.29.19",
+     "name": "",
+     "critical": true
+    },
+    {
+     "oid": "2.5.29.15",
+     "name": "",
+     "critical": true
+    },
+    {
+     "oid": "2.23.133.5.4.4",
+     "name": "tcg-dice-Ueid",
+     "critical": false,
+     "ueid": "0000000000000000000000000000000000"
+    },
+    {
+     "oid": "2.5.29.37",
+     "name": "",
+     "critical": false
+    },
+    {
+     "oid": "2.5.29.14",
+     "name": "",
+     "critical": false
+    },
+    {
+     "oid": "2.5.29.35",
+     "name": "",
+     "critical": false
+    }
+   ]
+  },
+  "dpe_ecc_chain_1": {
+   "file": "dpe_ecc_chain_1.der",
+   "size": 1040,
+   "sha256": "cadef79e862bc416c1ac8e375fe1827f654c61d5c9b1b25f2b613be4a3459e86",
+   "subject": "serialNumber=CF64C9DDE91AB6A555139A29C15F24B3B10EE0FB38BAD3D9B90C690EEA7821C7,CN=Caliptra 2.1 Ecc384 FMC Alias",
+   "issuer": "serialNumber=1F841080777DC4DCB53ECC49B9D2EDF83D06614881DA450B455B01291BCFE791,CN=Caliptra 2.1 Ecc384 LDevID",
+   "serial": "4F64C9DDE91AB6A555139A29C15F24B3B10EE0FB",
+   "not_before": "Jan  1 00:00:00 2023 GMT",
+   "not_after": "Dec 31 23:59:59 9999 GMT",
+   "key_alg": "id-ecPublicKey",
+   "sig_alg": "ecdsa-with-SHA384",
+   "basic_constraints": "CA:TRUE, pathlen:5",
+   "key_usage": [
+    "Certificate Sign"
+   ],
+   "extensions": [
+    {
+     "oid": "2.5.29.19",
+     "name": "",
+     "critical": true
+    },
+    {
+     "oid": "2.5.29.15",
+     "name": "",
+     "critical": true
+    },
+    {
+     "oid": "2.23.133.5.4.4",
+     "name": "tcg-dice-Ueid",
+     "critical": false,
+     "ueid": "0000000000000000000000000000000000"
+    },
+    {
+     "oid": "2.5.29.37",
+     "name": "",
+     "critical": false
+    },
+    {
+     "oid": "2.23.133.5.4.5",
+     "name": "tcg-dice-MultiTcbInfo",
+     "critical": false,
+     "multi_tcb_info": [
+      {
+       "fwids": [
+        {
+         "alg": "sha384",
+         "digest": "f3f332e1fbf3b75b5192cdf0b594f61afbf7f91710c306b46a1940470938dda7776d3dc180f47da18c5c036e725f4bf1"
+        }
+       ],
+       "type": "43414c49505452415f325f585f465553455f4f574e45525f494e464f ('CALIPTRA_2_X_FUSE_OWNER_INFO')"
+      },
+      {
+       "fwids": [
+        {
+         "alg": "sha384",
+         "digest": "e52a189b220954d57bcfbbcbfbd3f40137019390729f0ab36e9705842724a19305b7563a8bff6594925110a7858693b0"
+        }
+       ],
+       "type": "43414c49505452415f325f585f465553455f56454e444f525f494e464f ('CALIPTRA_2_X_FUSE_VENDOR_INFO')"
+      },
+      {
+       "svn": 256,
+       "fwids": [
+        {
+         "alg": "sha384",
+         "digest": "13ab82496a0cb5625a3af929cfe6a233bc7701d5cd9054187883fa033ee99566f2a44738485a349b9e7709c3bb856f9f"
+        }
+       ],
+       "type": "43414c49505452415f325f585f464d435f4649524d574152455f494e464f ('CALIPTRA_2_X_FMC_FIRMWARE_INFO')"
+      }
+     ]
+    },
+    {
+     "oid": "2.5.29.14",
+     "name": "",
+     "critical": false
+    },
+    {
+     "oid": "2.5.29.35",
+     "name": "",
+     "critical": false
+    }
+   ]
+  },
+  "dpe_ecc_chain_2": {
+   "file": "dpe_ecc_chain_2.der",
+   "size": 829,
+   "sha256": "604af936a6b7b3193e60fcc6ed7dca9643c50f0e819f52431021ae2e12dd751a",
+   "subject": "serialNumber=E61EC4C252064A0AF7A10408DDD6D291F9F1666A5C24E76F4522F2B911F86627,CN=Caliptra 2.1 Ecc384 Rt Alias",
+   "issuer": "serialNumber=CF64C9DDE91AB6A555139A29C15F24B3B10EE0FB38BAD3D9B90C690EEA7821C7,CN=Caliptra 2.1 Ecc384 FMC Alias",
+   "serial": "661EC4C252064A0AF7A10408DDD6D291F9F1666A",
+   "not_before": "Jan  1 00:00:00 2023 GMT",
+   "not_after": "Dec 31 23:59:59 9999 GMT",
+   "key_alg": "id-ecPublicKey",
+   "sig_alg": "ecdsa-with-SHA384",
+   "basic_constraints": "CA:TRUE, pathlen:4",
+   "key_usage": [
+    "Digital Signature, Certificate Sign"
+   ],
+   "extensions": [
+    {
+     "oid": "2.5.29.19",
+     "name": "",
+     "critical": true
+    },
+    {
+     "oid": "2.5.29.15",
+     "name": "",
+     "critical": true
+    },
+    {
+     "oid": "2.23.133.5.4.4",
+     "name": "tcg-dice-Ueid",
+     "critical": false,
+     "ueid": "0000000000000000000000000000000000"
+    },
+    {
+     "oid": "2.5.29.37",
+     "name": "",
+     "critical": false
+    },
+    {
+     "oid": "2.23.133.5.4.1",
+     "name": "tcg-dice-TcbInfo",
+     "critical": false,
+     "tcb_info": {
+      "svn": 256,
+      "fwids": [
+       {
+        "alg": "sha384",
+        "digest": "e3dc800c1fb2ee2e953c07c5eec2f23a1e4f7b09c050c63795d49976407df74cb19978cd3cbb0ef1fc399edee14cc1a2"
+       }
+      ],
+      "type": "43414c49505452415f325f585f52545f4649524d574152455f494e464f ('CALIPTRA_2_X_RT_FIRMWARE_INFO')"
+     }
+    },
+    {
+     "oid": "2.5.29.14",
+     "name": "",
+     "critical": false
+    },
+    {
+     "oid": "2.5.29.35",
+     "name": "",
+     "critical": false
+    }
+   ]
+  },
+  "dpe_mldsa_chain_0": {
+   "file": "dpe_mldsa_chain_0.der",
+   "size": 7741,
+   "sha256": "3de536d81f3046c3ceaae4e6cbcabcae7b923d920c62ec1c9a34ea03bcd2b465",
+   "subject": "serialNumber=7DC585CDEEB418B0E8445BCB8166E5A3C00A8A02FAA099DDBB28D1AF6F797741,CN=Caliptra 2.1 MlDsa87 LDevID",
+   "issuer": "serialNumber=27A9FFCB5D54F6A01DF66BDBE778666169F9BEF7FFF5164026A936B66C7FF274,CN=Caliptra 2.1 MlDsa87 IDevID",
+   "serial": "7DC585CDEEB418B0E8445BCB8166E5A3C00A8A02",
+   "not_before": "Jan  1 00:00:00 2023 GMT",
+   "not_after": "Dec 31 23:59:59 9999 GMT",
+   "key_alg": "ML-DSA-87",
+   "sig_alg": "ML-DSA-87",
+   "basic_constraints": "CA:TRUE, pathlen:6",
+   "key_usage": [
+    "Certificate Sign"
+   ],
+   "extensions": [
+    {
+     "oid": "2.5.29.19",
+     "name": "",
+     "critical": true
+    },
+    {
+     "oid": "2.5.29.15",
+     "name": "",
+     "critical": true
+    },
+    {
+     "oid": "2.23.133.5.4.4",
+     "name": "tcg-dice-Ueid",
+     "critical": false,
+     "ueid": "0000000000000000000000000000000000"
+    },
+    {
+     "oid": "2.5.29.37",
+     "name": "",
+     "critical": false
+    },
+    {
+     "oid": "2.5.29.14",
+     "name": "",
+     "critical": false
+    },
+    {
+     "oid": "2.5.29.35",
+     "name": "",
+     "critical": false
+    }
+   ]
+  },
+  "dpe_mldsa_chain_1": {
+   "file": "dpe_mldsa_chain_1.der",
+   "size": 8064,
+   "sha256": "8a423599ae08bc0d89659897d762a8019394b03f790eb31b0948d804008d6476",
+   "subject": "serialNumber=DC224A78710479BF3CB2823EBF74EAFAA38AF89558D21C54BA5D94ED9A9D5183,CN=Caliptra 2.1 MlDsa87 FMC Alias",
+   "issuer": "serialNumber=7DC585CDEEB418B0E8445BCB8166E5A3C00A8A02FAA099DDBB28D1AF6F797741,CN=Caliptra 2.1 MlDsa87 LDevID",
+   "serial": "5C224A78710479BF3CB2823EBF74EAFAA38AF895",
+   "not_before": "Jan  1 00:00:00 2023 GMT",
+   "not_after": "Dec 31 23:59:59 9999 GMT",
+   "key_alg": "ML-DSA-87",
+   "sig_alg": "ML-DSA-87",
+   "basic_constraints": "CA:TRUE, pathlen:5",
+   "key_usage": [
+    "Certificate Sign"
+   ],
+   "extensions": [
+    {
+     "oid": "2.5.29.19",
+     "name": "",
+     "critical": true
+    },
+    {
+     "oid": "2.5.29.15",
+     "name": "",
+     "critical": true
+    },
+    {
+     "oid": "2.23.133.5.4.4",
+     "name": "tcg-dice-Ueid",
+     "critical": false,
+     "ueid": "0000000000000000000000000000000000"
+    },
+    {
+     "oid": "2.5.29.37",
+     "name": "",
+     "critical": false
+    },
+    {
+     "oid": "2.23.133.5.4.5",
+     "name": "tcg-dice-MultiTcbInfo",
+     "critical": false,
+     "multi_tcb_info": [
+      {
+       "fwids": [
+        {
+         "alg": "sha384",
+         "digest": "f3f332e1fbf3b75b5192cdf0b594f61afbf7f91710c306b46a1940470938dda7776d3dc180f47da18c5c036e725f4bf1"
+        }
+       ],
+       "type": "43414c49505452415f325f585f465553455f4f574e45525f494e464f ('CALIPTRA_2_X_FUSE_OWNER_INFO')"
+      },
+      {
+       "fwids": [
+        {
+         "alg": "sha384",
+         "digest": "e52a189b220954d57bcfbbcbfbd3f40137019390729f0ab36e9705842724a19305b7563a8bff6594925110a7858693b0"
+        }
+       ],
+       "type": "43414c49505452415f325f585f465553455f56454e444f525f494e464f ('CALIPTRA_2_X_FUSE_VENDOR_INFO')"
+      },
+      {
+       "svn": 256,
+       "fwids": [
+        {
+         "alg": "sha384",
+         "digest": "13ab82496a0cb5625a3af929cfe6a233bc7701d5cd9054187883fa033ee99566f2a44738485a349b9e7709c3bb856f9f"
+        }
+       ],
+       "type": "43414c49505452415f325f585f464d435f4649524d574152455f494e464f ('CALIPTRA_2_X_FMC_FIRMWARE_INFO')"
+      }
+     ]
+    },
+    {
+     "oid": "2.5.29.14",
+     "name": "",
+     "critical": false
+    },
+    {
+     "oid": "2.5.29.35",
+     "name": "",
+     "critical": false
+    }
+   ]
+  },
+  "dpe_mldsa_chain_2": {
+   "file": "dpe_mldsa_chain_2.der",
+   "size": 7853,
+   "sha256": "95bb4be9ddc97a285a4c0e84f5c245b90947a3767cd41a7876f381daaea603cf",
+   "subject": "serialNumber=8371DD71B63F6F978FDDD2DF976398F484A055741BD36B5798115D695D3143CF,CN=Caliptra 2.1 MlDsa87 Rt Alias",
+   "issuer": "serialNumber=DC224A78710479BF3CB2823EBF74EAFAA38AF89558D21C54BA5D94ED9A9D5183,CN=Caliptra 2.1 MlDsa87 FMC Alias",
+   "serial": "0771DD71B63F6F978FDDD2DF976398F484A05574",
+   "not_before": "Jan  1 00:00:00 2023 GMT",
+   "not_after": "Dec 31 23:59:59 9999 GMT",
+   "key_alg": "ML-DSA-87",
+   "sig_alg": "ML-DSA-87",
+   "basic_constraints": "CA:TRUE, pathlen:4",
+   "key_usage": [
+    "Digital Signature, Certificate Sign"
+   ],
+   "extensions": [
+    {
+     "oid": "2.5.29.19",
+     "name": "",
+     "critical": true
+    },
+    {
+     "oid": "2.5.29.15",
+     "name": "",
+     "critical": true
+    },
+    {
+     "oid": "2.23.133.5.4.4",
+     "name": "tcg-dice-Ueid",
+     "critical": false,
+     "ueid": "0000000000000000000000000000000000"
+    },
+    {
+     "oid": "2.5.29.37",
+     "name": "",
+     "critical": false
+    },
+    {
+     "oid": "2.23.133.5.4.1",
+     "name": "tcg-dice-TcbInfo",
+     "critical": false,
+     "tcb_info": {
+      "svn": 256,
+      "fwids": [
+       {
+        "alg": "sha384",
+        "digest": "e3dc800c1fb2ee2e953c07c5eec2f23a1e4f7b09c050c63795d49976407df74cb19978cd3cbb0ef1fc399edee14cc1a2"
+       }
+      ],
+      "type": "43414c49505452415f325f585f52545f4649524d574152455f494e464f ('CALIPTRA_2_X_RT_FIRMWARE_INFO')"
+     }
+    },
+    {
+     "oid": "2.5.29.14",
+     "name": "",
+     "critical": false
+    },
+    {
+     "oid": "2.5.29.35",
+     "name": "",
+     "critical": false
+    }
+   ]
+  }
+ },
+ "verify": {
+  "ecc384": {
+   "idevid_ecc384 <- TEST mfg CA": "OK",
+   "ldevid_ecc384 <- idevid_ecc384": "OK",
+   "fmc_alias_ecc384 <- ldevid_ecc384": "OK",
+   "rt_alias_ecc384 <- fmc_alias_ecc384": "OK",
+   "dpe_ecc_leaf_after <- rt_alias_ecc384": "OK",
+   "FULL idevid_ecc384 > ldevid_ecc384 > fmc_alias_ecc384 > rt_alias_ecc384 > dpe_ecc_leaf_after (root=TEST mfg CA, -ignore_critical)": "OK",
+   "FULL strict (no -ignore_critical)": "dpe_ecc_leaf_after.pem: OK"
+  },
+  "mldsa87": {
+   "idevid_mldsa87 <- TEST mfg CA": "OK",
+   "ldevid_mldsa87 <- idevid_mldsa87": "OK",
+   "fmc_alias_mldsa87 <- ldevid_mldsa87": "OK",
+   "rt_alias_mldsa87 <- fmc_alias_mldsa87": "OK",
+   "dpe_mldsa_leaf_after <- rt_alias_mldsa87": "OK",
+   "FULL idevid_mldsa87 > ldevid_mldsa87 > fmc_alias_mldsa87 > rt_alias_mldsa87 > dpe_mldsa_leaf_after (root=TEST mfg CA, -ignore_critical)": "OK",
+   "FULL strict (no -ignore_critical)": "dpe_mldsa_leaf_after.pem: OK"
+  },
+  "dpe_ecc_chain_matches_mailbox_certs": [
+   true,
+   true,
+   true
+  ],
+  "dpe_mldsa_chain_matches_mailbox_certs": [
+   true,
+   true,
+   true
+  ],
+  "idevid_ecc_cert_key_eq_GET_IDEV_ECC384_INFO": true,
+  "idevid_mldsa_cert_key_eq_GET_IDEV_MLDSA87_INFO": true
+ },
+ "quote": {
+  "quote_ecc_before": {
+   "nonce": "6595f9487947af353379e77371e8c48bcd8409b3f674fe1449fe39df5e329577",
+   "digest": "21834e4cf770e390c1545373bc7bf5036eb4298c30799b6b3e3f9f3d76bce57317ab0864c5968c1c07cf89385ebdb17f",
+   "digest_recomputed_from_pcrs_and_nonce": true,
+   "sig_by_idevid_ecc384": false,
+   "sig_by_ldevid_ecc384": false,
+   "sig_by_fmc_alias_ecc384": true,
+   "sig_by_rt_alias_ecc384": false
+  },
+  "quote_ecc_after": {
+   "nonce": "b3d0a203a6f636f1383e17f1dc33d2d0f016febfe43c0bd3cd39e14f3b73587f",
+   "digest": "98992709f013581e20c98d5ca929c82e0d68f537146113528c1197ead6e3940335fe5834d7cb0f73082e504763a0cae9",
+   "digest_recomputed_from_pcrs_and_nonce": true,
+   "sig_by_idevid_ecc384": false,
+   "sig_by_ldevid_ecc384": false,
+   "sig_by_fmc_alias_ecc384": true,
+   "sig_by_rt_alias_ecc384": false
+  },
+  "quote_mldsa_after": {
+   "nonce": "b3d0a203a6f636f1383e17f1dc33d2d0f016febfe43c0bd3cd39e14f3b73587f",
+   "digest": "1a845a7afb3fd0b0ba4ab9f116c27e4fe9caa06347502e08730fcbd73458fe350394e3d6ea97118c5213611437f5680d2ec829a95c8dc9201e5813f009279998",
+   "digest_recomputed_from_pcrs_and_nonce": true,
+   "sig_by_idevid_mldsa87": false,
+   "sig_by_ldevid_mldsa87": false,
+   "sig_by_fmc_alias_mldsa87": true,
+   "sig_by_rt_alias_mldsa87": false
+  }
+ },
+ "measurement": {
+  "value": "a206a828e5aa1592be7e20300d6b735667df5ed305fa3603501a04ff9286fce00870532215cb9664525e8ae7c5281877",
+  "tag": "NIOS",
+  "svn": 1,
+  "stash_dpe_result": 0,
+  "pcr31_before": "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+  "pcr31_after": "bbd599442d64ee6a19f3548c6066453c415316310aa65a6ce588eb21f027e1ab89ddd9e3d39a3bd190ccf6692b72a1a2",
+  "pcr31_expected_sha384_zero48_concat_meas": "bbd599442d64ee6a19f3548c6066453c415316310aa65a6ce588eb21f027e1ab89ddd9e3d39a3bd190ccf6692b72a1a2",
+  "pcr31_matches": true,
+  "pcr31_mldsa_quote": "bbd599442d64ee6a19f3548c6066453c415316310aa65a6ce588eb21f027e1ab89ddd9e3d39a3bd190ccf6692b72a1a2",
+  "found_in_dpe_ecc_leaf_before": [],
+  "found_in_dpe_ecc_leaf_after": [
+   {
+    "ext": "tcg-dice-MultiTcbInfo",
+    "tcb_index": 2,
+    "type": "4e494f53 ('NIOS')",
+    "svn": 1,
+    "fwid_alg": "sha384"
+   }
+  ],
+  "found_in_dpe_mldsa_leaf_after": [
+   {
+    "ext": "tcg-dice-MultiTcbInfo",
+    "tcb_index": 2,
+    "type": "4e494f53 ('NIOS')",
+    "svn": 1,
+    "fwid_alg": "sha384"
+   }
+  ],
+  "found_in_rt_alias_ecc384": []
+ },
+ "compare": {}
+}

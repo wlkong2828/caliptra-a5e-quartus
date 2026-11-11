@@ -1,0 +1,49 @@
+[MCI] Registering outgoing events
+[MCI] Registering outgoing events
+Using hardware-model ModelEmulated trng=External
+InitParamsSummary {
+    rom_sha384: "daf28adb6b568739188a492c1497cdcfdb09618dc86966792a3bf5c4f775d7a30b97f604ac6670148382bf79cc7b1ea9",
+    obf_key: [0xb2c3b8d5, 0x3dc4fd37, 0xcf1f2ce9, 0xd1bf4e16, 0xe5f5ffd6, 0x1c1b3b72, 0xf34d6a45, 0x31358e8a],
+    hmac_csr_key: [0x5a3c96e1; 16],
+    security_state: SecurityState(
+        7,
+    ),
+    debug_locked: true,
+}
+Initializing fuses
+EMU ready_for_runtime
+EMU req 0 cmd 494e464f done
+EMU req 1 cmd 49444549 done
+EMU req 2 cmd 49444d49 done
+EMU req 3 cmd 4c444556 done
+EMU req 4 cmd 43455246 done
+EMU req 5 cmd 43455252 done
+EMU req 6 cmd 4c444d43 done
+EMU req 7 cmd 434d4346 done
+EMU req 8 cmd 434d4352 done
+EMU req 9 cmd 50435251 done
+EMU req 10 cmd 44504543 done
+EMU req 11 cmd 44504543 done
+EMU req 12 cmd 4d454153 done
+EMU req 13 cmd 50435251 done
+EMU req 14 cmd 44504543 done
+EMU req 15 cmd 44504543 done
+EMU req 16 cmd 44504543 done
+EMU req 17 cmd 4450454d done
+EMU req 18 cmd 4450454d done
+EMU req 19 cmd 4450454d done
+EMU req 20 cmd 4450454d done
+EMU req 21 cmd 4450454d done
+EMU req 22 cmd 4450454d done
+EMU req 23 cmd 4450454d done
+EMU req 24 cmd 4450454d done
+EMU req 25 cmd 4450454d done
+EMU req 26 cmd 4450454d done
+EMU req 27 cmd 4450454d done
+EMU req 28 cmd 4450454d done
+EMU req 29 cmd 4450454d done
+EMU req 30 cmd 4450454d done
+EMU req 31 cmd 5043524d done
+EMU req 32 cmd 49444543 done
+EMU req 33 cmd 49444d43 done
+EMU done, 34 commands
