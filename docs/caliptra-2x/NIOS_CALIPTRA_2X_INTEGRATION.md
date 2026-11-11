@@ -1,7 +1,7 @@
 # Nios V ↔ Caliptra 2.x Integration Guide (passive / core-only)
 
 > **Where the files are.** All paths in this guide are repo-relative ([pwilliam282/caliptra-a5e-quartus](https://github.com/pwilliam282/caliptra-a5e-quartus)):
-> - 2.x glue RTL, sim, firmware, fuse script and Quartus project: [`caliptra2x/`](../../caliptra2x/) (`caliptra2x/rtl_2x/`, `caliptra2x/sim_2x/`, `caliptra2x/sim/`, `caliptra2x/fw_2x/`, `caliptra2x/scripts/`, `caliptra2x/quartus_a5e_2x/`)
+> - 2.x glue RTL, sim, firmware, fuse script and Quartus project: [`caliptra2x/`](../../caliptra2x/) (`caliptra2x/rtl_2x/`, `caliptra2x/sim_2x/`, `caliptra2x/sim/`, `caliptra2x/fw_2x/`, `caliptra2x/scripts/`, `caliptra2x/quartus_a5e_2x/` core-only fit gate, `caliptra2x/quartus_a5e_2x_nios/` full Nios V + Caliptra 2.x system)
 > - Upstream RTL: `external/caliptra-rtl-2x/` = chipsalliance/caliptra-rtl v2.1.2 (`49370266`) with `submodules/adams-bridge` (`b77e3d8`), a pinned git submodule, unmodified. Fetch it with `scripts/get_caliptra_a5e.sh` or `git clone --recursive` + `scripts/fetch_deps.sh`. See [NIOS_CALIPTRA_2X_INTEGRATION.md §16](NIOS_CALIPTRA_2X_INTEGRATION.md#16-getting-the-sources).
 > - Companion docs `P1_FIT_RESULT_2X_A5E.md` and `CALIPTRA_2X_INTEGRATION_PLAN.md`: this folder (`docs/caliptra-2x/`). The 1.x guide is [`docs/NIOS_CALIPTRA_INTEGRATION.md`](../NIOS_CALIPTRA_INTEGRATION.md).
 >
@@ -14,7 +14,8 @@
 - **Attestation / DPE in simulation:** ROM boot → FIRMWARE_LOAD → runtime, then 34 mailbox commands (IDevID/LDevID/FMC Alias/RT Alias certs, `STASH_MEASUREMENT`, PCR quotes, DPE GetProfile/CertifyKey/GetCertificateChain), **PASS** at 59,280,395 cycles with certificates byte-identical to the sw-emulator. Step-by-step commands: [SIMULATION_2X.md §8](SIMULATION_2X.md#8-rom-boot-firmware-load-attestation-and-dpe-in-simulation).
 - **Companion docs:** [docs/caliptra-2x/P1_FIT_RESULT_2X_A5E.md](P1_FIT_RESULT_2X_A5E.md) (Quartus fit gate), [docs/caliptra-2x/CALIPTRA_2X_INTEGRATION_PLAN.md](CALIPTRA_2X_INTEGRATION_PLAN.md) (1.x → 2.x delta and phased plan). The 1.x guide this one is modelled on is `docs/NIOS_CALIPTRA_INTEGRATION.md` (rev 3).
 - **Getting the sources / building:** §16 (clone with submodules; upstream RTL in `external/caliptra-rtl-2x/`) and §17 (Quartus Pro 25.3 build, Docker, license, measured results, known issues).
-- **Date:** 2026-11-10 (America/Chicago).
+- **Nios V system:** the 2.x Platform Designer system `nios_caliptra2x_sys` is the 1.1 system with only the Caliptra window changed; side-by-side comparison in §18.
+- **Date:** 2026-11-11 (America/Chicago).
 
 > **Status.** This is a *design study*. The 2.x glue RTL and the boot flow are verified in Verilator. The design **does not fit** the A5E 065: synthesis estimates 279,685 / 222,400 ALMs (126 %) (§14). Every key, seed and entropy value is a **TEST/STUDY value**: the obfuscation key, CSR HMAC key, UDS, field entropy, the test-signed firmware, and the simulated TRNG data. The firmware is signed with caliptra-sw's **public fake keys**. See [FIRMWARE_AND_KEYS_2X.md §6](FIRMWARE_AND_KEYS_2X.md).
 
@@ -25,9 +26,9 @@
 | `caliptra2x/rtl_2x/nios_caliptra2x_top.sv`, `avmm_to_axi.sv`, `soc_fuse_ctrl2x.sv`, `soc_fw_store.sv`, `reset_sync.sv`, `caliptra_passive_top.sv` | Written; simulated (Verilator) |
 | `caliptra2x/scripts/gen_fuse_image_2x.py` → `caliptra2x/fw_2x/fuse_image_2x.hex` | Written; output used in the PASS run (regeneration is byte-identical) |
 | `caliptra2x/fw_2x/` ROM + FW bundle (+ `build_rom.sh`, `SHA256SUMS`) | Built from caliptra-sw `dd1e79d` |
-| Platform Designer system `nios_caliptra2x_sys` (Nios V + PIOs + 1 MiB window) | **Not created yet.** The TB uses a behavioral stand-in module `nios_caliptra2x_sys` with the ports the top instantiates: `clk_clk`, `reset_reset_n`, `caliptra_axi_address[19:0]`, `_read`, `_write`, `_writedata[31:0]`, `_byteenable[3:0]`, `_readdata[31:0]`, `_readdatavalid`, `_waitrequest`, `_burstcount`, `_debugaccess`, `ctrl_pio_export[31:0]` (out), `status_pio_export[31:0]` (in), `magic_pio_export[31:0]` (out) |
-| Nios C firmware for 2.x (`main.c` port) | **Not ported yet.** The 1.x `quartus_a5e_nios/sw/app/main.c` is unchanged. The TB host model defines the 2.x sequence (§11) |
-| Quartus project for the full Nios + 2.x top | **Not created.** `caliptra2x/quartus_a5e_2x/` synthesizes only the Caliptra core wrapper (fit gate) |
+| Platform Designer system `nios_caliptra2x_sys` (Nios V + PIOs + 1 MiB window) | **Created** in `caliptra2x/quartus_a5e_2x_nios/qsys/` (`nios_caliptra2x_sys.tcl`, generated `.qsys` / `.ip` / output committed). Same Nios V/m, RAM, JTAG UART, PIOs, clock/reset and addresses as the 1.1 system (§18). Its exported ports match `nios_caliptra2x_top.sv` and the TB stand-in `nios_caliptra2x_sys` in `sim_2x/tb_nios2x_top_fw.sv` exactly: `clk_clk`, `reset_reset_n`, `caliptra_axi_address[19:0]`, `_read`, `_write`, `_writedata[31:0]`, `_byteenable[3:0]`, `_readdata[31:0]`, `_readdatavalid`, `_waitrequest`, `_burstcount`, `_debugaccess`, `ctrl_pio_export[31:0]` (out), `status_pio_export[31:0]` (in), `magic_pio_export[31:0]` (out) |
+| Nios C firmware for 2.x (`main.c` port) | **Ported**: `caliptra2x/quartus_a5e_2x_nios/sw/app/main.c` (the §11 sequence; same LED/MAGIC codes, TRNG service, error handling, fatal recovery and warm-reset helper as 1.x). Builds (26,504 B text) into `onchip_mem.hex`. Not run on a Nios RTL model or a board; the Verilator TB still uses the behavioral host |
+| Quartus project for the full Nios + 2.x top | **Created**: `caliptra2x/quartus_a5e_2x_nios/` (`nios_caliptra2x_a5e`, top `nios_caliptra2x_top`). Synthesis: §17. Fit overflows (does not fit the A5E 065) |
 
 ---
 
@@ -46,6 +47,9 @@
 | `caliptra2x/scripts/gen_fuse_image_2x.py` | Builds the fuse image from the FW bundle |
 | `caliptra2x/fw_2x/` | ROM, FW bundle, hex files, `SHA256SUMS`, `build_rom.sh`, `fuse_image_2x.hex` |
 | `caliptra2x/sim_2x/` | `boot2x.f`, `tb_nios2x_top_fw.sv`, `run_nios2x_top_fw.sh`, `BOOT_NIOS2X.md`, `nios2x_top_fw_run.log` |
+| `caliptra2x/quartus_a5e_2x_nios/qsys/nios_caliptra2x_sys.tcl` | Platform Designer system: Nios V/m + 64 KiB RAM + JTAG UART + ctrl/status/magic PIOs + 1 MiB `caliptra_axi` mm_bridge (generated `.qsys`, `qsys/ip/`, `qsys/nios_caliptra2x_sys/` committed) |
+| `caliptra2x/quartus_a5e_2x_nios/sw/` | Nios host firmware `app/main.c`, HAL BSP `bsp/` (niosv-bsp), `build_app.sh`; image `../onchip_mem.hex` |
+| `caliptra2x/quartus_a5e_2x_nios/nios_caliptra2x_a5e.qsf` (+ `gen_qsf.py`, `.sdc`, `ip/rst_release.ip`, `run_nios2x_a5e_docker.sh`) | Full-system Quartus project |
 
 ---
 
@@ -255,7 +259,7 @@ Widths come from `config_defines.svh`: `CALIPTRA_AXI_DATA_WIDTH` = 32, `CALIPTRA
 
 ### 5.1 Nios SoC window (20-bit, 1 MiB) — decode in `nios_caliptra2x_top`
 
-The window base in the Nios address space is set by the (not yet created) Platform Designer system. Offsets below are **window offsets** (`cl_address[19:0]`).
+The window (`caliptra_win`, exported as `caliptra_axi`) sits at Nios address **`0x0010_0000`–`0x001F_FFFF`** in `nios_caliptra2x_sys` (`CALIPTRA_WIN_BASE` in the BSP `system.h`). Offsets below are **window offsets** (`cl_address[19:0]`); the Nios address is `0x0010_0000 + offset` (e.g. `mbox_csr` `0x001A_0000`, `soc_ifc` `0x001B_0000`, fuse ctrl `0x0017_F000`).
 
 | Window offset | Decode (RTL) | Target |
 |---|---|---|
@@ -471,7 +475,7 @@ sequenceDiagram
   C-->>N: ready_for_runtime (36,597,957)
 ```
 
-**Host sequence, step by step.** This is the TB behavioral host `nios_caliptra2x_sys`, which is the reference for the future `main.c` port.
+**Host sequence, step by step.** This is the TB behavioral host `nios_caliptra2x_sys`. `caliptra2x/quartus_a5e_2x_nios/sw/app/main.c` implements the same sequence on the Nios (it waits on `status_pio` with polling loops instead of fixed clock counts).
 
 1. Wait until the Reset Release IP releases `sys_reset_n`.
 2. `ctrl = 1` (pwrgood), wait 20 clk, `ctrl = 3` (rst_b).
@@ -512,7 +516,7 @@ The magic/LED codes the TB uses are 1 = start, 2 = ready_for_fuses, 3 = AxUSER p
 
 ## 13. Compliance checklist vs. caliptra-rtl v2.1.2 Integration Specification
 
-References: IS Table 4 (clocks/resets), Table 5 (AXI), Tables 11–13 (straps, generic wires), §TRNG, Table 19 (SoC integration requirements), and `soc_ifc` RDL. The status reflects the **2.x RTL glue plus the TB host sequence**. The Nios firmware for 2.x is not ported yet.
+References: IS Table 4 (clocks/resets), Table 5 (AXI), Tables 11–13 (straps, generic wires), §TRNG, Table 19 (SoC integration requirements), and `soc_ifc` RDL. The status reflects the **2.x RTL glue plus the TB host sequence**. The ported Nios firmware (`quartus_a5e_2x_nios/sw/app/main.c`) follows the same sequence but has not been executed in simulation or on hardware.
 
 | Requirement | Spec ref | Implementation | Status |
 |---|---|---|---|
@@ -576,7 +580,7 @@ So this column is **not** the same top as the 2.x column, which is the core-only
 
 - **Biggest consumer: Adams-Bridge** (`abr_inst`): 101,640 ALUTs, 244,925 FFs, 164 DSP. The masked NTT `hybrid_bf2x2` alone has 218,303 FFs.
 - **Next:** `ecc_top1` (79,991 ALUTs), VeeR (55,132), key vault (51,019).
-- **Over by 57,285 ALMs.** Even a 20 % packing gain leaves the design at ≥ 100 %. The Nios system would add more.
+- **Over by 57,285 ALMs.** Even a 20 % packing gain leaves the design at ≥ 100 %. With the Nios V system, fw store and glue added (`caliptra2x/quartus_a5e_2x_nios/`, §17) the full design estimates **286,415 / 222,400 ALMs (129 %)**.
 
 **Options**
 
@@ -590,8 +594,8 @@ So this column is **not** the same top as the 2.x column, which is the core-only
 
 ## 15. Open items
 
-1. Create the Platform Designer system `nios_caliptra2x_sys`: Nios V/m, on-chip RAM, JTAG UART, ctrl/status/magic PIOs, and an exported 20-bit Avalon `mm_bridge` named `caliptra_axi`.
-2. Port `main.c` to the §11 sequence: 2.x register names, AxUSER programming, `ready_for_mb_processing`, 253,440-byte load, warm-reset START_DONE with bridge quiesce, and fatal pwrgood recovery.
+1. ~~Create the Platform Designer system `nios_caliptra2x_sys`~~ **Done** (`caliptra2x/quartus_a5e_2x_nios/qsys/`, §18).
+2. ~~Port `main.c` to the §11 sequence~~ **Done** (`caliptra2x/quartus_a5e_2x_nios/sw/app/main.c`). Still to do: run it on a Nios RTL simulation or a board (only the TB behavioral host is simulated).
 3. Add 2.x `warm` and `fatal` Verilator tests, as in the 1.x suite.
 4. Choose the hardware target (Agilex 7 vs. sim-only), then do a full fit, timing, and synthesis-integrity constraints.
 5. Production replacements for every TEST-ONLY row: OTP fuses, a real lifecycle, an HSM-generated obfuscation and CSR HMAC key, a hardware TRNG, and own signing keys ([FIRMWARE_AND_KEYS_2X.md](FIRMWARE_AND_KEYS_2X.md)).
@@ -613,7 +617,7 @@ The upstream Caliptra RTL is **not copied into this repo**. It comes in as pinne
 | `quartus_a5e/` | Caliptra 1.x core-only Quartus project (size study) | this repo |
 | `fw/` | 1.x ROM (rom-1.1.1), signed FW bundle, fuse image | this repo |
 | `sim/` | Verilator TB for the 1.x Nios glue | this repo |
-| `caliptra2x/` | 2.x glue (`rtl_2x/`), sim (`sim_2x/`, `sim/`), firmware (`fw_2x/`), fuse script (`scripts/`), core-only Quartus project (`quartus_a5e_2x/`) | this repo |
+| `caliptra2x/` | 2.x glue (`rtl_2x/`), sim (`sim_2x/`, `sim/`), firmware (`fw_2x/`), fuse script (`scripts/`), core-only Quartus project (`quartus_a5e_2x/`), full Nios V + 2.x Quartus project (`quartus_a5e_2x_nios/`: `qsys/`, `sw/`, `ip/rst_release.ip`, `onchip_mem.hex`) | this repo |
 | `scripts/get_caliptra_a5e.sh` | Clone or update this repo with all submodules, then verify the pins | this repo |
 | `scripts/fetch_deps.sh` | `git submodule update --init --recursive` (or clone the pinned commits if there is no `.git`), then verify; `--check` verifies only | this repo |
 | `scripts/quartus_docker.sh` | Run any Quartus command in the Quartus Pro 25.3 Docker image with the repo and license mounted | this repo |
@@ -654,7 +658,8 @@ Never commit license `.dat` files.
 
 | Project | Directory | `.qpf` / revision | Top |
 |---|---|---|---|
-| Nios V + Caliptra 1.x (the 1.x design; the full Nios + 2.x Quartus project does not exist yet, see the status table) | `quartus_a5e_nios/` | `nios_caliptra_a5e` | `nios_caliptra_top` |
+| Nios V + Caliptra 1.x (the 1.1 design) | `quartus_a5e_nios/` | `nios_caliptra_a5e` | `nios_caliptra_top` |
+| **Nios V + Caliptra 2.x** (full system; same Nios system as 1.1, §18; does not fit) | `caliptra2x/quartus_a5e_2x_nios/` | `nios_caliptra2x_a5e` | `nios_caliptra2x_top` |
 | Caliptra 1.x core only (size study) | `quartus_a5e/` | `caliptra_a5e` | `caliptra_passive_top` |
 | Caliptra 2.x core only (fit gate; 126 %, does not fit) | `caliptra2x/quartus_a5e_2x/` | `caliptra2x_a5e` | `caliptra_passive_top` |
 
@@ -667,6 +672,8 @@ quartus_ipgenerate nios_caliptra_a5e
 #   cd qsys && qsys-script --script=nios_caliptra_sys.tcl --quartus-project=none && cd ..
 #   (or: qsys-generate qsys/nios_caliptra_sys.qsys --synthesis=VERILOG --quartus-project=nios_caliptra_a5e)
 ```
+
+For the **2.x Nios project** it is the same, in `caliptra2x/quartus_a5e_2x_nios/` with revision `nios_caliptra2x_a5e` and Tcl `qsys/nios_caliptra2x_sys.tcl`; its program memory is `caliptra2x/quartus_a5e_2x_nios/onchip_mem.hex` (rebuild with `caliptra2x/quartus_a5e_2x_nios/sw/build_app.sh`), and `run_nios2x_a5e_docker.sh [syn|fit]` runs the whole flow.
 
 `run_nios_a5e_docker.sh [syn|fit]` does the full regeneration (Tcl → PD → ipgenerate → synthesis) in one go. The Nios program memory is initialised from the committed `quartus_a5e_nios/onchip_mem.hex`. Rebuild it with `quartus_a5e_nios/sw/build_app.sh` (needs `RISCV_BIN=<dir with riscv-none-elf-gcc>`) only if you change `sw/app/main.c`.
 
@@ -690,6 +697,7 @@ scripts/quartus_docker.sh quartus_a5e_nios 'quartus_ipgenerate nios_caliptra_a5e
 scripts/quartus_docker.sh quartus_a5e_nios 'quartus_fit nios_caliptra_a5e && quartus_sta nios_caliptra_a5e'
 scripts/quartus_docker.sh quartus_a5e 'quartus_syn caliptra_a5e'
 scripts/quartus_docker.sh caliptra2x/quartus_a5e_2x 'quartus_syn caliptra2x_a5e'
+scripts/quartus_docker.sh caliptra2x/quartus_a5e_2x_nios 'quartus_ipgenerate nios_caliptra2x_a5e && quartus_syn nios_caliptra2x_a5e'
 ```
 
 **GUI alternative.**
@@ -712,6 +720,7 @@ The `qdb/`, `dni/` and `tmp-clearbox/` work directories are gitignored.
 | `quartus_a5e_nios` (`nios_caliptra_top`) | **OK**, 0 errors, 1 min 19 s, 3.3 GB peak; `quartus_ipgenerate` OK, 0 errors, 9 s | **Successful**, 0 errors: **138,715 / 222,400 ALMs (62 %)**, 145,784 registers, 47 DSP post-merge, 5,671,936 block-memory bits; 6 min 50 s at `--parallel=4`, 4.0 GB peak. This matches the earlier build exactly |
 | `quartus_a5e` (`caliptra_passive_top` 1.x) | **OK**, 0 errors, 44 s, 2.8 GB peak | 141,256 / 222,400 ALMs (**64 %**), 142,373 registers, 47 DSP (committed `syn.summary`; 6 min 30 s, 3.6 GB) |
 | `caliptra2x_a5e` (`caliptra_passive_top` 2.x) | **OK**, 0 errors, 1 min 41 s, 4.4 GB peak | 279,685 / 222,400 ALMs (**126 %, does not fit**), 411,569 registers, 199 DSP (committed report; 22 min, 6.8 GB) |
+| `nios_caliptra2x_a5e` (`nios_caliptra2x_top`, Nios V + 2.x) | OK (part of the full run); `quartus_ipgenerate` OK, 0 errors | **Successful**, 0 errors, 17 warnings: **286,415 / 222,400 ALMs (129 %, does not fit)**, 413,568 registers, 199 DSP post-merge (213 before merge), 11,630,208 block-memory bits; 21 min at `--parallel=4`, 6.8 GB peak (2026-11-11). Of this, the Nios system `u_sys` is 3,948 ALUTs / 3,528 registers / 527,360 RAM bits, `u_fw_store` 2,097,152 bits (256 KiB), `u_fuse_ctrl` 235 ALUTs, `u_bridge` (`avmm_to_axi`) 17 ALUTs. `quartus_fit` was tried and **killed by the Linux OOM killer** about 3 min in (at the timing-setup step of the fitter plan stage) at 13.9 GB resident on the 15 GB box (2026-11-11, 09:50 CST), so no fitter report exists; with 129 % ALM use, fit would fail anyway |
 
 All three hierarchies elaborate with no missing-file or undefined-entity messages. The ROM, FW-bundle and fuse hex files are read by `$readmemh` from their repo-relative paths (`../fw/…`, `../fw_2x/…`).
 
@@ -727,3 +736,51 @@ Expected warnings (harmless):
 - **Synthesis hangs with no CPU use.** Quartus can stop progressing, usually during the SLD/JTAG-hub `ip-deploy` step or right after RAM inference when it starts its parallel helper processes. Signs: the log stops growing, `quartus_syn` sits at about 0 % CPU, and defunct `quartus_sh` children remain. Most likely the same start-up crash, hitting a helper process. Kill the container (`docker kill <id>`; with `DOCKER_NAME=<name>` set for `scripts/quartus_docker.sh` you can `docker kill <name>`) and rerun. A healthy Nios synthesis shows 4 busy `quartus_syn` helpers with `--parallel=4`. The run then finishes normally; the earlier note recorded about 7 min at `--parallel=8`.
 - **Memory.** A&E needs about 3–4.5 GB, and full synthesis about 4 GB (1.x) or 7 GB (2.x). **Fit/route needs ≥ 32 GB**: placement passed on a 16 GB VM but routing ran out of memory, so fit, timing and `.sof` have not been produced yet.
 - **Pins.** All top-level I/O except `clk` (and `reset_n` in the Nios project) are `VIRTUAL_PIN ON`. Assign real pins and I/O standards for your board before `quartus_asm`.
+
+---
+
+## 18. Nios V system: Caliptra 1.1 vs 2.x
+
+The 2.x Nios host system is the Caliptra 1.1 system with **only the Caliptra window changed**. `caliptra2x/quartus_a5e_2x_nios/qsys/nios_caliptra2x_sys.tcl` was derived line-for-line from `quartus_a5e_nios/qsys/nios_caliptra_sys.tcl`. After generation, the `.ip` files of `clk`, `ram`, `jtag_uart`, `ctrl_pio`, `status_pio` and `magic_pio` are **identical** to the 1.1 ones apart from the system name. `cpu.ip` differs only in the CPU's address-map string (the window entry), and `caliptra_win.ip` only in address width / span (18 → 20 bit, 256 KiB → 1 MiB). The HAL BSP was regenerated with `niosv-bsp -t=hal` from the 2.x system: every `settings.bsp` value is identical to 1.1, and `system.h` differs only in `ALT_SYSTEM_NAME` and `CALIPTRA_WIN_BASE`/`_SPAN`.
+
+**Same in both**
+
+| Item | Caliptra 1.1 (`quartus_a5e_nios/`) | Caliptra 2.x (`caliptra2x/quartus_a5e_2x_nios/`) |
+|---|---|---|
+| PD system | `nios_caliptra_sys` | `nios_caliptra2x_sys` |
+| CPU | `intel_niosv_m` (Nios V/m), reset vector `ram.s1` + 0, debug module on | same |
+| Clock source | `clock_source` 50 MHz, reset sync deassert | same |
+| Program/data RAM | `intel_onchip_memory` 64 KiB × 32, init `onchip_mem.hex`, at `0x0000_0000` | same |
+| JTAG UART | `altera_avalon_jtag_uart` at `0x0008_0000`, IRQ 0 | same |
+| `ctrl_pio` | 32-bit output, reset 0 (Caliptra held in reset), `0x0008_0010` | same |
+| `status_pio` | 32-bit input, `0x0008_0020` | same (bit 1 is `ready_for_mb_processing` instead of `ready_for_fw_push`) |
+| `magic_pio` | 32-bit output, reset 0, `0x0008_0030`; `led = magic[7:0]` | same |
+| Timer / debug agents | `cpu.timer_sw_agent` `0x0008_0040`, `cpu.dm_agent` `0x0009_0000` | same |
+| Reset | Reset Release IP `ip/rst_release.ip` gates `sys_reset_n`; 2FF async-assert/sync-deassert syncs | same file, same gating |
+| SDC | 50 MHz `clk`, `altera_reserved_tck`, false paths on `reset_n` and `u_rst_release` | same (`nios_caliptra2x.sdc`) |
+| Device / pins | A5EC065BB32AE6S; all I/O virtual except `clk`, `reset_n` (`led[7:0]` virtual) | same |
+| BSP | HAL, `niosv-bsp` defaults, stdio = `jtag_uart`, sys clk = `cpu` | same settings |
+| Firmware flow | `sw/app/main.c`: cold release, user/lock + timer + WDT, fuse START, TRNG service, FW load, runtime; fatal pwrgood recovery (≤ 3), warm-reset helper | same flow, ported to 2.x registers |
+| LED / MAGIC codes | 1, 2, 3, 4, 5, 6, 7, `0xCA11F00D`; `0xDEAD000E/000F/00FF/0010`; warm `0x13/0x14/0x15/0x17` | same |
+| Build | `run_nios_a5e_docker.sh [syn\|fit]`, `sw/build_app.sh` | `run_nios2x_a5e_docker.sh [syn\|fit]`, `sw/build_app.sh` |
+
+**Different (because Caliptra 2.x is different)**
+
+| Item | Caliptra 1.1 | Caliptra 2.x |
+|---|---|---|
+| Window bridge (`caliptra_win`, `altera_avalon_mm_bridge`) | 18-bit, 256 KiB at `0x0004_0000`, exported as `caliptra_apb` | 20-bit, 1 MiB at **`0x0010_0000`**, exported as **`caliptra_axi`** (a 1 MiB window must be 1 MiB-aligned) |
+| Bridge to Caliptra (top RTL) | `avmm_to_apb` → APB, PAUSER | `avmm_to_axi` → AXI4, AxUSER |
+| Window map | fw store `0x00000`, fuse ctrl `0x1F000`, Caliptra APB `0x20000`–`0x3FFFF` | fw store `0x00000`, fuse ctrl `0x7F000`, Caliptra AXI `0x80000`–`0xFFFFF` (`mbox_csr` `+0x20000`, `soc_ifc` `+0x30000`) |
+| Requester IDs | PAUSER 1 for Nios and fuse ctrl | Nios AxUSER 1, fuse ctrl AxUSER 2 (`FUSE_VALID_AXI_USER = 2`) |
+| FW store / bundle | 28,672 words, 109,000 B | 65,536 words, 253,440 B |
+| Fuse writes | 84 (83 + `FUSE_WR_DONE`) | 118 (104 + owner PK hash ×12 + lock + `FUSE_WR_DONE`) |
+| Ready signal on `status_pio[1]` | `ready_for_fw_push` | `ready_for_mb_processing` |
+| `main.c` text size | 26,300 B | 26,504 B |
+
+**How it was checked**
+- The exported ports of the generated `nios_caliptra2x_sys` (`qsys/nios_caliptra2x_sys/synth/nios_caliptra2x_sys.v`) are exactly the ones `nios_caliptra2x_top.sv` connects and the TB stand-in in `sim_2x/tb_nios2x_top_fw.sv` declares, so no change to the top or the TB was needed.
+- `.ip` files diffed against 1.1 after renaming the system (results above).
+- `main.c` uses the same register offsets as the passing TB host model (`tb_nios2x_top_fw.sv`) and the `caliptra_reg_defines.svh` values of v2.1.2 (§5.3).
+- Not done: running `main.c` on an RTL model of the Nios (the Verilator TB uses the behavioral host), and running it on a board (the 2.x design does not fit the A5E 065).
+
+**`onchip_mem.hex` byte order (fixed for 1.1 too).** Quartus `elf2hex -w 32` writes each 32-bit word MSB first. The fallback `scripts/elf2hex_intel.py` used to write the bytes in little-endian file order, so its output was byte-swapped relative to Quartus. The 1.1 `quartus_a5e_nios/onchip_mem.hex` in git had been made with that fallback. Both are fixed: the fallback now matches Quartus `elf2hex` byte-for-byte (checked on the 2.x image), and the 1.1 image was regenerated from the same, unchanged 1.1 `main.c`.

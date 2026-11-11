@@ -1,0 +1,168 @@
+set_global_assignment -entity "nios_caliptra2x_sys_cpu" -library "nios_caliptra2x_sys_cpu" -name IP_TOOL_NAME "QsysPrimePro"
+set_global_assignment -entity "nios_caliptra2x_sys_cpu" -library "nios_caliptra2x_sys_cpu" -name IP_TOOL_VERSION "25.3"
+set_global_assignment -entity "nios_caliptra2x_sys_cpu" -library "nios_caliptra2x_sys_cpu" -name IP_TOOL_ENV "QsysPrimePro"
+set_global_assignment -entity "nios_caliptra2x_sys_cpu" -library "nios_caliptra2x_sys_cpu" -name IP_TOOL_VENDOR_NAME "Altera Corporation"
+set_global_assignment -entity "nios_caliptra2x_sys_cpu" -library "nios_caliptra2x_sys_cpu" -name IP_TOP_LEVEL_COMPONENT_NAME "intel_niosv_m"
+set_global_assignment -entity "nios_caliptra2x_sys_cpu" -library "nios_caliptra2x_sys_cpu" -name PRE_COMPILED_MODULE "ON"
+set_global_assignment -entity "nios_caliptra2x_sys_cpu" -library "nios_caliptra2x_sys_cpu" -name OCS_IP_FILE [file join $::quartus(qip_path) "../nios_caliptra2x_sys_cpu.ip"]
+set_global_assignment -entity "nios_caliptra2x_sys_cpu" -library "nios_caliptra2x_sys_cpu" -name OCS_IP_TYPE "intel_niosv_m"
+set_global_assignment -entity "nios_caliptra2x_sys_cpu" -library "nios_caliptra2x_sys_cpu" -name OCS_IP_VERSION "26.0.0"
+set_global_assignment -entity "nios_caliptra2x_sys_cpu" -library "nios_caliptra2x_sys_cpu" -name OCS_IP_HASH "xhfx4my"
+set_global_assignment -library "nios_caliptra2x_sys_cpu" -name SOPCINFO_FILE [file join $::quartus(qip_path) "nios_caliptra2x_sys_cpu.sopcinfo"]
+set_global_assignment -entity "nios_caliptra2x_sys_cpu" -library "nios_caliptra2x_sys_cpu" -name SLD_INFO "QSYS_NAME nios_caliptra2x_sys_cpu HAS_SOPCINFO 1 GENERATION_ID 0"
+set_global_assignment -library "nios_caliptra2x_sys_cpu" -name MISC_FILE [file join $::quartus(qip_path) "nios_caliptra2x_sys_cpu.cmp"]
+set_global_assignment -entity "nios_caliptra2x_sys_cpu" -library "nios_caliptra2x_sys_cpu" -name IP_TARGETED_DEVICE_FAMILY "Agilex 5"
+set_global_assignment -entity "nios_caliptra2x_sys_cpu" -library "nios_caliptra2x_sys_cpu" -name IP_GENERATED_DEVICE_FAMILY "{Agilex 5}"
+set_global_assignment -entity "nios_caliptra2x_sys_cpu" -library "nios_caliptra2x_sys_cpu" -name IP_QSYS_MODE "STANDALONE"
+set_global_assignment -name SYNTHESIS_ONLY_QIP ON
+set_global_assignment -library "nios_caliptra2x_sys_cpu" -name MISC_FILE [file join $::quartus(qip_path) "../nios_caliptra2x_sys_cpu.ip"]
+
+set_global_assignment -entity "altera_reset_controller" -library "altera_reset_controller_1924" -name IP_COMPONENT_NAME "YWx0ZXJhX3Jlc2V0X2NvbnRyb2xsZXI="
+set_global_assignment -entity "altera_reset_controller" -library "altera_reset_controller_1924" -name IP_COMPONENT_DISPLAY_NAME "TWVybGluIFJlc2V0IENvbnRyb2xsZXIgSVA="
+set_global_assignment -entity "altera_reset_controller" -library "altera_reset_controller_1924" -name IP_COMPONENT_REPORT_HIERARCHY "Off"
+set_global_assignment -entity "altera_reset_controller" -library "altera_reset_controller_1924" -name IP_COMPONENT_INTERNAL "Off"
+set_global_assignment -entity "altera_reset_controller" -library "altera_reset_controller_1924" -name IP_COMPONENT_AUTHOR "SW50ZWwgQ29ycG9yYXRpb24="
+set_global_assignment -entity "altera_reset_controller" -library "altera_reset_controller_1924" -name IP_COMPONENT_VERSION "MTkuMi40"
+set_global_assignment -entity "altera_reset_controller" -library "altera_reset_controller_1924" -name IP_COMPONENT_DESCRIPTION "Rm9yIHN5c3RlbXMgd2l0aCBtdWx0aXBsZSByZXNldCBpbnB1dHMsIHRoZSBNZXJsaW4gUmVzZXQgQ29udHJvbGxlciBPUnMgYWxsIHJlc2V0IGlucHV0cyBhbmQgZ2VuZXJhdGVzIGEgc2luZ2xlIHJlc2V0IG91dHB1dC4="
+set_global_assignment -entity "altera_reset_controller" -library "altera_reset_controller_1924" -name IP_COMPONENT_GROUP "QmFzaWMgRnVuY3Rpb25zL0Nsb2NrczsgUExMcyBhbmQgUmVzZXRz"
+set_global_assignment -entity "altera_reset_controller" -library "altera_reset_controller_1924" -name IP_COMPONENT_DOCUMENTATION_LINK "aHR0cHM6Ly93d3cuaW50ZWwuY29tL2NvbnRlbnQvd3d3L3VzL2VuL3Byb2dyYW1tYWJsZS9kb2N1bWVudGF0aW9uL3pjbjE1MTM5ODcyODI5MzUuaHRtbCNtd2gxNDA5OTU4ODI4NzMy"
+set_global_assignment -entity "altera_reset_controller" -library "altera_reset_controller_1924" -name IP_COMPONENT_DOCUMENTATION_LINK "aHR0cHM6Ly93d3cuaW50ZWwuY29tL2NvbnRlbnQvZGFtL3d3dy9wcm9ncmFtbWFibGUvdXMvZW4vcGRmcy9saXRlcmF0dXJlL3VnL3VnLXFwcC1wbGF0Zm9ybS1kZXNpZ25lci5wZGY="
+set_global_assignment -entity "altera_reset_controller" -library "altera_reset_controller_1924" -name IP_COMPONENT_DOCUMENTATION_LINK "aHR0cHM6Ly93d3cuaW50ZWwuY29tL2NvbnRlbnQvd3d3L3VzL2VuL3Byb2dyYW1tYWJsZS9kb2N1bWVudGF0aW9uL2hjbzE0MTY4MzYxNDU1NTUuaHRtbCNoY28xNDE2ODM2NjUzMjIx"
+set_global_assignment -entity "niosv_reset_controller" -library "intel_niosv_m_unit_2600" -name IP_COMPONENT_NAME "bmlvc3ZfcmVzZXRfY29udHJvbGxlcg=="
+set_global_assignment -entity "niosv_reset_controller" -library "intel_niosv_m_unit_2600" -name IP_COMPONENT_DISPLAY_NAME "bmlvc3ZfcmVzZXRfY29udHJvbGxlcg=="
+set_global_assignment -entity "niosv_reset_controller" -library "intel_niosv_m_unit_2600" -name IP_COMPONENT_REPORT_HIERARCHY "Off"
+set_global_assignment -entity "niosv_reset_controller" -library "intel_niosv_m_unit_2600" -name IP_COMPONENT_INTERNAL "Off"
+set_global_assignment -entity "niosv_reset_controller" -library "intel_niosv_m_unit_2600" -name IP_COMPONENT_AUTHOR "QWx0ZXJhIENvcnBvcmF0aW9u"
+set_global_assignment -entity "niosv_reset_controller" -library "intel_niosv_m_unit_2600" -name IP_COMPONENT_VERSION "MjYuMC4w"
+set_global_assignment -entity "nios_caliptra2x_sys_cpu_intel_niosv_m_unit_2600_muhwqoy" -library "intel_niosv_m_unit_2600" -name IP_COMPONENT_NAME "bmlvc19jYWxpcHRyYTJ4X3N5c19jcHVfaW50ZWxfbmlvc3ZfbV91bml0XzI2MDBfbXVod3FveQ=="
+set_global_assignment -entity "nios_caliptra2x_sys_cpu_intel_niosv_m_unit_2600_muhwqoy" -library "intel_niosv_m_unit_2600" -name IP_COMPONENT_DISPLAY_NAME "TmlvcyBWL20gUHJvY2Vzc29yIElQ"
+set_global_assignment -entity "nios_caliptra2x_sys_cpu_intel_niosv_m_unit_2600_muhwqoy" -library "intel_niosv_m_unit_2600" -name IP_COMPONENT_REPORT_HIERARCHY "Off"
+set_global_assignment -entity "nios_caliptra2x_sys_cpu_intel_niosv_m_unit_2600_muhwqoy" -library "intel_niosv_m_unit_2600" -name IP_COMPONENT_INTERNAL "On"
+set_global_assignment -entity "nios_caliptra2x_sys_cpu_intel_niosv_m_unit_2600_muhwqoy" -library "intel_niosv_m_unit_2600" -name IP_COMPONENT_AUTHOR "QWx0ZXJhIENvcnBvcmF0aW9u"
+set_global_assignment -entity "nios_caliptra2x_sys_cpu_intel_niosv_m_unit_2600_muhwqoy" -library "intel_niosv_m_unit_2600" -name IP_COMPONENT_VERSION "MjYuMC4w"
+set_global_assignment -entity "nios_caliptra2x_sys_cpu_intel_niosv_m_unit_2600_muhwqoy" -library "intel_niosv_m_unit_2600" -name IP_COMPONENT_GROUP "UHJvY2Vzc29ycyBhbmQgUGVyaXBoZXJhbHMvRW1iZWRkZWQgUHJvY2Vzc29ycw=="
+set_global_assignment -entity "niosv_timer_msip" -library "intel_niosv_timer_msip_120" -name IP_COMPONENT_NAME "bmlvc3ZfdGltZXJfbXNpcA=="
+set_global_assignment -entity "niosv_timer_msip" -library "intel_niosv_timer_msip_120" -name IP_COMPONENT_DISPLAY_NAME "TmlvcyBWIFRpbWVyIGFuZCBTb2Z0d2FyZSBJbnRlcnJ1cHQgSVA="
+set_global_assignment -entity "niosv_timer_msip" -library "intel_niosv_timer_msip_120" -name IP_COMPONENT_REPORT_HIERARCHY "Off"
+set_global_assignment -entity "niosv_timer_msip" -library "intel_niosv_timer_msip_120" -name IP_COMPONENT_INTERNAL "On"
+set_global_assignment -entity "niosv_timer_msip" -library "intel_niosv_timer_msip_120" -name IP_COMPONENT_AUTHOR "QWx0ZXJhIENvcnBvcmF0aW9u"
+set_global_assignment -entity "niosv_timer_msip" -library "intel_niosv_timer_msip_120" -name IP_COMPONENT_VERSION "MS4yLjA="
+set_global_assignment -entity "niosv_timer_msip" -library "intel_niosv_timer_msip_120" -name IP_COMPONENT_DESCRIPTION "VGhpcyBtb2R1bGUgaG91c2VzIHRpbWVyIGFuZCBzb2Z0d2FyZSBpbnRlcnJ1cHQgZ2VuZXJhdG9ycyBmb3IgdGhlIE5pb3MgViBQcm9jZXNzb3Iu"
+set_global_assignment -entity "niosv_timer_msip" -library "intel_niosv_timer_msip_120" -name IP_COMPONENT_GROUP "UHJvY2Vzc29ycyBhbmQgUGVyaXBoZXJhbHMvRW1iZWRkZWQgUHJvY2Vzc29ycw=="
+set_global_assignment -entity "niosv_dm_top" -library "intel_niosv_dbg_mod_210" -name IP_COMPONENT_NAME "bmlvc3ZfZG1fdG9w"
+set_global_assignment -entity "niosv_dm_top" -library "intel_niosv_dbg_mod_210" -name IP_COMPONENT_DISPLAY_NAME "TmlvcyBWIERlYnVnIE1vZHVsZSBJUA=="
+set_global_assignment -entity "niosv_dm_top" -library "intel_niosv_dbg_mod_210" -name IP_COMPONENT_REPORT_HIERARCHY "Off"
+set_global_assignment -entity "niosv_dm_top" -library "intel_niosv_dbg_mod_210" -name IP_COMPONENT_INTERNAL "On"
+set_global_assignment -entity "niosv_dm_top" -library "intel_niosv_dbg_mod_210" -name IP_COMPONENT_AUTHOR "QWx0ZXJhIENvcnBvcmF0aW9u"
+set_global_assignment -entity "niosv_dm_top" -library "intel_niosv_dbg_mod_210" -name IP_COMPONENT_VERSION "Mi4xLjA="
+set_global_assignment -entity "niosv_dm_top" -library "intel_niosv_dbg_mod_210" -name IP_COMPONENT_DESCRIPTION "VGhpcyBtb2R1bGUgaG91c2VzIHRoZSBSSVNDLVYgYmFzZWQgRGVidWcgTW9kdWxlIGZvciB0aGUgTmlvcyBWIFByb2Nlc3Nvci4="
+set_global_assignment -entity "niosv_dm_top" -library "intel_niosv_dbg_mod_210" -name IP_COMPONENT_GROUP "UHJvY2Vzc29ycyBhbmQgUGVyaXBoZXJhbHMvRW1iZWRkZWQgUHJvY2Vzc29ycw=="
+set_global_assignment -entity "nios_caliptra2x_sys_cpu_altera_irq_mapper_2001_wgtbcyy" -library "altera_irq_mapper_2001" -name IP_COMPONENT_NAME "bmlvc19jYWxpcHRyYTJ4X3N5c19jcHVfYWx0ZXJhX2lycV9tYXBwZXJfMjAwMV93Z3RiY3l5"
+set_global_assignment -entity "nios_caliptra2x_sys_cpu_altera_irq_mapper_2001_wgtbcyy" -library "altera_irq_mapper_2001" -name IP_COMPONENT_DISPLAY_NAME "TWVybGluIElSUSBNYXBwZXIgSVA="
+set_global_assignment -entity "nios_caliptra2x_sys_cpu_altera_irq_mapper_2001_wgtbcyy" -library "altera_irq_mapper_2001" -name IP_COMPONENT_REPORT_HIERARCHY "Off"
+set_global_assignment -entity "nios_caliptra2x_sys_cpu_altera_irq_mapper_2001_wgtbcyy" -library "altera_irq_mapper_2001" -name IP_COMPONENT_INTERNAL "Off"
+set_global_assignment -entity "nios_caliptra2x_sys_cpu_altera_irq_mapper_2001_wgtbcyy" -library "altera_irq_mapper_2001" -name IP_COMPONENT_AUTHOR "SW50ZWwgQ29ycG9yYXRpb24="
+set_global_assignment -entity "nios_caliptra2x_sys_cpu_altera_irq_mapper_2001_wgtbcyy" -library "altera_irq_mapper_2001" -name IP_COMPONENT_VERSION "MjAuMC4x"
+set_global_assignment -entity "nios_caliptra2x_sys_cpu_altera_irq_mapper_2001_wgtbcyy" -library "altera_irq_mapper_2001" -name IP_COMPONENT_DESCRIPTION "Q29udmVydHMgaW5kaXZpZHVhbCBpbnRlcnJ1cHQgd2lyZXMgdG8gYSBidXMuIEJ5IGRlZmF1bHQsIHRoZSBpbnRlcnJ1cHQgc2VuZGVyIGNvbm5lY3RlZCB0byB0aGUgcmVjZWl2ZXIwIGludGVyZmFjZSBvZiB0aGUgSVJRIG1hcHBlciBpcyB0aGUgaGlnaGVzdCBwcmlvcml0eSB3aXRoIHNlcXVlbnRpYWwgcmVjZWl2ZXJzIGJlaWluZyBzdWNjZXNzaXZlbHkgbG93ZXIgcHJpb3JpdHku"
+set_global_assignment -entity "nios_caliptra2x_sys_cpu_altera_irq_mapper_2001_wgtbcyy" -library "altera_irq_mapper_2001" -name IP_COMPONENT_GROUP "SW50ZXJjb25uZWN0L0ludGVycnVwdA=="
+set_global_assignment -entity "nios_caliptra2x_sys_cpu_intel_niosv_m_2600_xhfx4my" -library "intel_niosv_m_2600" -name IP_COMPONENT_NAME "bmlvc19jYWxpcHRyYTJ4X3N5c19jcHVfaW50ZWxfbmlvc3ZfbV8yNjAwX3hoZng0bXk="
+set_global_assignment -entity "nios_caliptra2x_sys_cpu_intel_niosv_m_2600_xhfx4my" -library "intel_niosv_m_2600" -name IP_COMPONENT_DISPLAY_NAME "TmlvcyBWL20gTWljcm9jb250cm9sbGVyIElQ"
+set_global_assignment -entity "nios_caliptra2x_sys_cpu_intel_niosv_m_2600_xhfx4my" -library "intel_niosv_m_2600" -name IP_COMPONENT_REPORT_HIERARCHY "Off"
+set_global_assignment -entity "nios_caliptra2x_sys_cpu_intel_niosv_m_2600_xhfx4my" -library "intel_niosv_m_2600" -name IP_COMPONENT_INTERNAL "Off"
+set_global_assignment -entity "nios_caliptra2x_sys_cpu_intel_niosv_m_2600_xhfx4my" -library "intel_niosv_m_2600" -name IP_COMPONENT_AUTHOR "QWx0ZXJhIENvcnBvcmF0aW9u"
+set_global_assignment -entity "nios_caliptra2x_sys_cpu_intel_niosv_m_2600_xhfx4my" -library "intel_niosv_m_2600" -name IP_COMPONENT_VERSION "MjYuMC4w"
+set_global_assignment -entity "nios_caliptra2x_sys_cpu_intel_niosv_m_2600_xhfx4my" -library "intel_niosv_m_2600" -name IP_COMPONENT_DESCRIPTION "TmlvcyBWL20gaXMgYSBtaWNyb2NvbnRyb2xsZXIgY29yZSBiYXNlZCBvbiB0aGUgUklTQy1WIFJWMzJJIGNsYXNzaWZpY2F0aW9u"
+set_global_assignment -entity "nios_caliptra2x_sys_cpu_intel_niosv_m_2600_xhfx4my" -library "intel_niosv_m_2600" -name IP_COMPONENT_GROUP "UHJvY2Vzc29ycyBhbmQgUGVyaXBoZXJhbHMvRW1iZWRkZWQgUHJvY2Vzc29ycw=="
+set_global_assignment -entity "nios_caliptra2x_sys_cpu_intel_niosv_m_2600_xhfx4my" -library "intel_niosv_m_2600" -name IP_COMPONENT_DOCUMENTATION_LINK "aHR0cHM6Ly93d3cuaW50ZWwuY29tL2NvbnRlbnQvd3d3L3VzL2VuL2RvY3MvcHJvZ3JhbW1hYmxlLzY4MzYzMi9jdXJyZW50L292ZXJ2aWV3Lmh0bWw="
+set_global_assignment -entity "nios_caliptra2x_sys_cpu_intel_niosv_m_2600_xhfx4my" -library "intel_niosv_m_2600" -name IP_COMPONENT_DOCUMENTATION_LINK "aHR0cHM6Ly93d3cuaW50ZWwuY29tL2NvbnRlbnQvd3d3L3VzL2VuL2RvY3MvcHJvZ3JhbW1hYmxlLzcyNjk1Mi9jdXJyZW50L2Fib3V0LXRoZS1lbWJlZGRlZC1wcm9jZXNzb3IuaHRtbA=="
+set_global_assignment -entity "nios_caliptra2x_sys_cpu_intel_niosv_m_2600_xhfx4my" -library "intel_niosv_m_2600" -name IP_COMPONENT_DOCUMENTATION_LINK "aHR0cHM6Ly93d3cuaW50ZWwuY29tL2NvbnRlbnQvd3d3L3VzL2VuL2RvY3MvcHJvZ3JhbW1hYmxlLzc0MzgxMC9jdXJyZW50L292ZXJ2aWV3LW9mLWVtYmVkZGVkLXByb2Nlc3Nvci1kZXZlbG9wbWVudC5odG1s"
+set_global_assignment -entity "nios_caliptra2x_sys_cpu_intel_niosv_m_2600_xhfx4my" -library "intel_niosv_m_2600" -name IP_COMPONENT_DOCUMENTATION_LINK "aHR0cHM6Ly93d3cuaW50ZWwuY29tL2NvbnRlbnQvd3d3L3VzL2VuL2RvY3MvcHJvZ3JhbW1hYmxlLzY4MzA5OC8yMy00L3Byb2Nlc3Nvci1yZWxlYXNlLW5vdGVzLTQwNzMzLmh0bWw="
+set_global_assignment -entity "nios_caliptra2x_sys_cpu" -library "nios_caliptra2x_sys_cpu" -name IP_COMPONENT_NAME "bmlvc19jYWxpcHRyYTJ4X3N5c19jcHU="
+set_global_assignment -entity "nios_caliptra2x_sys_cpu" -library "nios_caliptra2x_sys_cpu" -name IP_COMPONENT_DISPLAY_NAME "c3lzdGVt"
+set_global_assignment -entity "nios_caliptra2x_sys_cpu" -library "nios_caliptra2x_sys_cpu" -name IP_COMPONENT_REPORT_HIERARCHY "On"
+set_global_assignment -entity "nios_caliptra2x_sys_cpu" -library "nios_caliptra2x_sys_cpu" -name IP_COMPONENT_INTERNAL "Off"
+set_global_assignment -entity "nios_caliptra2x_sys_cpu" -library "nios_caliptra2x_sys_cpu" -name IP_COMPONENT_AUTHOR "QWx0ZXJhIENvcnBvcmF0aW9u"
+set_global_assignment -entity "nios_caliptra2x_sys_cpu" -library "nios_caliptra2x_sys_cpu" -name IP_COMPONENT_VERSION "MS4w"
+
+
+set_global_assignment -library "altera_reset_controller_1924" -name VERILOG_FILE [file join $::quartus(qip_path) "altera_reset_controller_1924/synth/altera_reset_controller.v"]
+set_global_assignment -library "altera_reset_controller_1924" -name VERILOG_FILE [file join $::quartus(qip_path) "altera_reset_controller_1924/synth/altera_reset_synchronizer.v"]
+set_instance_assignment -entity "altera_reset_controller" -library "altera_reset_controller_1924" -name SDC_ENTITY_FILE [file join $::quartus(qip_path) "altera_reset_controller_1924/synth/altera_reset_controller.sdc"] -no_sdc_promotion 
+set_global_assignment -library "intel_niosv_m_unit_2600" -name VERILOG_FILE [file join $::quartus(qip_path) "intel_niosv_m_unit_2600/synth/niosv_reset_controller.v"]
+set_global_assignment -library "intel_niosv_m_unit_2600" -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "intel_niosv_m_unit_2600/synth/riscv.pkg.sv"]
+set_global_assignment -library "intel_niosv_m_unit_2600" -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "intel_niosv_m_unit_2600/synth/niosv_opcode_def.sv"]
+set_global_assignment -library "intel_niosv_m_unit_2600" -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "intel_niosv_m_unit_2600/synth/niosv_clic_pkg.sv"]
+set_global_assignment -library "intel_niosv_m_unit_2600" -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "intel_niosv_m_unit_2600/synth/niosv_mem_op_state.sv"]
+set_global_assignment -library "intel_niosv_m_unit_2600" -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "intel_niosv_m_unit_2600/synth/niosv_ram.sv"]
+set_global_assignment -library "intel_niosv_m_unit_2600" -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "intel_niosv_m_unit_2600/synth/ecc_enc.sv"]
+set_global_assignment -library "intel_niosv_m_unit_2600" -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "intel_niosv_m_unit_2600/synth/ecc_dec.sv"]
+set_global_assignment -library "intel_niosv_m_unit_2600" -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "intel_niosv_m_unit_2600/synth/altecc_enc.sv"]
+set_global_assignment -library "intel_niosv_m_unit_2600" -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "intel_niosv_m_unit_2600/synth/altecc_dec.sv"]
+set_global_assignment -library "intel_niosv_m_unit_2600" -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "intel_niosv_m_unit_2600/synth/niosv_reg_file.sv"]
+set_global_assignment -library "intel_niosv_m_unit_2600" -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "intel_niosv_m_unit_2600/synth/niosv_csr.sv"]
+set_global_assignment -library "intel_niosv_m_unit_2600" -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "intel_niosv_m_unit_2600/synth/niosv_csrind_if.sv"]
+set_global_assignment -library "intel_niosv_m_unit_2600" -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "intel_niosv_m_unit_2600/synth/niosv_csrind_host.sv"]
+set_global_assignment -library "intel_niosv_m_unit_2600" -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "intel_niosv_m_unit_2600/synth/niosv_interrupt_handler.sv"]
+set_global_assignment -library "intel_niosv_m_unit_2600" -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "intel_niosv_m_unit_2600/synth/niosv_instr_buffer.sv"]
+set_global_assignment -library "intel_niosv_m_unit_2600" -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "intel_niosv_m_unit_2600/synth/niosv_bus_req.sv"]
+set_global_assignment -library "intel_niosv_m_unit_2600" -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "intel_niosv_m_unit_2600/synth/niosv_shift.sv"]
+set_global_assignment -library "intel_niosv_m_unit_2600" -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "intel_niosv_m_unit_2600/synth/niosv_alu.sv"]
+set_global_assignment -library "intel_niosv_m_unit_2600" -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "intel_niosv_m_unit_2600/synth/niosv_lsu.sv"]
+set_global_assignment -library "intel_niosv_m_unit_2600" -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "intel_niosv_m_unit_2600/synth/niosv_c_decoder.sv"]
+set_global_assignment -library "intel_niosv_m_unit_2600" -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "intel_niosv_m_unit_2600/synth/niosv_c_core.sv"]
+set_global_assignment -library "intel_niosv_m_unit_2600" -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "intel_niosv_m_unit_2600/synth/niosv_c_csr.sv"]
+set_global_assignment -library "intel_niosv_m_unit_2600" -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "intel_niosv_m_unit_2600/synth/niosv_c_D_stage.sv"]
+set_global_assignment -library "intel_niosv_m_unit_2600" -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "intel_niosv_m_unit_2600/synth/niosv_c_E_stage.sv"]
+set_global_assignment -library "intel_niosv_m_unit_2600" -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "intel_niosv_m_unit_2600/synth/niosv_c_M0_stage.sv"]
+set_global_assignment -library "intel_niosv_m_unit_2600" -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "intel_niosv_m_unit_2600/synth/niosv_m_decoder.sv"]
+set_global_assignment -library "intel_niosv_m_unit_2600" -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "intel_niosv_m_unit_2600/synth/niosv_m_core.sv"]
+set_global_assignment -library "intel_niosv_m_unit_2600" -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "intel_niosv_m_unit_2600/synth/niosv_m_instr_prefetch.sv"]
+set_global_assignment -library "intel_niosv_m_unit_2600" -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "intel_niosv_m_unit_2600/synth/niosv_m_D_stage.sv"]
+set_global_assignment -library "intel_niosv_m_unit_2600" -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "intel_niosv_m_unit_2600/synth/niosv_m_E_stage.sv"]
+set_global_assignment -library "intel_niosv_m_unit_2600" -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "intel_niosv_m_unit_2600/synth/niosv_m_M0_stage.sv"]
+set_global_assignment -library "intel_niosv_m_unit_2600" -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "intel_niosv_m_unit_2600/synth/niosv_m_W_stage.sv"]
+set_global_assignment -library "intel_niosv_m_unit_2600" -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "intel_niosv_m_unit_2600/synth/nios_caliptra2x_sys_cpu_intel_niosv_m_unit_2600_muhwqoy.sv"]
+set_global_assignment -library "intel_niosv_timer_msip_120" -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "intel_niosv_timer_msip_120/synth/niosv_timer_msip.sv"]
+set_global_assignment -library "intel_niosv_dbg_mod_210" -name SOURCE_FILE [file join $::quartus(qip_path) "intel_niosv_dbg_mod_210/synth/csr_mlab.mif"]
+set_global_assignment -library "intel_niosv_dbg_mod_210" -name SOURCE_FILE [file join $::quartus(qip_path) "intel_niosv_dbg_mod_210/synth/debug_rom.mif"]
+set_global_assignment -library "intel_niosv_dbg_mod_210" -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "intel_niosv_dbg_mod_210/synth/niosv_dm_def.sv"]
+set_global_assignment -library "intel_niosv_dbg_mod_210" -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "intel_niosv_dbg_mod_210/synth/niosv_ram.sv"]
+set_global_assignment -library "intel_niosv_dbg_mod_210" -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "intel_niosv_dbg_mod_210/synth/niosv_dm_jtag2mm.sv"]
+set_global_assignment -library "intel_niosv_dbg_mod_210" -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "intel_niosv_dbg_mod_210/synth/niosv_dm_top.sv"]
+set_global_assignment -library "intel_niosv_dbg_mod_210" -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "intel_niosv_dbg_mod_210/synth/niosv_debug_module.sv"]
+set_global_assignment -library "intel_niosv_dbg_mod_210" -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "intel_niosv_dbg_mod_210/synth/niosv_debug_rom.sv"]
+set_global_assignment -library "intel_niosv_dbg_mod_210" -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "intel_niosv_dbg_mod_210/synth/altera_std_synchronizer_bundle.v"]
+set_global_assignment -library "intel_niosv_dbg_mod_210" -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "intel_niosv_dbg_mod_210/synth/altera_std_synchronizer_nocut.v"]
+set_global_assignment -library "intel_niosv_dbg_mod_210" -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "intel_niosv_dbg_mod_210/synth/altera_std_synchronizer.v"]
+set_global_assignment -library "intel_niosv_dbg_mod_210" -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "intel_niosv_dbg_mod_210/synth/altera_avalon_st_clock_crosser.v"]
+set_global_assignment -library "intel_niosv_dbg_mod_210" -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "intel_niosv_dbg_mod_210/synth/altera_avalon_st_handshake_clock_crosser.v"]
+set_global_assignment -library "intel_niosv_dbg_mod_210" -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "intel_niosv_dbg_mod_210/synth/altera_avalon_st_pipeline_base.v"]
+set_global_assignment -library "intel_niosv_dbg_mod_210" -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "intel_niosv_dbg_mod_210/synth/altera_avalon_st_pipeline_stage.sv"]
+set_instance_assignment -entity "niosv_dm_top" -library "intel_niosv_dbg_mod_210" -name SDC_ENTITY_FILE [file join $::quartus(qip_path) "intel_niosv_dbg_mod_210/synth/altera_avalon_st_handshake_clock_crosser.sdc"] -no_sdc_promotion  -no_auto_inst_discovery 
+set_global_assignment -library "intel_niosv_dbg_mod_210" -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "intel_niosv_dbg_mod_210/synth/altera_reset_synchronizer.v"]
+set_global_assignment -library "intel_niosv_dbg_mod_210" -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "intel_niosv_dbg_mod_210/synth/altera_reset_controller.v"]
+set_instance_assignment -entity "niosv_dm_top" -library "intel_niosv_dbg_mod_210" -name SDC_ENTITY_FILE [file join $::quartus(qip_path) "intel_niosv_dbg_mod_210/synth/altera_reset_controller.sdc"] -no_sdc_promotion  -no_auto_inst_discovery 
+set_global_assignment -library "altera_irq_mapper_2001" -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "altera_irq_mapper_2001/synth/nios_caliptra2x_sys_cpu_altera_irq_mapper_2001_wgtbcyy.sv"]
+set_global_assignment -library "intel_niosv_m_2600" -name VERILOG_FILE [file join $::quartus(qip_path) "intel_niosv_m_2600/synth/nios_caliptra2x_sys_cpu_intel_niosv_m_2600_xhfx4my.v"]
+set_global_assignment -library "nios_caliptra2x_sys_cpu" -name VERILOG_FILE [file join $::quartus(qip_path) "synth/nios_caliptra2x_sys_cpu.v"]
+
+
+set_global_assignment -entity "nios_caliptra2x_sys_cpu_intel_niosv_m_2600_xhfx4my" -library "intel_niosv_m_2600" -name IP_TOOL_NAME "intel_niosv_m"
+set_global_assignment -entity "nios_caliptra2x_sys_cpu_intel_niosv_m_2600_xhfx4my" -library "intel_niosv_m_2600" -name IP_TOOL_VERSION "26.0.0"
+set_global_assignment -entity "nios_caliptra2x_sys_cpu_intel_niosv_m_2600_xhfx4my" -library "intel_niosv_m_2600" -name IP_TOOL_ENV "QsysPrimePro"
+set_global_assignment -entity "nios_caliptra2x_sys_cpu_altera_irq_mapper_2001_wgtbcyy" -library "altera_irq_mapper_2001" -name IP_TOOL_NAME "altera_irq_mapper"
+set_global_assignment -entity "nios_caliptra2x_sys_cpu_altera_irq_mapper_2001_wgtbcyy" -library "altera_irq_mapper_2001" -name IP_TOOL_VERSION "20.0.1"
+set_global_assignment -entity "nios_caliptra2x_sys_cpu_altera_irq_mapper_2001_wgtbcyy" -library "altera_irq_mapper_2001" -name IP_TOOL_ENV "QsysPrimePro"
+set_global_assignment -entity "niosv_dm_top" -library "intel_niosv_dbg_mod_210" -name IP_TOOL_NAME "intel_niosv_dbg_mod"
+set_global_assignment -entity "niosv_dm_top" -library "intel_niosv_dbg_mod_210" -name IP_TOOL_VERSION "2.1.0"
+set_global_assignment -entity "niosv_dm_top" -library "intel_niosv_dbg_mod_210" -name IP_TOOL_ENV "QsysPrimePro"
+set_global_assignment -entity "niosv_timer_msip" -library "intel_niosv_timer_msip_120" -name IP_TOOL_NAME "intel_niosv_timer_msip"
+set_global_assignment -entity "niosv_timer_msip" -library "intel_niosv_timer_msip_120" -name IP_TOOL_VERSION "1.2.0"
+set_global_assignment -entity "niosv_timer_msip" -library "intel_niosv_timer_msip_120" -name IP_TOOL_ENV "QsysPrimePro"
+set_global_assignment -entity "nios_caliptra2x_sys_cpu_intel_niosv_m_unit_2600_muhwqoy" -library "intel_niosv_m_unit_2600" -name IP_TOOL_NAME "intel_niosv_m_unit"
+set_global_assignment -entity "nios_caliptra2x_sys_cpu_intel_niosv_m_unit_2600_muhwqoy" -library "intel_niosv_m_unit_2600" -name IP_TOOL_VERSION "26.0.0"
+set_global_assignment -entity "nios_caliptra2x_sys_cpu_intel_niosv_m_unit_2600_muhwqoy" -library "intel_niosv_m_unit_2600" -name IP_TOOL_ENV "QsysPrimePro"
+set_global_assignment -entity "altera_reset_controller" -library "altera_reset_controller_1924" -name IP_TOOL_NAME "altera_reset_controller"
+set_global_assignment -entity "altera_reset_controller" -library "altera_reset_controller_1924" -name IP_TOOL_VERSION "19.2.4"
+set_global_assignment -entity "altera_reset_controller" -library "altera_reset_controller_1924" -name IP_TOOL_ENV "QsysPrimePro"
+

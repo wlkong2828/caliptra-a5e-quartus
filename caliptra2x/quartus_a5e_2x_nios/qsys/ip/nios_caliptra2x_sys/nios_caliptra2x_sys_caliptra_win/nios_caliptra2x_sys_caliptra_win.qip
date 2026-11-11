@@ -1,0 +1,43 @@
+set_global_assignment -entity "nios_caliptra2x_sys_caliptra_win" -library "nios_caliptra2x_sys_caliptra_win" -name IP_TOOL_NAME "QsysPrimePro"
+set_global_assignment -entity "nios_caliptra2x_sys_caliptra_win" -library "nios_caliptra2x_sys_caliptra_win" -name IP_TOOL_VERSION "25.3"
+set_global_assignment -entity "nios_caliptra2x_sys_caliptra_win" -library "nios_caliptra2x_sys_caliptra_win" -name IP_TOOL_ENV "QsysPrimePro"
+set_global_assignment -entity "nios_caliptra2x_sys_caliptra_win" -library "nios_caliptra2x_sys_caliptra_win" -name IP_TOOL_VENDOR_NAME "Intel Corporation"
+set_global_assignment -entity "nios_caliptra2x_sys_caliptra_win" -library "nios_caliptra2x_sys_caliptra_win" -name IP_TOP_LEVEL_COMPONENT_NAME "altera_avalon_mm_bridge"
+set_global_assignment -library "nios_caliptra2x_sys_caliptra_win" -name SOPCINFO_FILE [file join $::quartus(qip_path) "nios_caliptra2x_sys_caliptra_win.sopcinfo"]
+set_global_assignment -entity "nios_caliptra2x_sys_caliptra_win" -library "nios_caliptra2x_sys_caliptra_win" -name SLD_INFO "QSYS_NAME nios_caliptra2x_sys_caliptra_win HAS_SOPCINFO 1 GENERATION_ID 0"
+set_global_assignment -library "nios_caliptra2x_sys_caliptra_win" -name MISC_FILE [file join $::quartus(qip_path) "nios_caliptra2x_sys_caliptra_win.cmp"]
+set_global_assignment -entity "nios_caliptra2x_sys_caliptra_win" -library "nios_caliptra2x_sys_caliptra_win" -name IP_TARGETED_DEVICE_FAMILY "Agilex 5"
+set_global_assignment -entity "nios_caliptra2x_sys_caliptra_win" -library "nios_caliptra2x_sys_caliptra_win" -name IP_GENERATED_DEVICE_FAMILY "{Agilex 5}"
+set_global_assignment -entity "nios_caliptra2x_sys_caliptra_win" -library "nios_caliptra2x_sys_caliptra_win" -name IP_QSYS_MODE "STANDALONE"
+set_global_assignment -name SYNTHESIS_ONLY_QIP ON
+set_global_assignment -library "nios_caliptra2x_sys_caliptra_win" -name MISC_FILE [file join $::quartus(qip_path) "../nios_caliptra2x_sys_caliptra_win.ip"]
+
+set_global_assignment -entity "nios_caliptra2x_sys_caliptra_win_altera_avalon_mm_bridge_2010_tex5a4i" -library "altera_avalon_mm_bridge_2010" -name IP_COMPONENT_NAME "bmlvc19jYWxpcHRyYTJ4X3N5c19jYWxpcHRyYV93aW5fYWx0ZXJhX2F2YWxvbl9tbV9icmlkZ2VfMjAxMF90ZXg1YTRp"
+set_global_assignment -entity "nios_caliptra2x_sys_caliptra_win_altera_avalon_mm_bridge_2010_tex5a4i" -library "altera_avalon_mm_bridge_2010" -name IP_COMPONENT_DISPLAY_NAME "QXZhbG9uIE1lbW9yeSBNYXBwZWQgUGlwZWxpbmUgQnJpZGdlIElQ"
+set_global_assignment -entity "nios_caliptra2x_sys_caliptra_win_altera_avalon_mm_bridge_2010_tex5a4i" -library "altera_avalon_mm_bridge_2010" -name IP_COMPONENT_REPORT_HIERARCHY "Off"
+set_global_assignment -entity "nios_caliptra2x_sys_caliptra_win_altera_avalon_mm_bridge_2010_tex5a4i" -library "altera_avalon_mm_bridge_2010" -name IP_COMPONENT_INTERNAL "Off"
+set_global_assignment -entity "nios_caliptra2x_sys_caliptra_win_altera_avalon_mm_bridge_2010_tex5a4i" -library "altera_avalon_mm_bridge_2010" -name IP_COMPONENT_AUTHOR "SW50ZWwgQ29ycG9yYXRpb24="
+set_global_assignment -entity "nios_caliptra2x_sys_caliptra_win_altera_avalon_mm_bridge_2010_tex5a4i" -library "altera_avalon_mm_bridge_2010" -name IP_COMPONENT_VERSION "MjAuMS4w"
+set_global_assignment -entity "nios_caliptra2x_sys_caliptra_win_altera_avalon_mm_bridge_2010_tex5a4i" -library "altera_avalon_mm_bridge_2010" -name IP_COMPONENT_DESCRIPTION "SW5zZXJ0cyBhIHJlZ2lzdGVyIHN0YWdlIGluIHRoZSBBdmFsb24gTWVtb3J5IE1hcHBlZCBjb21tYW5kIGFuZCByZXNwb25zZSBwYXRocy4gQWNjZXB0cyBjb21tYW5kcyBvbiBpdHMgQXZhbG9uIE1lbW9yeSBNYXBwZWQgc2xhdmUgcG9ydCBhbmQgcHJvcGFnYXRlcyB0aGVtIHRvIGl0cyBBdmFsb24gTWVtb3J5IE1hcHBlZCBtYXN0ZXIgcG9ydC4="
+set_global_assignment -entity "nios_caliptra2x_sys_caliptra_win_altera_avalon_mm_bridge_2010_tex5a4i" -library "altera_avalon_mm_bridge_2010" -name IP_COMPONENT_GROUP "QmFzaWMgRnVuY3Rpb25zL0JyaWRnZXMgYW5kIEFkYXB0b3JzL01lbW9yeSBNYXBwZWQ="
+set_global_assignment -entity "nios_caliptra2x_sys_caliptra_win_altera_avalon_mm_bridge_2010_tex5a4i" -library "altera_avalon_mm_bridge_2010" -name IP_COMPONENT_DOCUMENTATION_LINK "aHR0cHM6Ly93d3cuaW50ZWwuY29tL2NvbnRlbnQvd3d3L3VzL2VuL3Byb2dyYW1tYWJsZS9kb2N1bWVudGF0aW9uL3pjbjE1MTM5ODcyODI5MzUuaHRtbCNtd2gxNDA5OTU4ODI4NzMy"
+set_global_assignment -entity "nios_caliptra2x_sys_caliptra_win_altera_avalon_mm_bridge_2010_tex5a4i" -library "altera_avalon_mm_bridge_2010" -name IP_COMPONENT_DOCUMENTATION_LINK "aHR0cHM6Ly93d3cuaW50ZWwuY29tL2NvbnRlbnQvZGFtL3d3dy9wcm9ncmFtbWFibGUvdXMvZW4vcGRmcy9saXRlcmF0dXJlL3VnL3VnLXFwcC1wbGF0Zm9ybS1kZXNpZ25lci5wZGY="
+set_global_assignment -entity "nios_caliptra2x_sys_caliptra_win_altera_avalon_mm_bridge_2010_tex5a4i" -library "altera_avalon_mm_bridge_2010" -name IP_COMPONENT_DOCUMENTATION_LINK "aHR0cHM6Ly93d3cuaW50ZWwuY29tL2NvbnRlbnQvd3d3L3VzL2VuL3Byb2dyYW1tYWJsZS9kb2N1bWVudGF0aW9uL2hjbzE0MTY4MzYxNDU1NTUuaHRtbCNoY28xNDE2ODM2NjUzMjIx"
+set_global_assignment -entity "nios_caliptra2x_sys_caliptra_win" -library "nios_caliptra2x_sys_caliptra_win" -name IP_COMPONENT_NAME "bmlvc19jYWxpcHRyYTJ4X3N5c19jYWxpcHRyYV93aW4="
+set_global_assignment -entity "nios_caliptra2x_sys_caliptra_win" -library "nios_caliptra2x_sys_caliptra_win" -name IP_COMPONENT_DISPLAY_NAME "c3lzdGVt"
+set_global_assignment -entity "nios_caliptra2x_sys_caliptra_win" -library "nios_caliptra2x_sys_caliptra_win" -name IP_COMPONENT_REPORT_HIERARCHY "On"
+set_global_assignment -entity "nios_caliptra2x_sys_caliptra_win" -library "nios_caliptra2x_sys_caliptra_win" -name IP_COMPONENT_INTERNAL "Off"
+set_global_assignment -entity "nios_caliptra2x_sys_caliptra_win" -library "nios_caliptra2x_sys_caliptra_win" -name IP_COMPONENT_AUTHOR "SW50ZWwgQ29ycG9yYXRpb24="
+set_global_assignment -entity "nios_caliptra2x_sys_caliptra_win" -library "nios_caliptra2x_sys_caliptra_win" -name IP_COMPONENT_VERSION "MS4w"
+
+
+set_global_assignment -library "altera_avalon_mm_bridge_2010" -name VERILOG_FILE [file join $::quartus(qip_path) "altera_avalon_mm_bridge_2010/synth/nios_caliptra2x_sys_caliptra_win_altera_avalon_mm_bridge_2010_tex5a4i.v"]
+set_global_assignment -library "altera_avalon_mm_bridge_2010" -name VERILOG_FILE [file join $::quartus(qip_path) "altera_avalon_mm_bridge_2010/synth/altera_merlin_waitrequest_adapter.v"]
+set_global_assignment -library "altera_avalon_mm_bridge_2010" -name VERILOG_FILE [file join $::quartus(qip_path) "altera_avalon_mm_bridge_2010/synth/altera_avalon_sc_fifo.v"]
+set_global_assignment -library "nios_caliptra2x_sys_caliptra_win" -name VERILOG_FILE [file join $::quartus(qip_path) "synth/nios_caliptra2x_sys_caliptra_win.v"]
+
+
+set_global_assignment -entity "nios_caliptra2x_sys_caliptra_win_altera_avalon_mm_bridge_2010_tex5a4i" -library "altera_avalon_mm_bridge_2010" -name IP_TOOL_NAME "altera_avalon_mm_bridge"
+set_global_assignment -entity "nios_caliptra2x_sys_caliptra_win_altera_avalon_mm_bridge_2010_tex5a4i" -library "altera_avalon_mm_bridge_2010" -name IP_TOOL_VERSION "20.1.0"
+set_global_assignment -entity "nios_caliptra2x_sys_caliptra_win_altera_avalon_mm_bridge_2010_tex5a4i" -library "altera_avalon_mm_bridge_2010" -name IP_TOOL_ENV "QsysPrimePro"
+

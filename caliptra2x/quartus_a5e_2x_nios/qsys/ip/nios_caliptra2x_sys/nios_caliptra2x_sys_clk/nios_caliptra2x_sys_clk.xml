@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<deploy
+ date="2026.11.11.15:18:44"
+ outputDirectory="/tmp/repro/caliptra2x/quartus_a5e_2x_nios/qsys/ip/nios_caliptra2x_sys/nios_caliptra2x_sys_clk/">
+ <perimeter>
+  <parameter
+     name="AUTO_GENERATION_ID"
+     type="Integer"
+     defaultValue="0"
+     onHdl="0"
+     affectsHdl="1" />
+  <parameter
+     name="AUTO_UNIQUE_ID"
+     type="String"
+     defaultValue=""
+     onHdl="0"
+     affectsHdl="1" />
+  <parameter
+     name="AUTO_DEVICE_FAMILY"
+     type="String"
+     defaultValue="Agilex 5"
+     onHdl="0"
+     affectsHdl="1" />
+  <parameter
+     name="AUTO_DEVICE"
+     type="String"
+     defaultValue="A5EC065BB32AE6S"
+     onHdl="0"
+     affectsHdl="1" />
+  <parameter
+     name="AUTO_DEVICE_SPEEDGRADE"
+     type="String"
+     defaultValue="6"
+     onHdl="0"
+     affectsHdl="1" />
+  <parameter
+     name="AUTO_BOARD"
+     type="String"
+     defaultValue="default"
+     onHdl="0"
+     affectsHdl="1" />
+  <parameter
+     name="AUTO_CLK_IN_CLOCK_RATE"
+     type="Long"
+     defaultValue="-1"
+     onHdl="0"
+     affectsHdl="1" />
+  <parameter
+     name="AUTO_CLK_IN_CLOCK_DOMAIN"
+     type="Integer"
+     defaultValue="-1"
+     onHdl="0"
+     affectsHdl="1" />
+  <parameter
+     name="AUTO_CLK_IN_RESET_DOMAIN"
+     type="Integer"
+     defaultValue="-1"
+     onHdl="0"
+     affectsHdl="1" />
+  <interface name="clk_in" kind="clock" start="0">
+   <property name="clockRate" value="50000000" />
+   <property name="externallyDriven" value="false" />
+   <property name="ptfSchematicName" value="" />
+   <port name="in_clk" direction="input" role="clk" width="1" />
+  </interface>
+  <interface name="clk_in_reset" kind="reset" start="0">
+   <property name="associatedClock" value="clk_in" />
+   <property name="synchronousEdges" value="DEASSERT" />
+   <port name="reset_n" direction="input" role="reset_n" width="1" />
+  </interface>
+  <interface name="clk" kind="clock" start="1">
+   <property name="associatedDirectClock" value="clk_in" />
+   <property name="clockRate" value="50000000" />
+   <property name="clockRateKnown" value="true" />
+   <property name="externallyDriven" value="true" />
+   <property name="ptfSchematicName" value="" />
+   <port name="clk_out" direction="output" role="clk" width="1" />
+  </interface>
+  <interface name="clk_reset" kind="reset" start="1">
+   <property name="associatedClock" value="clk" />
+   <property name="associatedDirectReset" value="clk_in_reset" />
+   <property name="associatedResetSinks" value="clk_in_reset" />
+   <property name="synchronousEdges" value="DEASSERT" />
+   <port name="reset_n_out" direction="output" role="reset_n" width="1" />
+  </interface>
+ </perimeter>
+ <entity
+   kind="nios_caliptra2x_sys_clk"
+   version="1.0"
+   name="nios_caliptra2x_sys_clk">
+  <parameter name="AUTO_CLK_IN_CLOCK_DOMAIN" value="-1" />
+  <parameter name="AUTO_GENERATION_ID" value="0" />
+  <parameter name="AUTO_DEVICE" value="A5EC065BB32AE6S" />
+  <parameter name="AUTO_DEVICE_FAMILY" value="Agilex 5" />
+  <parameter name="AUTO_BOARD" value="default" />
+  <parameter name="AUTO_CLK_IN_CLOCK_RATE" value="-1" />
+  <parameter name="AUTO_CLK_IN_RESET_DOMAIN" value="-1" />
+  <parameter name="AUTO_UNIQUE_ID" value="" />
+  <parameter name="AUTO_DEVICE_SPEEDGRADE" value="6" />
+  <generatedFiles>
+   <file
+       path="/tmp/repro/caliptra2x/quartus_a5e_2x_nios/qsys/ip/nios_caliptra2x_sys/nios_caliptra2x_sys_clk/synth/nios_caliptra2x_sys_clk.v"
+       attributes="CONTAINS_INLINE_CONFIGURATION" />
+  </generatedFiles>
+  <childGeneratedFiles>
+   <file
+       path="/tmp/repro/caliptra2x/quartus_a5e_2x_nios/qsys/ip/nios_caliptra2x_sys/nios_caliptra2x_sys_clk/synth/nios_caliptra2x_sys_clk.v"
+       attributes="CONTAINS_INLINE_CONFIGURATION" />
+  </childGeneratedFiles>
+  <sourceFiles>
+   <file
+       path="/tmp/repro/caliptra2x/quartus_a5e_2x_nios/qsys/ip/nios_caliptra2x_sys/nios_caliptra2x_sys_clk.ip" />
+  </sourceFiles>
+  <childSourceFiles/>
+  <messages>
+   <message level="Info" culprit="nios_caliptra2x_sys_clk">"Generating: nios_caliptra2x_sys_clk"</message>
+  </messages>
+ </entity>
+</deploy>

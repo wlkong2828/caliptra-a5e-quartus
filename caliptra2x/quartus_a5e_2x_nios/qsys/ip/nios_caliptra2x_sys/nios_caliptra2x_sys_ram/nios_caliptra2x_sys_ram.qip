@@ -1,0 +1,44 @@
+set_global_assignment -entity "nios_caliptra2x_sys_ram" -library "nios_caliptra2x_sys_ram" -name IP_TOOL_NAME "QsysPrimePro"
+set_global_assignment -entity "nios_caliptra2x_sys_ram" -library "nios_caliptra2x_sys_ram" -name IP_TOOL_VERSION "25.3"
+set_global_assignment -entity "nios_caliptra2x_sys_ram" -library "nios_caliptra2x_sys_ram" -name IP_TOOL_ENV "QsysPrimePro"
+set_global_assignment -entity "nios_caliptra2x_sys_ram" -library "nios_caliptra2x_sys_ram" -name IP_TOOL_VENDOR_NAME "Altera"
+set_global_assignment -entity "nios_caliptra2x_sys_ram" -library "nios_caliptra2x_sys_ram" -name IP_TOP_LEVEL_COMPONENT_NAME "intel_onchip_memory"
+set_global_assignment -entity "nios_caliptra2x_sys_ram" -library "nios_caliptra2x_sys_ram" -name PRE_COMPILED_MODULE "ON"
+set_global_assignment -entity "nios_caliptra2x_sys_ram" -library "nios_caliptra2x_sys_ram" -name OCS_IP_FILE [file join $::quartus(qip_path) "../nios_caliptra2x_sys_ram.ip"]
+set_global_assignment -entity "nios_caliptra2x_sys_ram" -library "nios_caliptra2x_sys_ram" -name OCS_IP_TYPE "intel_onchip_memory"
+set_global_assignment -entity "nios_caliptra2x_sys_ram" -library "nios_caliptra2x_sys_ram" -name OCS_IP_VERSION "1.4.10"
+set_global_assignment -entity "nios_caliptra2x_sys_ram" -library "nios_caliptra2x_sys_ram" -name OCS_IP_HASH "keeyoqy"
+set_global_assignment -library "nios_caliptra2x_sys_ram" -name SOPCINFO_FILE [file join $::quartus(qip_path) "nios_caliptra2x_sys_ram.sopcinfo"]
+set_global_assignment -entity "nios_caliptra2x_sys_ram" -library "nios_caliptra2x_sys_ram" -name SLD_INFO "QSYS_NAME nios_caliptra2x_sys_ram HAS_SOPCINFO 1 GENERATION_ID 0"
+set_global_assignment -library "nios_caliptra2x_sys_ram" -name MISC_FILE [file join $::quartus(qip_path) "nios_caliptra2x_sys_ram.cmp"]
+set_global_assignment -entity "nios_caliptra2x_sys_ram" -library "nios_caliptra2x_sys_ram" -name IP_TARGETED_DEVICE_FAMILY "Agilex 5"
+set_global_assignment -entity "nios_caliptra2x_sys_ram" -library "nios_caliptra2x_sys_ram" -name IP_GENERATED_DEVICE_FAMILY "{Agilex 5}"
+set_global_assignment -entity "nios_caliptra2x_sys_ram" -library "nios_caliptra2x_sys_ram" -name IP_QSYS_MODE "STANDALONE"
+set_global_assignment -name SYNTHESIS_ONLY_QIP ON
+set_global_assignment -library "nios_caliptra2x_sys_ram" -name MISC_FILE [file join $::quartus(qip_path) "../nios_caliptra2x_sys_ram.ip"]
+
+set_global_assignment -entity "nios_caliptra2x_sys_ram_intel_onchip_memory_1410_keeyoqy" -library "intel_onchip_memory_1410" -name IP_COMPONENT_NAME "bmlvc19jYWxpcHRyYTJ4X3N5c19yYW1faW50ZWxfb25jaGlwX21lbW9yeV8xNDEwX2tlZXlvcXk="
+set_global_assignment -entity "nios_caliptra2x_sys_ram_intel_onchip_memory_1410_keeyoqy" -library "intel_onchip_memory_1410" -name IP_COMPONENT_DISPLAY_NAME "T24tQ2hpcCBNZW1vcnkgSUkgKFJBTSBvciBST00pIElQ"
+set_global_assignment -entity "nios_caliptra2x_sys_ram_intel_onchip_memory_1410_keeyoqy" -library "intel_onchip_memory_1410" -name IP_COMPONENT_REPORT_HIERARCHY "Off"
+set_global_assignment -entity "nios_caliptra2x_sys_ram_intel_onchip_memory_1410_keeyoqy" -library "intel_onchip_memory_1410" -name IP_COMPONENT_INTERNAL "Off"
+set_global_assignment -entity "nios_caliptra2x_sys_ram_intel_onchip_memory_1410_keeyoqy" -library "intel_onchip_memory_1410" -name IP_COMPONENT_AUTHOR "QWx0ZXJh"
+set_global_assignment -entity "nios_caliptra2x_sys_ram_intel_onchip_memory_1410_keeyoqy" -library "intel_onchip_memory_1410" -name IP_COMPONENT_VERSION "MS40LjEw"
+set_global_assignment -entity "nios_caliptra2x_sys_ram_intel_onchip_memory_1410_keeyoqy" -library "intel_onchip_memory_1410" -name IP_COMPONENT_GROUP "QmFzaWMgRnVuY3Rpb25zL09uIENoaXAgTWVtb3J5"
+set_global_assignment -entity "nios_caliptra2x_sys_ram_intel_onchip_memory_1410_keeyoqy" -library "intel_onchip_memory_1410" -name IP_COMPONENT_DOCUMENTATION_LINK "aHR0cHM6Ly93d3cuaW50ZWwuY29tL2NvbnRlbnQvd3d3L3VzL2VuL2RvY3MvcHJvZ3JhbW1hYmxlLzY4MzEzMC9jdXJyZW50L29uLWNoaXAtbWVtb3J5LWlpLXJhbS1vci1yb20taW50ZWwtZnBnYS1pcC5odG1s"
+set_global_assignment -entity "nios_caliptra2x_sys_ram_intel_onchip_memory_1410_keeyoqy" -library "intel_onchip_memory_1410" -name IP_COMPONENT_DOCUMENTATION_LINK "aHR0cHM6Ly93d3cuaW50ZWwuY29tL2NvbnRlbnQvd3d3L3VzL2VuL2RvY3MvcHJvZ3JhbW1hYmxlLzY4MzEzMC9jdXJyZW50L29uLWNoaXAtbWVtb3J5LWlpLXJhbS1hbmQtcm9tLWludGVsLmh0bWw="
+set_global_assignment -entity "nios_caliptra2x_sys_ram" -library "nios_caliptra2x_sys_ram" -name IP_COMPONENT_NAME "bmlvc19jYWxpcHRyYTJ4X3N5c19yYW0="
+set_global_assignment -entity "nios_caliptra2x_sys_ram" -library "nios_caliptra2x_sys_ram" -name IP_COMPONENT_DISPLAY_NAME "c3lzdGVt"
+set_global_assignment -entity "nios_caliptra2x_sys_ram" -library "nios_caliptra2x_sys_ram" -name IP_COMPONENT_REPORT_HIERARCHY "On"
+set_global_assignment -entity "nios_caliptra2x_sys_ram" -library "nios_caliptra2x_sys_ram" -name IP_COMPONENT_INTERNAL "Off"
+set_global_assignment -entity "nios_caliptra2x_sys_ram" -library "nios_caliptra2x_sys_ram" -name IP_COMPONENT_AUTHOR "QWx0ZXJh"
+set_global_assignment -entity "nios_caliptra2x_sys_ram" -library "nios_caliptra2x_sys_ram" -name IP_COMPONENT_VERSION "MS4w"
+
+
+set_global_assignment -library "intel_onchip_memory_1410" -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "intel_onchip_memory_1410/synth/nios_caliptra2x_sys_ram_intel_onchip_memory_1410_keeyoqy.sv"]
+set_global_assignment -library "nios_caliptra2x_sys_ram" -name VERILOG_FILE [file join $::quartus(qip_path) "synth/nios_caliptra2x_sys_ram.v"]
+
+
+set_global_assignment -entity "nios_caliptra2x_sys_ram_intel_onchip_memory_1410_keeyoqy" -library "intel_onchip_memory_1410" -name IP_TOOL_NAME "intel_onchip_memory"
+set_global_assignment -entity "nios_caliptra2x_sys_ram_intel_onchip_memory_1410_keeyoqy" -library "intel_onchip_memory_1410" -name IP_TOOL_VERSION "1.4.10"
+set_global_assignment -entity "nios_caliptra2x_sys_ram_intel_onchip_memory_1410_keeyoqy" -library "intel_onchip_memory_1410" -name IP_TOOL_ENV "QsysPrimePro"
+

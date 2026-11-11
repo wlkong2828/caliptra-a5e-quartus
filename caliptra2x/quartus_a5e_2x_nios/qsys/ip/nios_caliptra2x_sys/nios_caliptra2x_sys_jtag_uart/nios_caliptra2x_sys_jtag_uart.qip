@@ -1,0 +1,50 @@
+set_global_assignment -entity "nios_caliptra2x_sys_jtag_uart" -library "nios_caliptra2x_sys_jtag_uart" -name IP_TOOL_NAME "QsysPrimePro"
+set_global_assignment -entity "nios_caliptra2x_sys_jtag_uart" -library "nios_caliptra2x_sys_jtag_uart" -name IP_TOOL_VERSION "25.3"
+set_global_assignment -entity "nios_caliptra2x_sys_jtag_uart" -library "nios_caliptra2x_sys_jtag_uart" -name IP_TOOL_ENV "QsysPrimePro"
+set_global_assignment -entity "nios_caliptra2x_sys_jtag_uart" -library "nios_caliptra2x_sys_jtag_uart" -name IP_TOOL_VENDOR_NAME "Altera"
+set_global_assignment -entity "nios_caliptra2x_sys_jtag_uart" -library "nios_caliptra2x_sys_jtag_uart" -name IP_TOP_LEVEL_COMPONENT_NAME "altera_avalon_jtag_uart"
+set_global_assignment -entity "nios_caliptra2x_sys_jtag_uart" -library "nios_caliptra2x_sys_jtag_uart" -name PRE_COMPILED_MODULE "ON"
+set_global_assignment -entity "nios_caliptra2x_sys_jtag_uart" -library "nios_caliptra2x_sys_jtag_uart" -name OCS_IP_FILE [file join $::quartus(qip_path) "../nios_caliptra2x_sys_jtag_uart.ip"]
+set_global_assignment -entity "nios_caliptra2x_sys_jtag_uart" -library "nios_caliptra2x_sys_jtag_uart" -name OCS_IP_TYPE "altera_avalon_jtag_uart"
+set_global_assignment -entity "nios_caliptra2x_sys_jtag_uart" -library "nios_caliptra2x_sys_jtag_uart" -name OCS_IP_VERSION "19.3.1"
+set_global_assignment -entity "nios_caliptra2x_sys_jtag_uart" -library "nios_caliptra2x_sys_jtag_uart" -name OCS_IP_HASH "ej7d6za"
+set_global_assignment -library "nios_caliptra2x_sys_jtag_uart" -name SOPCINFO_FILE [file join $::quartus(qip_path) "nios_caliptra2x_sys_jtag_uart.sopcinfo"]
+set_global_assignment -entity "nios_caliptra2x_sys_jtag_uart" -library "nios_caliptra2x_sys_jtag_uart" -name SLD_INFO "QSYS_NAME nios_caliptra2x_sys_jtag_uart HAS_SOPCINFO 1 GENERATION_ID 0"
+set_global_assignment -library "nios_caliptra2x_sys_jtag_uart" -name MISC_FILE [file join $::quartus(qip_path) "nios_caliptra2x_sys_jtag_uart.cmp"]
+set_global_assignment -library "nios_caliptra2x_sys_jtag_uart" -name SLD_FILE [file join $::quartus(qip_path) "nios_caliptra2x_sys_jtag_uart.regmap"]
+set_global_assignment -entity "nios_caliptra2x_sys_jtag_uart" -library "nios_caliptra2x_sys_jtag_uart" -name IP_TARGETED_DEVICE_FAMILY "Agilex 5"
+set_global_assignment -entity "nios_caliptra2x_sys_jtag_uart" -library "nios_caliptra2x_sys_jtag_uart" -name IP_GENERATED_DEVICE_FAMILY "{Agilex 5}"
+set_global_assignment -entity "nios_caliptra2x_sys_jtag_uart" -library "nios_caliptra2x_sys_jtag_uart" -name IP_QSYS_MODE "STANDALONE"
+set_global_assignment -name SYNTHESIS_ONLY_QIP ON
+set_global_assignment -library "nios_caliptra2x_sys_jtag_uart" -name MISC_FILE [file join $::quartus(qip_path) "../nios_caliptra2x_sys_jtag_uart.ip"]
+
+set_global_assignment -entity "altera_avalon_jtag_uart" -library "altera_avalon_jtag_uart_1931" -name IP_COMPONENT_NAME "YWx0ZXJhX2F2YWxvbl9qdGFnX3VhcnQ="
+set_global_assignment -entity "altera_avalon_jtag_uart" -library "altera_avalon_jtag_uart_1931" -name IP_COMPONENT_DISPLAY_NAME "SlRBRyBVQVJUIElQ"
+set_global_assignment -entity "altera_avalon_jtag_uart" -library "altera_avalon_jtag_uart_1931" -name IP_COMPONENT_REPORT_HIERARCHY "Off"
+set_global_assignment -entity "altera_avalon_jtag_uart" -library "altera_avalon_jtag_uart_1931" -name IP_COMPONENT_INTERNAL "Off"
+set_global_assignment -entity "altera_avalon_jtag_uart" -library "altera_avalon_jtag_uart_1931" -name IP_COMPONENT_AUTHOR "QWx0ZXJh"
+set_global_assignment -entity "altera_avalon_jtag_uart" -library "altera_avalon_jtag_uart_1931" -name IP_COMPONENT_VERSION "MTkuMy4x"
+set_global_assignment -entity "altera_avalon_jtag_uart" -library "altera_avalon_jtag_uart_1931" -name IP_COMPONENT_GROUP "SW50ZXJmYWNlIFByb3RvY29scy9TZXJpYWw="
+set_global_assignment -entity "altera_avalon_jtag_uart" -library "altera_avalon_jtag_uart_1931" -name IP_COMPONENT_DOCUMENTATION_LINK "aHR0cHM6Ly93d3cuaW50ZWwuY29tL2NvbnRlbnQvd3d3L3VzL2VuL2RvY3MvcHJvZ3JhbW1hYmxlLzY4MzEzMC9jdXJyZW50L2p0YWctdWFydC1jb3JlLmh0bWw="
+set_global_assignment -entity "altera_avalon_jtag_uart" -library "altera_avalon_jtag_uart_1931" -name IP_COMPONENT_DOCUMENTATION_LINK "aHR0cHM6Ly93d3cuaW50ZWwuY29tL2NvbnRlbnQvd3d3L3VzL2VuL2RvY3MvcHJvZ3JhbW1hYmxlLzY4MzEzMC9jdXJyZW50L2p0YWctdWFydC1jb3JlLXJldmlzaW9uLWhpc3RvcnkuaHRtbA=="
+set_global_assignment -entity "nios_caliptra2x_sys_jtag_uart" -library "nios_caliptra2x_sys_jtag_uart" -name IP_COMPONENT_NAME "bmlvc19jYWxpcHRyYTJ4X3N5c19qdGFnX3VhcnQ="
+set_global_assignment -entity "nios_caliptra2x_sys_jtag_uart" -library "nios_caliptra2x_sys_jtag_uart" -name IP_COMPONENT_DISPLAY_NAME "c3lzdGVt"
+set_global_assignment -entity "nios_caliptra2x_sys_jtag_uart" -library "nios_caliptra2x_sys_jtag_uart" -name IP_COMPONENT_REPORT_HIERARCHY "On"
+set_global_assignment -entity "nios_caliptra2x_sys_jtag_uart" -library "nios_caliptra2x_sys_jtag_uart" -name IP_COMPONENT_INTERNAL "Off"
+set_global_assignment -entity "nios_caliptra2x_sys_jtag_uart" -library "nios_caliptra2x_sys_jtag_uart" -name IP_COMPONENT_AUTHOR "QWx0ZXJh"
+set_global_assignment -entity "nios_caliptra2x_sys_jtag_uart" -library "nios_caliptra2x_sys_jtag_uart" -name IP_COMPONENT_VERSION "MS4w"
+
+
+set_global_assignment -library "altera_avalon_jtag_uart_1931" -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "altera_avalon_jtag_uart_1931/synth/altera_avalon_jtag_uart.sv"]
+set_global_assignment -library "altera_avalon_jtag_uart_1931" -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "altera_avalon_jtag_uart_1931/synth/altera_avalon_jtag_uart_log_module.sv"]
+set_global_assignment -library "altera_avalon_jtag_uart_1931" -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "altera_avalon_jtag_uart_1931/synth/altera_avalon_jtag_uart_scfifo_r.sv"]
+set_global_assignment -library "altera_avalon_jtag_uart_1931" -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "altera_avalon_jtag_uart_1931/synth/altera_avalon_jtag_uart_scfifo_w.sv"]
+set_global_assignment -library "altera_avalon_jtag_uart_1931" -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "altera_avalon_jtag_uart_1931/synth/altera_avalon_jtag_uart_sim_scfifo_r.sv"]
+set_global_assignment -library "altera_avalon_jtag_uart_1931" -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "altera_avalon_jtag_uart_1931/synth/altera_avalon_jtag_uart_sim_scfifo_w.sv"]
+set_global_assignment -library "nios_caliptra2x_sys_jtag_uart" -name VERILOG_FILE [file join $::quartus(qip_path) "synth/nios_caliptra2x_sys_jtag_uart.v"]
+
+
+set_global_assignment -entity "altera_avalon_jtag_uart" -library "altera_avalon_jtag_uart_1931" -name IP_TOOL_NAME "altera_avalon_jtag_uart"
+set_global_assignment -entity "altera_avalon_jtag_uart" -library "altera_avalon_jtag_uart_1931" -name IP_TOOL_VERSION "19.3.1"
+set_global_assignment -entity "altera_avalon_jtag_uart" -library "altera_avalon_jtag_uart_1931" -name IP_TOOL_ENV "QsysPrimePro"
+

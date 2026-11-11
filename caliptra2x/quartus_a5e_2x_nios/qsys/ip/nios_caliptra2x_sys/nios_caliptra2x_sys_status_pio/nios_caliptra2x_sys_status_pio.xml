@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<deploy
+ date="2026.11.11.15:18:47"
+ outputDirectory="/tmp/repro/caliptra2x/quartus_a5e_2x_nios/qsys/ip/nios_caliptra2x_sys/nios_caliptra2x_sys_status_pio/">
+ <perimeter>
+  <parameter
+     name="AUTO_GENERATION_ID"
+     type="Integer"
+     defaultValue="0"
+     onHdl="0"
+     affectsHdl="1" />
+  <parameter
+     name="AUTO_UNIQUE_ID"
+     type="String"
+     defaultValue=""
+     onHdl="0"
+     affectsHdl="1" />
+  <parameter
+     name="AUTO_DEVICE_FAMILY"
+     type="String"
+     defaultValue="Agilex 5"
+     onHdl="0"
+     affectsHdl="1" />
+  <parameter
+     name="AUTO_DEVICE"
+     type="String"
+     defaultValue="A5EC065BB32AE6S"
+     onHdl="0"
+     affectsHdl="1" />
+  <parameter
+     name="AUTO_DEVICE_SPEEDGRADE"
+     type="String"
+     defaultValue="6"
+     onHdl="0"
+     affectsHdl="1" />
+  <parameter
+     name="AUTO_BOARD"
+     type="String"
+     defaultValue="default"
+     onHdl="0"
+     affectsHdl="1" />
+  <parameter
+     name="AUTO_CLK_CLOCK_RATE"
+     type="Long"
+     defaultValue="-1"
+     onHdl="0"
+     affectsHdl="1" />
+  <parameter
+     name="AUTO_CLK_CLOCK_DOMAIN"
+     type="Integer"
+     defaultValue="-1"
+     onHdl="0"
+     affectsHdl="1" />
+  <parameter
+     name="AUTO_CLK_RESET_DOMAIN"
+     type="Integer"
+     defaultValue="-1"
+     onHdl="0"
+     affectsHdl="1" />
+  <parameter
+     name="AUTO_S1_CPU_INFO_ID"
+     type="String"
+     defaultValue=""
+     onHdl="0"
+     affectsHdl="1" />
+  <interface name="clk" kind="clock" start="0">
+   <property name="clockRate" value="0" />
+   <property name="externallyDriven" value="false" />
+   <property name="ptfSchematicName" value="" />
+   <port name="clk" direction="input" role="clk" width="1" />
+  </interface>
+  <interface name="reset" kind="reset" start="0">
+   <property name="associatedClock" value="clk" />
+   <property name="synchronousEdges" value="DEASSERT" />
+   <port name="reset_n" direction="input" role="reset_n" width="1" />
+  </interface>
+  <interface name="s1" kind="avalon" start="0">
+   <property name="addressAlignment" value="NATIVE" />
+   <property name="addressGroup" value="0" />
+   <property name="addressSpan" value="4" />
+   <property name="addressUnits" value="WORDS" />
+   <property name="alwaysBurstMaxBurst" value="false" />
+   <property name="associatedClock" value="clk" />
+   <property name="associatedReset" value="reset" />
+   <property name="bitsPerSymbol" value="8" />
+   <property name="bridgedAddressOffset" value="0" />
+   <property name="bridgesToMaster" value="" />
+   <property name="burstOnBurstBoundariesOnly" value="false" />
+   <property name="burstcountUnits" value="WORDS" />
+   <property name="constantBurstBehavior" value="false" />
+   <property name="explicitAddressSpan" value="0" />
+   <property name="holdTime" value="0" />
+   <property name="interleaveBursts" value="false" />
+   <property name="isBigEndian" value="false" />
+   <property name="isFlash" value="false" />
+   <property name="isMemoryDevice" value="false" />
+   <property name="isNonVolatileStorage" value="false" />
+   <property name="linewrapBursts" value="false" />
+   <property name="maximumPendingReadTransactions" value="0" />
+   <property name="maximumPendingWriteTransactions" value="0" />
+   <property name="minimumReadLatency" value="1" />
+   <property name="minimumResponseLatency" value="1" />
+   <property name="minimumUninterruptedRunLength" value="1" />
+   <property name="prSafe" value="false" />
+   <property name="printableDevice" value="false" />
+   <property name="readLatency" value="0" />
+   <property name="readWaitStates" value="1" />
+   <property name="readWaitTime" value="1" />
+   <property name="registerIncomingSignals" value="false" />
+   <property name="registerOutgoingSignals" value="false" />
+   <property name="setupTime" value="0" />
+   <property name="timingUnits" value="Cycles" />
+   <property name="transparentBridge" value="false" />
+   <property name="waitrequestAllowance" value="0" />
+   <property name="waitrequestTimeout" value="1024" />
+   <property name="wellBehavedWaitrequest" value="false" />
+   <property name="writeLatency" value="0" />
+   <property name="writeWaitStates" value="0" />
+   <property name="writeWaitTime" value="0" />
+   <property name="dfhFeatureGuid" value="0" />
+   <property name="dfhGroupId" value="0" />
+   <property name="dfhParameterId" value="" />
+   <property name="dfhParameterName" value="" />
+   <property name="dfhParameterVersion" value="" />
+   <property name="dfhParameterData" value="" />
+   <property name="dfhParameterDataLength" value="" />
+   <property name="dfhFeatureMajorVersion" value="0" />
+   <property name="dfhFeatureMinorVersion" value="0" />
+   <property name="dfhFeatureId" value="35" />
+   <property name="dfhFeatureType" value="3" />
+   <port name="address" direction="input" role="address" width="2" />
+   <port name="readdata" direction="output" role="readdata" width="32" />
+  </interface>
+  <interface name="external_connection" kind="conduit" start="0">
+   <property name="associatedClock" value="" />
+   <property name="associatedReset" value="" />
+   <property name="prSafe" value="false" />
+   <port name="in_port" direction="input" role="export" width="32" />
+  </interface>
+ </perimeter>
+ <entity
+   kind="nios_caliptra2x_sys_status_pio"
+   version="1.0"
+   name="nios_caliptra2x_sys_status_pio">
+  <parameter name="AUTO_CLK_CLOCK_RATE" value="-1" />
+  <parameter name="AUTO_GENERATION_ID" value="0" />
+  <parameter name="AUTO_DEVICE" value="A5EC065BB32AE6S" />
+  <parameter name="AUTO_DEVICE_FAMILY" value="Agilex 5" />
+  <parameter name="AUTO_BOARD" value="default" />
+  <parameter name="AUTO_CLK_RESET_DOMAIN" value="-1" />
+  <parameter name="AUTO_CLK_CLOCK_DOMAIN" value="-1" />
+  <parameter name="AUTO_UNIQUE_ID" value="" />
+  <parameter name="AUTO_S1_CPU_INFO_ID" value="" />
+  <parameter name="AUTO_DEVICE_SPEEDGRADE" value="6" />
+  <generatedFiles>
+   <file
+       path="/tmp/repro/caliptra2x/quartus_a5e_2x_nios/qsys/ip/nios_caliptra2x_sys/nios_caliptra2x_sys_status_pio/synth/nios_caliptra2x_sys_status_pio.v"
+       attributes="CONTAINS_INLINE_CONFIGURATION" />
+  </generatedFiles>
+  <childGeneratedFiles>
+   <file
+       path="/tmp/repro/caliptra2x/quartus_a5e_2x_nios/qsys/ip/nios_caliptra2x_sys/nios_caliptra2x_sys_status_pio/synth/nios_caliptra2x_sys_status_pio.v"
+       attributes="CONTAINS_INLINE_CONFIGURATION" />
+  </childGeneratedFiles>
+  <sourceFiles>
+   <file
+       path="/tmp/repro/caliptra2x/quartus_a5e_2x_nios/qsys/ip/nios_caliptra2x_sys/nios_caliptra2x_sys_status_pio.ip" />
+  </sourceFiles>
+  <childSourceFiles>
+   <file
+       path="/opt/altera/ip/altera/eip/altera_avalon_pio/altera_avalon_pio_hw.tcl" />
+  </childSourceFiles>
+  <messages>
+   <message level="Info" culprit="nios_caliptra2x_sys_status_pio">"Generating: nios_caliptra2x_sys_status_pio"</message>
+   <message level="Info" culprit="nios_caliptra2x_sys_status_pio">"Generating: nios_caliptra2x_sys_status_pio_altera_avalon_pio_1924_5kps7ry"</message>
+   <message level="Info" culprit="status_pio">Starting RTL generation for module 'nios_caliptra2x_sys_status_pio_altera_avalon_pio_1924_5kps7ry'</message>
+   <message level="Info" culprit="status_pio">  Generation command is [exec /opt/altera/quartus/linux64//perl/bin/perl -I /opt/altera/quartus/linux64//perl/lib -I /opt/altera/quartus/sopc_builder/bin/europa -I /opt/altera/quartus/sopc_builder/bin/perl_lib -I /opt/altera/quartus/sopc_builder/bin -I /opt/altera/quartus/../ip/altera/sopc_builder_ip/common -I /opt/altera/quartus/../ip/altera/eip/altera_avalon_pio -- /opt/altera/quartus/../ip/altera/eip/altera_avalon_pio/generate_rtl.pl --name=nios_caliptra2x_sys_status_pio_altera_avalon_pio_1924_5kps7ry --dir=/tmp/alt0768_6536414308773145795.dir/0002_status_pio_gen/ --quartus_dir=/opt/altera/quartus --verilog --config=/tmp/alt0768_6536414308773145795.dir/0002_status_pio_gen//nios_caliptra2x_sys_status_pio_altera_avalon_pio_1924_5kps7ry_component_configuration.pl  --do_build_sim=0  ]</message>
+   <message level="Info" culprit="status_pio">Done RTL generation for module 'nios_caliptra2x_sys_status_pio_altera_avalon_pio_1924_5kps7ry'</message>
+  </messages>
+ </entity>
+ <entity
+   kind="altera_avalon_pio"
+   version="19.2.4"
+   name="nios_caliptra2x_sys_status_pio_altera_avalon_pio_1924_5kps7ry">
+  <parameter name="DEVICE_FAMILY" value="Agilex 5" />
+  <parameter name="derived_do_test_bench_wiring" value="false" />
+  <parameter name="generateIRQ" value="false" />
+  <parameter name="derived_has_irq" value="false" />
+  <parameter name="captureEdge" value="false" />
+  <parameter name="clockRate" value="50000000" />
+  <parameter name="derived_has_out" value="false" />
+  <parameter name="derived_has_in" value="true" />
+  <parameter name="resetValue" value="0" />
+  <parameter name="derived_has_tri" value="false" />
+  <parameter name="derived_capture" value="false" />
+  <parameter name="simDoTestBenchWiring" value="false" />
+  <parameter name="bitModifyingOutReg" value="false" />
+  <parameter name="simDrivenValue" value="0" />
+  <parameter name="derived_edge_type" value="NONE" />
+  <parameter name="irqType" value="LEVEL" />
+  <parameter name="derived_irq_type" value="NONE" />
+  <parameter name="edgeType" value="RISING" />
+  <parameter name="width" value="32" />
+  <parameter name="bitClearingEdgeCapReg" value="false" />
+  <parameter name="direction" value="Input" />
+  <generatedFiles>
+   <file
+       path="/tmp/repro/caliptra2x/quartus_a5e_2x_nios/qsys/ip/nios_caliptra2x_sys/nios_caliptra2x_sys_status_pio/altera_avalon_pio_1924/synth/nios_caliptra2x_sys_status_pio_altera_avalon_pio_1924_5kps7ry.v"
+       attributes="" />
+  </generatedFiles>
+  <childGeneratedFiles>
+   <file
+       path="/tmp/repro/caliptra2x/quartus_a5e_2x_nios/qsys/ip/nios_caliptra2x_sys/nios_caliptra2x_sys_status_pio/altera_avalon_pio_1924/synth/nios_caliptra2x_sys_status_pio_altera_avalon_pio_1924_5kps7ry.v"
+       attributes="" />
+  </childGeneratedFiles>
+  <sourceFiles>
+   <file
+       path="/opt/altera/ip/altera/eip/altera_avalon_pio/altera_avalon_pio_hw.tcl" />
+  </sourceFiles>
+  <childSourceFiles/>
+  <instantiator instantiator="nios_caliptra2x_sys_status_pio" as="status_pio" />
+  <messages>
+   <message level="Info" culprit="nios_caliptra2x_sys_status_pio">"Generating: nios_caliptra2x_sys_status_pio_altera_avalon_pio_1924_5kps7ry"</message>
+   <message level="Info" culprit="status_pio">Starting RTL generation for module 'nios_caliptra2x_sys_status_pio_altera_avalon_pio_1924_5kps7ry'</message>
+   <message level="Info" culprit="status_pio">  Generation command is [exec /opt/altera/quartus/linux64//perl/bin/perl -I /opt/altera/quartus/linux64//perl/lib -I /opt/altera/quartus/sopc_builder/bin/europa -I /opt/altera/quartus/sopc_builder/bin/perl_lib -I /opt/altera/quartus/sopc_builder/bin -I /opt/altera/quartus/../ip/altera/sopc_builder_ip/common -I /opt/altera/quartus/../ip/altera/eip/altera_avalon_pio -- /opt/altera/quartus/../ip/altera/eip/altera_avalon_pio/generate_rtl.pl --name=nios_caliptra2x_sys_status_pio_altera_avalon_pio_1924_5kps7ry --dir=/tmp/alt0768_6536414308773145795.dir/0002_status_pio_gen/ --quartus_dir=/opt/altera/quartus --verilog --config=/tmp/alt0768_6536414308773145795.dir/0002_status_pio_gen//nios_caliptra2x_sys_status_pio_altera_avalon_pio_1924_5kps7ry_component_configuration.pl  --do_build_sim=0  ]</message>
+   <message level="Info" culprit="status_pio">Done RTL generation for module 'nios_caliptra2x_sys_status_pio_altera_avalon_pio_1924_5kps7ry'</message>
+  </messages>
+ </entity>
+</deploy>

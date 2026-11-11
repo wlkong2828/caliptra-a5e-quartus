@@ -39,3 +39,14 @@ keys/
 caliptra2x/sim_2x/attest_out/
 caliptra2x/sim_2x/attest_run.log
 caliptra2x/sim_2x/attest_run.out
+
+# Nios V + Caliptra 2.x full-system project: build products local only
+caliptra2x/quartus_a5e_2x_nios/sw/app/build/
+caliptra2x/quartus_a5e_2x_nios/sw/.shim/
+caliptra2x/quartus_a5e_2x_nios/ip/rst_release/
+caliptra2x/quartus_a5e_2x_nios/output_files/*
+!caliptra2x/quartus_a5e_2x_nios/output_files/nios_caliptra2x_a5e.flow.rpt
+!caliptra2x/quartus_a5e_2x_nios/output_files/nios_caliptra2x_a5e.syn.summary
+caliptra2x/quartus_a5e_2x_nios/run.out
+caliptra2x/quartus_a5e_2x_nios/ipgen.log
+caliptra2x/quartus_a5e_2x_nios/fit.log
