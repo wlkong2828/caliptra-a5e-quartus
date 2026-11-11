@@ -697,6 +697,8 @@ Counted from the table in §11: **32** requirement rows, one primary status per 
 
 ### 13.1 Simulation (Verilator 5.054, behavioral Nios host)
 
+> **Compiler note.** The testbench uses Verilator `--timing`, which needs C++20 coroutines. With GCC 10–12 the build fails in `verilated_timing.h` (`coroutine header requires -fcoroutines`). `sim/run_nios_top_fw.sh` calls `scripts/verilator_cflags.sh`, which adds `-CFLAGS -fcoroutines` automatically for GCC 10–12. If Verilator uses a different compiler than `${CXX:-c++}`, force it with `VERILATOR_CFLAGS=-fcoroutines sim/run_nios_top_fw.sh`, or use GCC 13 or newer.
+
 Testbench `sim/tb_nios_top_fw.sv` drives the real `nios_caliptra_top` glue (Reset Release stub, 2FF synchronizers, `avmm_to_apb`, `soc_fuse_ctrl`, `soc_fw_store`, window decode) plus the full caliptra-rtl v1.1 core, ROM `fw/caliptra-rom.hex` (rom-1.1.1) and the signed 1.x bundle `fw/caliptra-fw-bundle.hex` (109,000 bytes). The Nios V CPU is replaced by tasks that issue the same Avalon accesses as `main.c` (same register order, PAUSER/TIMER/WDT values, fuse START/START_DONE, ETRNG service, FIRMWARE_LOAD). Clock is 100 MHz in the TB (cycle counts are clock-independent). Runs were launched 2026-11-10 10:17 America/Chicago (CST) from the glue RTL named in the header (unchanged since `ea96100`).
 
 | Test | What it checks | Result | Key cycles | Wall | Log (`sim/nios_top_fw_<x>.log`) |
