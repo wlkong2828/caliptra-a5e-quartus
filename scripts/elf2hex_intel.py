@@ -23,8 +23,9 @@ def main():
     lines = [rec(2, 0, 2, b"\x00\x00")]  # extended segment address 0
     for i in range(nwords):
         word = blob[i*4:(i+1)*4]
-        # little-endian CPU image already; write bytes in file order
-        lines.append(rec(4, i, 0, word))
+        # Intel HEX data field holds the 32-bit word MSB first (same as Quartus elf2hex -w 32):
+        # the little-endian RV32 image word b0 b1 b2 b3 is written as b3 b2 b1 b0.
+        lines.append(rec(4, i, 0, word[::-1]))
     lines.append(":00000001FF")
     pathlib.Path(args.o).write_text("\n".join(lines) + "\n")
 
