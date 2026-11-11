@@ -3,8 +3,9 @@
 - **Project:** Caliptra 1.x (passive) on Intel Agilex 5 E **A5EC065BB32AE6S**, Nios V/m mailbox host (AXI4-lite → Avalon → APB).
 - **Repo:** [pwilliam282/caliptra-a5e-quartus](https://github.com/pwilliam282/caliptra-a5e-quartus)
 - **This document:** [`docs/NIOS_CALIPTRA_INTEGRATION.md`](https://github.com/pwilliam282/caliptra-a5e-quartus/blob/main/docs/NIOS_CALIPTRA_INTEGRATION.md)
-- **RTL / spec version:** chipsalliance/caliptra-rtl **v1.1**, commit `5f85fb4bc95b753a2f7d042db7dc2644ca1e8c49` (same tree as release [rtl-20261101](https://github.com/pwilliam282/caliptra-a5e-quartus/releases/tag/rtl-20261101)). Official sources used for this audit: `docs/CaliptraIntegrationSpecification.md` and `docs/CaliptraHardwareSpecification.md` at that commit. **1.x has no `strap_ss_*` / AXI DMA / Caliptra-SS straps** — those belong to 2.x / Caliptra SS.
+- **RTL / spec version:** chipsalliance/caliptra-rtl **v1.1**, commit `5f85fb4bc95b753a2f7d042db7dc2644ca1e8c49` (same tree as release [rtl-20261101](https://github.com/pwilliam282/caliptra-a5e-quartus/releases/tag/rtl-20261101)). In the repo it is the pinned submodule `external/caliptra-rtl-1x/`; see §15. Official sources used for this audit: `docs/CaliptraIntegrationSpecification.md` and `docs/CaliptraHardwareSpecification.md` at that commit. **1.x has no `strap_ss_*` / AXI DMA / Caliptra-SS straps** — those belong to 2.x / Caliptra SS.
 - **Glue RTL reviewed at:** glue RTL as of `ea96100` / `ea86b5c` (unchanged since; 2FF reset synchronizers, Reset Release IP gating, warm-reset DONE-only fuse path, PAUSER lock, TIMER_CONFIG, fatal recovery, generic_input tie-off). Verilator results in §13 were built from exactly this RTL; Quartus synthesis result is from `ea86b5c`. Earlier notes: first added in `7ba4ce5` (rev 1), re-audited in `238df80` (rev 2, docs-only).
+- **Getting the sources / building:** §15 (clone, submodules, `scripts/get_caliptra_a5e.sh`, `scripts/fetch_deps.sh`) and §16 (Quartus Pro 25.3 build, Docker, license, measured results, known issues).
 - **Date:** 2026-11-10 (America/Chicago), revision 3 (design fixes for the rev-2 FAIL/OPEN items; checklist re-audited against the new RTL + v1.1 spec).
 - **Scope:** FPGA study / production-flow *mimic*. STUDY keys, UDS, field entropy, and TRNG are **not** production secrets or a FIPS entropy source. xorshift TRNG, study UDS/FE/obf key, and the FPGA fuse-image stand-in remain **TEST-ONLY**.
 
@@ -47,7 +48,7 @@ There was **no** `docs/` tree and no single integration note in the repo before 
 | [`sim/BOOT_NIOS_TOP_PROD.md`](https://github.com/pwilliam282/caliptra-a5e-quartus/blob/main/sim/BOOT_NIOS_TOP_PROD.md) | Verilator production-mimic boot and the rev-3 test list (prod PASS at cycle 24,064,900, 32 TRNG fills; warm/fatal/sync/pauser PASS) | Updated for rev 3; see §13. |
 | [`STUDY.md`](https://github.com/pwilliam282/caliptra-a5e-quartus/blob/main/STUDY.md) | C10 GX / A5E fit study (ALMs, routing OOM) | Not a signal map. Notes a Quartus critical warning for a **missing Reset Release IP** on the related A5E build. The Nios project now instantiates it (M11). |
 
-Official SoC-interface rules are in caliptra-rtl v1.1 `docs/CaliptraIntegrationSpecification.md` and `docs/CaliptraHardwareSpecification.md` at `5f85fb4`. Those files are *not* vendored in this git repo; get them with the RTL from release [rtl-20261101](https://github.com/pwilliam282/caliptra-a5e-quartus/releases/tag/rtl-20261101).
+Official SoC-interface rules are in caliptra-rtl v1.1 `docs/CaliptraIntegrationSpecification.md` and `docs/CaliptraHardwareSpecification.md` at `5f85fb4`. They are in the `external/caliptra-rtl-1x/docs/` submodule after `scripts/fetch_deps.sh` (§15).
 
 ---
 
@@ -720,7 +721,7 @@ Rerun: `sim/run_nios_top_fw.sh +test=<name>` (builds into `sim/obj_nios_top_fw/`
 
 ### 13.2 Synthesis (Quartus Prime Pro 25.3.0 Build 109, A5EC065BB32AE6S)
 
-`quartus_a5e_nios/` at `ea86b5c` (with the Reset Release IP): **Successful**, logic utilization **138,715 / 222,400 ALMs (62 %)**, 145,784 dedicated logic registers, 47 DSP blocks (`quartus_a5e_nios/output_files/nios_caliptra_a5e.syn.summary`). Fit/route and timing were **not** run (needs ≥ 32 GB RAM; placement passed on an earlier build). No `.sof`: programming-file generation needs a license that includes it.
+`quartus_a5e_nios/` at `ea86b5c` (with the Reset Release IP): **Successful**, logic utilization **138,715 / 222,400 ALMs (62 %)**, 145,784 dedicated logic registers, 47 DSP blocks (`quartus_a5e_nios/output_files/nios_caliptra_a5e.syn.summary`). Fit/route and timing were **not** run (needs ≥ 32 GB RAM; placement passed on an earlier build). No `.sof`: programming-file generation needs a license that includes it. Re-verified from a fresh clone with the repo-relative QSF and submodule RTL: see §16.
 
 ---
 
@@ -728,6 +729,10 @@ Rerun: `sim/run_nios_top_fw.sh +test=<name>` (builds into `sim/obj_nios_top_fw/`
 
 | Path | Role |
 |---|---|
+| `external/caliptra-rtl-1x/` | Upstream caliptra-rtl v1.1 (`5f85fb4`), git submodule, unmodified |
+| `quartus/syn_src/` | Synthesis overrides: `caliptra_sram.sv`, `caliptra_top_tb_pkg.sv`, `caliptra_veer_sram_export.sv` |
+| `quartus_a5e_nios/nios_caliptra_a5e.qsf` / `.qpf` | Nios project (repo-relative paths into `../external/caliptra-rtl-1x`, `../rtl`, `../quartus/syn_src`, `../fw`) |
+| `scripts/get_caliptra_a5e.sh`, `scripts/fetch_deps.sh`, `scripts/quartus_docker.sh` | Clone/update, pin check, Quartus-in-Docker wrapper (§15, §16) |
 | `rtl/caliptra_passive_top.sv` | Caliptra 1.x wrapper, memories, QSPI tie-offs |
 | `quartus_a5e_nios/rtl/nios_caliptra_top.sv` | Top: Reset Release gating, PD system, window decode, APB mux, 2FF reset requests + glue reset, generic_input tie-off, straps |
 | `quartus_a5e_nios/rtl/avmm_to_apb.sv` | Avalon → APB3, `pauser_i` (default 1) |
@@ -746,3 +751,134 @@ Rerun: `sim/run_nios_top_fw.sh +test=<name>` (builds into `sim/obj_nios_top_fw/`
 | caliptra-rtl v1.1 `5f85fb4` `docs/CaliptraIntegrationSpecification.md` | Official SoC interface, Boot FSM, RDC, Table 17 |
 | caliptra-rtl v1.1 `docs/CaliptraHardwareSpecification.md` | WDT, clock gating, security state |
 | caliptra-rtl v1.1 `src/soc_ifc/rtl/soc_ifc_boot_fsm.sv`, `wdt.sv`, `soc_ifc_top.sv` | Boot FSM, WDT/NMI/fatal, fuse sticky / observed |
+
+---
+
+## 15. Getting the sources
+
+The upstream Caliptra RTL is **not copied into this repo**. It comes in as pinned git submodules under `external/`, used unmodified. Every FPGA-specific change lives in this repo.
+
+| Path | What | Version / commit |
+|---|---|---|
+| `external/caliptra-rtl-1x/` | chipsalliance/caliptra-rtl (submodule) | **v1.1**, `5f85fb4bc95b753a2f7d042db7dc2644ca1e8c49` |
+| `external/caliptra-rtl-2x/` | chipsalliance/caliptra-rtl (submodule) | **v2.1.2**, `49370266d12cb0c4a8f71b3a0ff7e54ba7d4866e` |
+| `external/caliptra-rtl-2x/submodules/adams-bridge/` | chipsalliance/adams-bridge (nested submodule) | v2.0.3, `b77e3d899e828d626cfc2a0d26a6b5704cc121e0` |
+| `rtl/`, `quartus/syn_src/` | 1.x passive wrapper + synthesis overrides (`caliptra_sram`, `caliptra_top_tb_pkg`, `caliptra_veer_sram_export`) | this repo |
+| `quartus_a5e_nios/` | Nios V + Caliptra 1.x Quartus project: `rtl/` glue, `qsys/` Platform Designer system (generated output committed), `ip/rst_release.ip`, `sw/` BSP + app, `onchip_mem.hex` | this repo |
+| `quartus_a5e/` | Caliptra 1.x core-only Quartus project (size study) | this repo |
+| `fw/` | 1.x ROM (rom-1.1.1), signed FW bundle, fuse image | this repo |
+| `sim/` | Verilator TB for the 1.x Nios glue | this repo |
+| `caliptra2x/` | 2.x glue (`rtl_2x/`), sim (`sim_2x/`, `sim/`), firmware (`fw_2x/`), fuse script (`scripts/`), core-only Quartus project (`quartus_a5e_2x/`) | this repo |
+| `scripts/get_caliptra_a5e.sh` | Clone or update this repo with all submodules, then verify the pins | this repo |
+| `scripts/fetch_deps.sh` | `git submodule update --init --recursive` (or clone the pinned commits if there is no `.git`), then verify; `--check` verifies only | this repo |
+| `scripts/quartus_docker.sh` | Run any Quartus command in the Quartus Pro 25.3 Docker image with the repo and license mounted | this repo |
+
+All paths in the `.qsf`, `.f` and run scripts are **relative to the file's own directory**, so the checkout can be anywhere. If Quartus reports `caliptra_passive_top` or `caliptra_top` as undefined, the submodules are missing: run `scripts/fetch_deps.sh`.
+
+**Download** (macOS or Linux; needs git; about 1 GB with both RTL trees):
+
+```bash
+# Option A: one script (clones, or updates an existing clone with pull + submodule update, then checks pins)
+curl -fsSLO https://raw.githubusercontent.com/pwilliam282/caliptra-a5e-quartus/main/scripts/get_caliptra_a5e.sh
+bash get_caliptra_a5e.sh ~/work/caliptra-a5e-quartus
+
+# Option B: plain git
+git clone --recursive https://github.com/pwilliam282/caliptra-a5e-quartus.git
+cd caliptra-a5e-quartus
+scripts/fetch_deps.sh            # expect: ok ... x3, "deps OK"
+```
+
+If you cloned without `--recursive`, or downloaded a ZIP, run `scripts/fetch_deps.sh` anyway.
+
+---
+
+## 16. Quartus build
+
+**Tools and host.**
+- Quartus Prime **Pro 25.3.0 Build 109** with Agilex 5 device support. All results in this guide come from that version.
+- Quartus Pro runs only on **Linux or Windows x86-64**. On a Mac (including Apple-silicon MacBooks), use the Mac for git and editing, and run Quartus on a Linux x86-64 PC, VM or server. The Docker image is `linux/amd64` and is not usable under emulation on Apple-silicon Docker Desktop.
+- Docker option: the official image `alterafpga/quartuspro-v25.3:agilex5`, wrapped by `scripts/quartus_docker.sh <dir> '<command>'`. The wrapper mounts the whole repo (including `external/`) at the same path, mounts your license read-only, runs as your UID, and uses `--net=host`.
+
+**License.** The A5EC065 needs the no-cost **SW-AGILEX-5E** license from Altera's Self-Service Licensing Center. It is node-locked to the NIC MAC address of the machine that runs Quartus. In Docker this works because of `--net=host`: FlexLM reads the host NIC, and without it `quartus_syn` can segfault in the host-ID lookup. Point the tools at the file:
+- Native: `export LM_LICENSE_FILE=/path/to/SW-AGILEX-5E.dat`
+- Docker: `export LIC_HOST=/path/to/SW-AGILEX-5E.dat`, or put the file at `license/SW-AGILEX-5E.dat` in the repo (gitignored)
+
+Never commit license `.dat` files.
+
+**Projects.**
+
+| Project | Directory | `.qpf` / revision | Top |
+|---|---|---|---|
+| Nios V + Caliptra 1.x (the design in this guide) | `quartus_a5e_nios/` | `nios_caliptra_a5e` | `nios_caliptra_top` |
+| Caliptra 1.x core only (size study) | `quartus_a5e/` | `caliptra_a5e` | `caliptra_passive_top` |
+| Caliptra 2.x core only (fit gate; 126 %, does not fit) | `caliptra2x/quartus_a5e_2x/` | `caliptra2x_a5e` | `caliptra_passive_top` |
+
+**Step 1: generate IP (Nios project only).** The Platform Designer output (`qsys/nios_caliptra_sys/`, `qsys/ip/nios_caliptra_sys/`) is committed. The Reset Release IP output (`ip/rst_release/`) is gitignored. Run `quartus_ipgenerate` once after cloning (and after any `.qsys`/`.ip` change). It regenerates every `QSYS_FILE`/`IP_FILE` in the project:
+
+```bash
+cd quartus_a5e_nios
+quartus_ipgenerate nios_caliptra_a5e
+# Optional, only if you changed the PD system: rebuild it from Tcl first
+#   cd qsys && qsys-script --script=nios_caliptra_sys.tcl --quartus-project=none && cd ..
+#   (or: qsys-generate qsys/nios_caliptra_sys.qsys --synthesis=VERILOG --quartus-project=nios_caliptra_a5e)
+```
+
+`run_nios_a5e_docker.sh [syn|fit]` does the full regeneration (Tcl → PD → ipgenerate → synthesis) in one go. The Nios program memory is initialised from the committed `quartus_a5e_nios/onchip_mem.hex`. Rebuild it with `quartus_a5e_nios/sw/build_app.sh` (needs `RISCV_BIN=<dir with riscv-none-elf-gcc>`) only if you change `sw/app/main.c`.
+
+**Step 2: compile.** Native Quartus on Linux:
+
+```bash
+cd quartus_a5e_nios
+quartus_syn --analysis_and_elaboration nios_caliptra_a5e   # quick check: all files found, hierarchy elaborates
+quartus_syn nios_caliptra_a5e                              # Analysis & Synthesis
+quartus_fit nios_caliptra_a5e                              # place + route (needs >= 32 GB RAM)
+quartus_sta nios_caliptra_a5e                              # timing
+quartus_asm nios_caliptra_a5e                              # .sof (only with real pins and a license that enables it)
+# or all stages:  quartus_sh --flow compile nios_caliptra_a5e
+```
+
+Same thing with Docker, from the repo root:
+
+```bash
+export LIC_HOST=$HOME/licenses/SW-AGILEX-5E.dat
+scripts/quartus_docker.sh quartus_a5e_nios 'quartus_ipgenerate nios_caliptra_a5e && quartus_syn nios_caliptra_a5e'
+scripts/quartus_docker.sh quartus_a5e_nios 'quartus_fit nios_caliptra_a5e && quartus_sta nios_caliptra_a5e'
+scripts/quartus_docker.sh quartus_a5e 'quartus_syn caliptra_a5e'
+scripts/quartus_docker.sh caliptra2x/quartus_a5e_2x 'quartus_syn caliptra2x_a5e'
+```
+
+**GUI alternative.**
+1. *File → Open Project* → `quartus_a5e_nios/nios_caliptra_a5e.qpf`.
+2. *Tools → Generate IP* (or accept the prompt to generate IP).
+3. *Processing → Start → Start Analysis & Synthesis* (or *Start Compilation* for the full flow).
+
+**Outputs.** Reports go to `<project>/output_files/`:
+- `<rev>.syn.summary`: ALMs, registers, DSP
+- `<rev>.syn.rpt`: hierarchy, resource usage by entity, messages
+- `<rev>.syn.ae.rpt`: Analysis & Elaboration
+- `<rev>.fit.*`, `<rev>.sta.*`, `<rev>.sof` after fit, timing and assembler
+
+The `qdb/`, `dni/` and `tmp-clearbox/` work directories are gitignored.
+
+**Measured results** (Quartus Pro 25.3.0 b109, A5EC065BB32AE6S, from a fresh `git clone --recursive` of commit `28951ad` on a 16 GB / 8-core Linux box, Docker image above):
+
+| Project | Analysis & Elaboration | Full Analysis & Synthesis |
+|---|---|---|
+| `quartus_a5e_nios` (`nios_caliptra_top`) | **OK**, 0 errors, 1 min 19 s, 3.3 GB peak; `quartus_ipgenerate` OK, 0 errors, 9 s | **Successful**, 0 errors: **138,715 / 222,400 ALMs (62 %)**, 145,784 registers, 47 DSP post-merge, 5,671,936 block-memory bits; 6 min 50 s at `--parallel=4`, 4.0 GB peak. This matches the earlier build exactly (§13.2) |
+| `quartus_a5e` (`caliptra_passive_top` 1.x) | **OK**, 0 errors, 44 s, 2.8 GB peak | 141,256 / 222,400 ALMs (**64 %**), 142,373 registers, 47 DSP (committed `syn.summary`; 6 min 30 s, 3.6 GB) |
+| `caliptra2x_a5e` (`caliptra_passive_top` 2.x) | **OK**, 0 errors, 1 min 41 s, 4.4 GB peak | 279,685 / 222,400 ALMs (**126 %, does not fit**), 411,569 registers, 199 DSP (committed report; 22 min, 6.8 GB) |
+
+All three hierarchies elaborate with no missing-file or undefined-entity messages. The ROM, FW-bundle and fuse hex files are read by `$readmemh` from their repo-relative paths (`../fw/…`, `../fw_2x/…`).
+
+Expected warnings (harmless):
+- Critical Warning 16668: MFCU turns off auto-discovery. MFCU is intentional, because Caliptra relies on macros persisting across files.
+- Critical Warning 20759 on the core-only projects: no Reset Release IP. That IP is only in the Nios top.
+- Critical Warning 127004 (Nios project, ×2): Quartus pads the internal MIFs for the ROM (6144 → 8192 words) and the FW store (28672 → 32768 words) to a power of two. This is expected.
+- Critical Warning 18061/18010: power-up-level notes on the security-state latch.
+- Verilog truncation and parameter warnings from upstream RTL.
+
+**Known issues.**
+- **Intermittent Quartus start-up crash in Docker:** `Error (22912): Unhandled exception … DDM_T::verify_token(token) : Cannot identify the client` within the first second. It is not a design problem. Simply rerun the same command; on the build box it took up to 3 tries.
+- **Synthesis hangs with no CPU use.** Quartus can stop progressing, usually during the SLD/JTAG-hub `ip-deploy` step or right after RAM inference when it starts its parallel helper processes. Signs: the log stops growing, `quartus_syn` sits at about 0 % CPU, and defunct `quartus_sh` children remain. Most likely the same start-up crash, hitting a helper process. Kill the container (`docker kill <id>`; with `DOCKER_NAME=<name>` set for `scripts/quartus_docker.sh` you can `docker kill <name>`) and rerun. A healthy Nios synthesis shows 4 busy `quartus_syn` helpers with `--parallel=4`. The run then finishes normally; the earlier note recorded about 7 min at `--parallel=8`.
+- **Memory.** A&E needs about 3–4.5 GB, and full synthesis about 4 GB (1.x) or 7 GB (2.x). **Fit/route needs ≥ 32 GB**: placement passed on a 16 GB VM but routing ran out of memory, so fit, timing and `.sof` have not been produced yet.
+- **Pins.** All top-level I/O except `clk` (and `reset_n` in the Nios project) are `VIRTUAL_PIN ON`. Assign real pins and I/O standards for your board before `quartus_asm`.

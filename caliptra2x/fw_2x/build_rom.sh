@@ -2,7 +2,7 @@
 # Rebuild Caliptra ROM (with log) + test-key FW bundle for HW rev 2.1, then make $readmemh hex files.
 set -e
 source ~/.cargo/env
-SW=${SW:-/workspace/caliptra-sw-rom}   # caliptra-sw dd1e79d = tags rom-2.1.3-1 and fw-2.1.4
+SW=${SW:?set SW=/path/to/caliptra-sw checked out at dd1e79d (tags rom-2.1.3-1, fw-2.1.4)}
 OUT=$(cd "$(dirname "$0")" && pwd)
 cd $SW
 cargo run --release --manifest-path builder/Cargo.toml --bin image -- --hw-revision 2.1 \

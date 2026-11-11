@@ -1,22 +1,22 @@
 # Caliptra 2.x — Firmware, Keys and Fuse-Image Preparation
 
-> **Where the files are (published copy).** This guide was written in the local Caliptra 2.x design tree. In this repo, the 2.x sources it names live under [`caliptra2x/`](../../caliptra2x/):
-> - `rtl_2x/`, `sim_2x/`, `sim/rst_release_stub.sv`, `fw_2x/`, `scripts/gen_fuse_image_2x.py` and `quartus_a5e_2x/` → `caliptra2x/…`
-> - `docs/P1_FIT_RESULT_2X_A5E.md` and `docs/CALIPTRA_2X_INTEGRATION_PLAN.md` → this folder
-> - The 1.x guide `docs/NIOS_CALIPTRA_INTEGRATION.md` is [`../NIOS_CALIPTRA_INTEGRATION.md`](../NIOS_CALIPTRA_INTEGRATION.md)
+> **Where the files are.** All paths in this guide are repo-relative ([pwilliam282/caliptra-a5e-quartus](https://github.com/pwilliam282/caliptra-a5e-quartus)):
+> - 2.x glue RTL, sim, firmware, fuse script and Quartus project: [`caliptra2x/`](../../caliptra2x/) (`caliptra2x/rtl_2x/`, `caliptra2x/sim_2x/`, `caliptra2x/sim/`, `caliptra2x/fw_2x/`, `caliptra2x/scripts/`, `caliptra2x/quartus_a5e_2x/`)
+> - Upstream RTL: `external/caliptra-rtl-2x/` = chipsalliance/caliptra-rtl v2.1.2 (`49370266`) with `submodules/adams-bridge` (`b77e3d8`), a pinned git submodule, unmodified. Fetch it with `scripts/get_caliptra_a5e.sh` or `git clone --recursive` + `scripts/fetch_deps.sh`. See [NIOS_CALIPTRA_2X_INTEGRATION.md §16](NIOS_CALIPTRA_2X_INTEGRATION.md#16-getting-the-sources).
+> - Companion docs `P1_FIT_RESULT_2X_A5E.md` and `CALIPTRA_2X_INTEGRATION_PLAN.md`: this folder (`docs/caliptra-2x/`). The 1.x guide is [`docs/NIOS_CALIPTRA_INTEGRATION.md`](../NIOS_CALIPTRA_INTEGRATION.md).
 >
-> caliptra-rtl and caliptra-sw are not vendored.
+> caliptra-sw is not vendored (only the built ROM/bundle in `caliptra2x/fw_2x/`).
 
-- **Applies to:** `fw_2x/` and `scripts/gen_fuse_image_2x.py` in this repo.
-- **Source:** caliptra-sw `dd1e79d5bf55a9bd5bdb05915757eaf34844145d`, tags `rom-2.1.3-1` and `fw-2.1.4` (checked out on the build box at `/workspace/caliptra-sw-rom`).
+- **Applies to:** `caliptra2x/fw_2x/` and `caliptra2x/scripts/gen_fuse_image_2x.py` in this repo.
+- **Source:** caliptra-sw `dd1e79d5bf55a9bd5bdb05915757eaf34844145d`, tags `rom-2.1.3-1` and `fw-2.1.4` (not vendored; clone `https://github.com/chipsalliance/caliptra-sw` at that commit and point `SW=` at it).
 - **Hardware revision:** `--hw-revision 2.1`, matching caliptra-rtl v2.1.2 (`CPTRA_HW_REV_ID` reads `0x212`).
 - **Related:** [NIOS_CALIPTRA_2X_INTEGRATION.md](NIOS_CALIPTRA_2X_INTEGRATION.md) §8 (fuse map), [SIMULATION_2X.md](SIMULATION_2X.md).
 
-> ⚠️ **The firmware bundle in `fw_2x/` is signed with caliptra-sw's public "fake" test keys.** The private halves of every vendor and owner key are published in caliptra-sw `image/fake-keys/src/lib.rs`, for example `VENDOR_ECC_KEY_0_PRIVATE`, `VENDOR_MLDSA_KEY_0_PRIVATE`, `OWNER_ECC_KEY_PRIVATE` and `OWNER_MLDSA_KEY_PRIVATE`. A device fused with the hashes in `fw_2x/fuse_image_2x.hex` will accept **any** firmware anyone signs with those keys. Use them for simulation and FPGA study only. §6 describes the production procedure.
+> ⚠️ **The firmware bundle in `caliptra2x/fw_2x/` is signed with caliptra-sw's public "fake" test keys.** The private halves of every vendor and owner key are published in caliptra-sw `image/fake-keys/src/lib.rs`, for example `VENDOR_ECC_KEY_0_PRIVATE`, `VENDOR_MLDSA_KEY_0_PRIVATE`, `OWNER_ECC_KEY_PRIVATE` and `OWNER_MLDSA_KEY_PRIVATE`. A device fused with the hashes in `caliptra2x/fw_2x/fuse_image_2x.hex` will accept **any** firmware anyone signs with those keys. Use them for simulation and FPGA study only. §6 describes the production procedure.
 
 ---
 
-## 1. Artifacts in `fw_2x/`
+## 1. Artifacts in `caliptra2x/fw_2x/`
 
 | File | Size | What it is |
 |---|---:|---|
@@ -32,11 +32,12 @@ Verify with `cd fw_2x && sha256sum -c SHA256SUMS`. Both hex files were checked w
 
 ---
 
-## 2. Building the ROM and bundle (`fw_2x/build_rom.sh`)
+## 2. Building the ROM and bundle (`caliptra2x/fw_2x/build_rom.sh`)
 
 ```bash
 source ~/.cargo/env
-SW=${SW:-/workspace/caliptra-sw-rom}          # caliptra-sw at dd1e79d
+SW=${SW:?}                                    # required: caliptra-sw checkout at dd1e79d
+OUT=caliptra2x/fw_2x                          # build_rom.sh writes next to itself
 cd $SW
 cargo run --release --manifest-path builder/Cargo.toml --bin image -- --hw-revision 2.1 \
   --rom-with-log $OUT/caliptra-rom.bin --fw $OUT/caliptra-fw-bundle.bin
@@ -120,11 +121,11 @@ From caliptra-sw `image/types/src/lib.rs`. Offsets are into `caliptra-fw-bundle.
 
 ---
 
-## 5. Fuse image generation (`scripts/gen_fuse_image_2x.py`)
+## 5. Fuse image generation (`caliptra2x/scripts/gen_fuse_image_2x.py`)
 
 ```bash
-python3 scripts/gen_fuse_image_2x.py [path/to/caliptra-fw-bundle.bin]   # default fw_2x/caliptra-fw-bundle.bin
-# -> fw_2x/fuse_image_2x.hex: 117 entries (104 fuse words + 13 owner-hash/lock); +FUSE_WR_DONE = 118 AXI writes; pqc_key_type=1
+python3 caliptra2x/scripts/gen_fuse_image_2x.py [path/to/caliptra-fw-bundle.bin]   # default caliptra2x/fw_2x/caliptra-fw-bundle.bin
+# -> caliptra2x/fw_2x/fuse_image_2x.hex: 117 entries (104 fuse words + 13 owner-hash/lock); +FUSE_WR_DONE = 118 AXI writes; pqc_key_type=1
 ```
 
 What the script does:
@@ -239,7 +240,7 @@ No other external-signing tool exists in caliptra-sw `dd1e79d`: no PKCS#11 / HSM
 
 ### 6.4 Regenerate the fuse image
 
-- `python3 scripts/gen_fuse_image_2x.py path/to/your-bundle.bin`. This recomputes `FUSE_VENDOR_PK_HASH` and `CPTRA_OWNER_PK_HASH` from your keys and sets `FUSE_PQC_KEY_TYPE`.
+- `python3 caliptra2x/scripts/gen_fuse_image_2x.py path/to/your-bundle.bin`. This recomputes `FUSE_VENDOR_PK_HASH` and `CPTRA_OWNER_PK_HASH` from your keys and sets `FUSE_PQC_KEY_TYPE`.
 - Cross-check against `caliptra-image-app … --print-hashes` (§6.3 A) if you build with method A.
 - In a product:
   - `FUSE_VENDOR_PK_HASH`, `FUSE_PQC_KEY_TYPE`, revocations and SVNs are burned into OTP at manufacturing.
@@ -271,7 +272,7 @@ No other external-signing tool exists in caliptra-sw `dd1e79d`: no PKCS#11 / HSM
 
 ## 7. Checklist before you trust a bundle
 
-1. `sha256sum -c fw_2x/SHA256SUMS` passes (or record new sums).
+1. `sha256sum -c caliptra2x/fw_2x/SHA256SUMS` passes (or record new sums).
 2. The bundle parses with marker `CMN2`, the expected `pqc_key_type`, SVN and TOC sizes (the §2 table, or the asserts in `gen_fuse_image_2x.py`).
 3. The fuse image was regenerated from **this** bundle, and both printed hashes match your HSM's public keys.
 4. Verilator boot reaches `[fwproc] Img verified …` and `ready_for_runtime` with that fuse image.

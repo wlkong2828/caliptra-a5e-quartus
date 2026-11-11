@@ -4,7 +4,7 @@ Passive Caliptra 1.x (v1.1) Quartus Prime Pro 25.3 project targeting **A5EC065BB
 
 **Caliptra 2.x study (passive / core-only, Nios V host):** [`docs/caliptra-2x/`](docs/caliptra-2x/) has three guides. [Integration](docs/caliptra-2x/NIOS_CALIPTRA_2X_INTEGRATION.md) covers signals, AxUSER IDs, the memory map, the fuse map, TRNG, the boot sequence, the spec checklist and the A5E fit result (126 %, does not fit). [Simulation](docs/caliptra-2x/SIMULATION_2X.md) covers the Verilator flow and the PASS run to `ready_for_runtime`. [Firmware & keys](docs/caliptra-2x/FIRMWARE_AND_KEYS_2X.md) covers the ROM and bundle build, fuse image generation, and production HSM key preparation. A combined PDF is at [`docs/caliptra-2x/NIOS_CALIPTRA_2X_GUIDE.pdf`](docs/caliptra-2x/NIOS_CALIPTRA_2X_GUIDE.pdf). The 2.x sources are in [`caliptra2x/`](caliptra2x/).
 
-**Nios ↔ Caliptra integration (signal map, TRNG, fuses, reset, watchdog, spec checklist):** [`docs/NIOS_CALIPTRA_INTEGRATION.md`](docs/NIOS_CALIPTRA_INTEGRATION.md) (revision 3).
+**Nios ↔ Caliptra integration (signal map, TRNG, fuses, reset, watchdog, spec checklist):** [`docs/NIOS_CALIPTRA_INTEGRATION.md`](docs/NIOS_CALIPTRA_INTEGRATION.md) (revision 3; PDF: [`docs/NIOS_CALIPTRA_INTEGRATION.pdf`](docs/NIOS_CALIPTRA_INTEGRATION.pdf)).
 
 ## Getting the sources and compiling
 
@@ -20,6 +20,10 @@ The upstream trees are used unmodified. All FPGA changes are in this repo: `rtl/
 
 **1. Get the sources** (Linux or macOS, needs git; about 1 GB):
 ```bash
+# one script: clones (or pulls + updates submodules in an existing clone) and checks the pins
+curl -fsSLO https://raw.githubusercontent.com/pwilliam282/caliptra-a5e-quartus/main/scripts/get_caliptra_a5e.sh
+bash get_caliptra_a5e.sh ~/work/caliptra-a5e-quartus
+# or by hand:
 git clone --recursive https://github.com/pwilliam282/caliptra-a5e-quartus.git
 cd caliptra-a5e-quartus
 scripts/fetch_deps.sh          # inits/updates the submodules and checks the pinned commits ("deps OK")
@@ -54,6 +58,8 @@ scripts/quartus_docker.sh quartus_a5e_nios 'quartus_ipgenerate nios_caliptra_a5e
 scripts/quartus_docker.sh quartus_a5e 'quartus_syn caliptra_a5e'
 scripts/quartus_docker.sh caliptra2x/quartus_a5e_2x 'quartus_syn caliptra2x_a5e'
 ```
+Full details (license, GUI, outputs, measured numbers, known Docker issues such as the intermittent start-up crash and a stalled `quartus_syn`, which you fix by killing the container and rerunning): §15–§16 of [`docs/NIOS_CALIPTRA_INTEGRATION.md`](docs/NIOS_CALIPTRA_INTEGRATION.md) and §16–§17 of the [2.x guide](docs/caliptra-2x/NIOS_CALIPTRA_2X_INTEGRATION.md).
+
 `quartus_a5e_nios/run_nios_a5e_docker.sh` regenerates the whole Platform Designer system from `qsys/nios_caliptra_sys.tcl`, then runs ipgenerate and synthesis. The full fit needs at least 32 GB of RAM.
 
 ## Contents

@@ -8,8 +8,8 @@ synthesis 138,715 / 222,400 ALMs). Date: 2026-11-10.
 
 | Item | Version used | Commit | Notes |
 |---|---|---|---|
-| caliptra-rtl (2.x target) | **v2.1.2** (latest release tag; tags after it: none) | `49370266d12cb0c4a8f71b3a0ff7e54ba7d4866e` (2026-03-19) | Local checkout `/workspace/caliptra-rtl`. `main` is post-2.1 dev. adams-bridge submodule `b77e3d8` (pinned by v2.1.2). |
-| caliptra-sw ROM | **rom-2.1.3-1** (latest `rom-*` tag) | `dd1e79d5bf55a9bd5bdb05915757eaf34844145d` (same commit as `fw-2.1.4`) | Local checkout `/workspace/caliptra-sw-rom`; built with `--hw-revision 2.1`. |
+| caliptra-rtl (2.x target) | **v2.1.2** (latest release tag; tags after it: none) | `49370266d12cb0c4a8f71b3a0ff7e54ba7d4866e` (2026-03-19) | In this repo: submodule `external/caliptra-rtl-2x`. `main` is post-2.1 dev. adams-bridge submodule `b77e3d8` (pinned by v2.1.2). |
+| caliptra-sw ROM | **rom-2.1.3-1** (latest `rom-*` tag) | `dd1e79d5bf55a9bd5bdb05915757eaf34844145d` (same commit as `fw-2.1.4`) | Not vendored (clone chipsalliance/caliptra-sw at this commit); built with `--hw-revision 2.1`. |
 | caliptra-sw FW (FMC+RT) | fw-2.1.4 built from the same commit; **fw-2.1.5** is the newest tag | — | Decide whether to rebuild RT from fw-2.1.5 (open question Q7). |
 | caliptra-rtl (1.x baseline) | v1.1 | `5f85fb4` | Unchanged copy of the 1.x design is the starting point of this repo. |
 
@@ -92,8 +92,8 @@ Designer, **FW** = Nios `sw/app/main.c`, **SIM** = Verilator TB, **TOOL** = fuse
 
 ### 2.2 Simulation delta
 
-- `sim/run_nios_top_fw.sh` compiles the real glue against `caliptra-rtl/` at the repo root (gitignored).
-  For 2.x: point it at `/workspace/caliptra-rtl` (v2.1.2) and build from a new `sim/boot_axi.f` derived from
+- `sim/run_nios_top_fw.sh` compiles the real glue against `external/caliptra-rtl-1x/` (v1.1 submodule).
+  For 2.x: point it at `external/caliptra-rtl-2x` (v2.1.2) and build from a new `sim/boot_axi.f` derived from
   `ref/agilex7-2x-phaseA/caliptra_passive_top.f` (+ adams-bridge Verilator patch).
 - Behavioural `nios_caliptra_sys` stand-in keeps the Avalon side, so only the expected values/sequence change
   (renamed ready signal, AXI user test instead of PAUSER test, bigger bundle, new fuse image).

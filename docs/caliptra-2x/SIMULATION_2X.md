@@ -1,15 +1,15 @@
 # Caliptra 2.x + Nios glue — Simulation Guide
 
-> **Where the files are (published copy).** This guide was written in the local Caliptra 2.x design tree. In this repo, the 2.x sources it names live under [`caliptra2x/`](../../caliptra2x/):
-> - `rtl_2x/`, `sim_2x/`, `sim/rst_release_stub.sv`, `fw_2x/`, `scripts/gen_fuse_image_2x.py` and `quartus_a5e_2x/` → `caliptra2x/…`
-> - `docs/P1_FIT_RESULT_2X_A5E.md` and `docs/CALIPTRA_2X_INTEGRATION_PLAN.md` → this folder
-> - The 1.x guide `docs/NIOS_CALIPTRA_INTEGRATION.md` is [`../NIOS_CALIPTRA_INTEGRATION.md`](../NIOS_CALIPTRA_INTEGRATION.md)
+> **Where the files are.** All paths in this guide are repo-relative ([pwilliam282/caliptra-a5e-quartus](https://github.com/pwilliam282/caliptra-a5e-quartus)):
+> - 2.x glue RTL, sim, firmware, fuse script and Quartus project: [`caliptra2x/`](../../caliptra2x/) (`caliptra2x/rtl_2x/`, `caliptra2x/sim_2x/`, `caliptra2x/sim/`, `caliptra2x/fw_2x/`, `caliptra2x/scripts/`, `caliptra2x/quartus_a5e_2x/`)
+> - Upstream RTL: `external/caliptra-rtl-2x/` = chipsalliance/caliptra-rtl v2.1.2 (`49370266`) with `submodules/adams-bridge` (`b77e3d8`), a pinned git submodule, unmodified. Fetch it with `scripts/get_caliptra_a5e.sh` or `git clone --recursive` + `scripts/fetch_deps.sh`. See [NIOS_CALIPTRA_2X_INTEGRATION.md §16](NIOS_CALIPTRA_2X_INTEGRATION.md#16-getting-the-sources).
+> - Companion docs `P1_FIT_RESULT_2X_A5E.md` and `CALIPTRA_2X_INTEGRATION_PLAN.md`: this folder (`docs/caliptra-2x/`). The 1.x guide is [`docs/NIOS_CALIPTRA_INTEGRATION.md`](../NIOS_CALIPTRA_INTEGRATION.md).
 >
-> caliptra-rtl and caliptra-sw are not vendored.
+> caliptra-sw is not vendored (only the built ROM/bundle in `caliptra2x/fw_2x/`).
 
-- **Scope:** Verilator simulation of the **real** 2.x glue RTL (`rtl_2x/`) around caliptra-rtl v2.1.2 (`49370266`) core-only. It runs the real ROM `rom-2.1.3-1` and the real FW bundle `fw-2.1.4` (FMC + runtime), and boots from cold power-on to `ready_for_runtime`.
+- **Scope:** Verilator simulation of the **real** 2.x glue RTL (`caliptra2x/rtl_2x/`) around caliptra-rtl v2.1.2 (`49370266`) core-only. It runs the real ROM `rom-2.1.3-1` and the real FW bundle `fw-2.1.4` (FMC + runtime), and boots from cold power-on to `ready_for_runtime`.
 - **Result:** **PASS**: `TB_NIOS2X PASS cyc=36617987 trng=217 (prod, debug locked)`.
-- **Related:** [NIOS_CALIPTRA_2X_INTEGRATION.md](NIOS_CALIPTRA_2X_INTEGRATION.md) (design), [FIRMWARE_AND_KEYS_2X.md](FIRMWARE_AND_KEYS_2X.md) (ROM, bundle, fuse image). The raw record is in `sim_2x/BOOT_NIOS2X.md` and `sim_2x/nios2x_top_fw_run.log`.
+- **Related:** [NIOS_CALIPTRA_2X_INTEGRATION.md](NIOS_CALIPTRA_2X_INTEGRATION.md) (design), [FIRMWARE_AND_KEYS_2X.md](FIRMWARE_AND_KEYS_2X.md) (ROM, bundle, fuse image). The raw record is in `caliptra2x/sim_2x/BOOT_NIOS2X.md` and `caliptra2x/sim_2x/nios2x_top_fw_run.log`.
 
 ---
 
@@ -17,11 +17,11 @@
 
 | Part | Real RTL or model |
 |---|---|
-| `nios_caliptra2x_top` (window decode, `soc_fw_store`, `soc_fuse_ctrl2x`, `avmm_to_axi`, AXI write mux, 2FF reset syncs, straps) | **Real** (`rtl_2x/`) |
-| `caliptra_passive_top` + `caliptra_top` v2.1.2 (VeeR, soc_ifc, crypto, Adams-Bridge, memories) | **Real** (`/workspace/caliptra-rtl`, `rtl_2x/caliptra_passive_top.sv`) |
-| Caliptra ROM / FMC / runtime | **Real** binaries: `fw_2x/caliptra-rom.hex`, `fw_2x/caliptra-fw-bundle.hex` |
-| Fuse image | **Real** generator output: `fw_2x/fuse_image_2x.hex` |
-| Agilex Reset Release IP | Stub `sim/rst_release_stub.sv` (`ninit_done` = 1 for 25 ns) |
+| `nios_caliptra2x_top` (window decode, `soc_fw_store`, `soc_fuse_ctrl2x`, `avmm_to_axi`, AXI write mux, 2FF reset syncs, straps) | **Real** (`caliptra2x/rtl_2x/`) |
+| `caliptra_passive_top` + `caliptra_top` v2.1.2 (VeeR, soc_ifc, crypto, Adams-Bridge, memories) | **Real** (`external/caliptra-rtl-2x/`, `caliptra2x/rtl_2x/caliptra_passive_top.sv`) |
+| Caliptra ROM / FMC / runtime | **Real** binaries: `caliptra2x/fw_2x/caliptra-rom.hex`, `caliptra2x/fw_2x/caliptra-fw-bundle.hex` |
+| Fuse image | **Real** generator output: `caliptra2x/fw_2x/fuse_image_2x.hex` |
+| Agilex Reset Release IP | Stub `caliptra2x/sim/rst_release_stub.sv` (`ninit_done` = 1 for 25 ns) |
 | Platform Designer system `nios_caliptra2x_sys` (Nios V + PIOs + window) | **Behavioral model** `module nios_caliptra2x_sys` in `tb_nios2x_top_fw.sv`. Ports: `clk_clk`, `reset_reset_n`, `caliptra_axi_address[19:0]`, `_read`, `_write`, `_writedata[31:0]`, `_byteenable[3:0]` (always `4'hF`), `_readdata[31:0]`, `_readdatavalid`, `_waitrequest`, `_burstcount`, `_debugaccess`, `ctrl_pio_export[31:0]` (out, initialized to 0), `status_pio_export[31:0]` (in), `magic_pio_export[31:0]` (out, initialized to 0). It issues the Avalon accesses the 2.x Nios firmware is meant to issue |
 
 The Nios V CPU, Platform Designer interconnect and C firmware are **not** in this sim. Compare the 1.x sim, which also used a behavioral host.
@@ -32,15 +32,15 @@ The Nios V CPU, Platform Designer interconnect and C firmware are **not** in thi
 
 | Item | Value |
 |---|---|
-| Simulator | **Verilator 5.054** (2026-11-01, conda-forge build), from `/workspace/mamba/envs/eda/bin` (override with `VERILATOR_BIN`) |
+| Simulator | **Verilator 5.054** (2026-11-01, conda-forge build), on `PATH` (set `VERILATOR_BIN=<dir>` to prepend a specific install; the build box used a conda env) |
 | Build flags (`run_nios2x_top_fw.sh`) | `--binary --threads ${THREADS:-4} -j 8 -O3 -Wno-fatal -Wno-lint -Wno-style -Wno-UNOPTFLAT -Wno-MULTIDRIVEN -Wno-TIMESCALEMOD --top-module tb_nios2x_top_fw -Mdir obj_nios2x -f boot2x.f -o Vtb_nios2x` |
-| Caliptra RTL | `/workspace/caliptra-rtl` at v2.1.2 `49370266d12cb0c4a8f71b3a0ff7e54ba7d4866e`, with submodule `adams-bridge`. **Not in git**; clone it with `git clone --recursive --branch v2.1.2 https://github.com/chipsalliance/caliptra-rtl.git` |
-| File list | `sim_2x/boot2x.f` (641 lines): `+incdir+` paths and 588 caliptra-rtl source files (absolute `/workspace/caliptra-rtl/...` paths), plus the repo files listed below |
-| Repo sources in the file list | `sim_2x/patches/decompress_top.sv`, `rtl_2x/caliptra_veer_sram_export.sv`, `rtl_2x/caliptra_passive_top.sv`, `sim/rst_release_stub.sv`, `rtl_2x/reset_sync.sv`, `rtl_2x/avmm_to_axi.sv`, `rtl_2x/soc_fuse_ctrl2x.sv`, `rtl_2x/soc_fw_store.sv`, `rtl_2x/nios_caliptra2x_top.sv`, `sim_2x/tb_nios2x_top_fw.sv` |
-| Verilator patch | `sim_2x/patches/decompress_top.sv` replaces the adams-bridge original. It changes one line: `` `ifdef VERILATOR `` becomes `` `ifdef CLP_OLD_VERILATOR_WORKAROUND `` around the `abr_piso_multi` rate arrays, so Verilator 5.054 uses the normal 4-entry `INPUT_RATES`/`OUTPUT_RATES` instead of the old 5-entry workaround |
-| Data files (via RTL parameter defaults, relative to `sim_2x/`) | `../fw_2x/caliptra-rom.hex`, `../fw_2x/caliptra-fw-bundle.hex`, `../fw_2x/fuse_image_2x.hex` |
+| Caliptra RTL | `external/caliptra-rtl-2x/` = v2.1.2 `49370266d12cb0c4a8f71b3a0ff7e54ba7d4866e`, with submodule `adams-bridge` `b77e3d8`. Pinned git submodule; run `scripts/fetch_deps.sh` (or clone with `--recursive`) |
+| File list | `caliptra2x/sim_2x/boot2x.f` (641 lines): `+incdir+` paths and 588 caliptra-rtl source files (`../../external/caliptra-rtl-2x/...`, relative to `caliptra2x/sim_2x/`), plus the repo files listed below |
+| Repo sources in the file list | `caliptra2x/sim_2x/patches/decompress_top.sv`, `caliptra2x/rtl_2x/caliptra_veer_sram_export.sv`, `caliptra2x/rtl_2x/caliptra_passive_top.sv`, `caliptra2x/sim/rst_release_stub.sv`, `caliptra2x/rtl_2x/reset_sync.sv`, `caliptra2x/rtl_2x/avmm_to_axi.sv`, `caliptra2x/rtl_2x/soc_fuse_ctrl2x.sv`, `caliptra2x/rtl_2x/soc_fw_store.sv`, `caliptra2x/rtl_2x/nios_caliptra2x_top.sv`, `caliptra2x/sim_2x/tb_nios2x_top_fw.sv` |
+| Verilator patch | `caliptra2x/sim_2x/patches/decompress_top.sv` replaces the adams-bridge original. It changes one line: `` `ifdef VERILATOR `` becomes `` `ifdef CLP_OLD_VERILATOR_WORKAROUND `` around the `abr_piso_multi` rate arrays, so Verilator 5.054 uses the normal 4-entry `INPUT_RATES`/`OUTPUT_RATES` instead of the old 5-entry workaround |
+| Data files (via RTL parameter defaults, relative to `caliptra2x/sim_2x/`) | `../fw_2x/caliptra-rom.hex`, `../fw_2x/caliptra-fw-bundle.hex`, `../fw_2x/fuse_image_2x.hex` |
 
-In the published copy (`caliptra2x/sim_2x/boot2x.f`), the repo files are already relative (`../rtl_2x/…`, which resolve because the run script `cd`s into `sim_2x/`); only the caliptra-rtl paths are absolute. To use a different checkout location, rewrite the absolute paths in `boot2x.f`, for example: `sed -i 's#/workspace/caliptra-rtl#/path/to/caliptra-rtl#g; s#/workspace/exports/caliptra-a5e-2x-quartus-repo#/path/to/repo#g' boot2x.f`.
+All paths in `caliptra2x/sim_2x/boot2x.f` are relative to `caliptra2x/sim_2x/` (the run script `cd`s there): repo files as `../rtl_2x/…`, upstream RTL as `../../external/caliptra-rtl-2x/…`. The checkout can live anywhere; no path rewriting is needed.
 
 ---
 
@@ -49,7 +49,8 @@ In the published copy (`caliptra2x/sim_2x/boot2x.f`), the repo files are already
 **Run long sims detached.** A full boot takes about 1.4 h of wall time, and a foreground shell or agent session can be interrupted.
 
 ```bash
-cd sim_2x
+scripts/fetch_deps.sh            # once, from the repo root: external/caliptra-rtl-2x must be present
+cd caliptra2x/sim_2x
 # build (~6 min) + run, detached; output in nios2x_top_fw_run.log, wrapper output in run.out
 nohup setsid ./run_nios2x_top_fw.sh +test=all > run.out 2>&1 &
 
@@ -65,7 +66,7 @@ grep -E 'MILESTONE|PASS|FAIL|TIMEOUT' nios2x_top_fw_run.log
 |---|---|---|
 | `BUILD` | `1` | `0` skips the Verilator build |
 | `THREADS` | `4` | Verilator `--threads` |
-| `VERILATOR_BIN` | `/workspace/mamba/envs/eda/bin` | Prepended to `PATH` |
+| `VERILATOR_BIN` | unset | Directory prepended to `PATH` if set; otherwise `verilator` from `PATH` |
 
 - The script runs the binary under `stdbuf -oL -eL`, so the log is line-buffered and `tail -f` works. When the run ends, it appends `wall_time_s=<s> end <date>`.
 - **Measured costs** on this box:
@@ -199,7 +200,7 @@ To get waves (untested for 2.x; a full 36.6 M-cycle dump of the whole design wou
    end
    ```
 3. Rebuild (`BUILD=1`) and run with a smaller `+max_cycles` if you only need the beginning.
-4. View with GTKWave: `gtkwave sim_2x/nios2x.fst`. Useful signals:
+4. View with GTKWave: `gtkwave caliptra2x/sim_2x/nios2x.fst`. Useful signals:
    - `dut.status_in[7:0]`, `dut.ctrl_out[2:0]`, `dut.cptra_pwrgood`, `dut.cptra_rst_b`
    - `dut.fuse_busy`, `dut.u_fuse_ctrl.st`, `dut.u_fuse_ctrl.idx`
    - `dut.awaddr`, `dut.awuser`, `dut.awvalid`/`awready`, `dut.bresp`, `dut.u_bridge.st`, `dut.u_bridge.err_q`
@@ -215,6 +216,6 @@ The 1.x project's waveform flow (FST + GTKWave screenshots) is in the 1.x repo h
 |---|---|
 | `FAIL fuse ctrl ERR` / `COUNT` < 118 | A fuse write got SLVERR: fuse AxUSER not programmed/locked to 2 before START, or a bad address in the image |
 | `FAIL etrng_req stuck` | TRNG AxUSER not 1/locked, or `DATA_WR_DONE` (2) not written |
-| ROM fatal around image verification | Fuse image doesn't match the bundle: regenerate with `scripts/gen_fuse_image_2x.py` after every bundle rebuild ([FIRMWARE_AND_KEYS_2X.md §5](FIRMWARE_AND_KEYS_2X.md)) |
+| ROM fatal around image verification | Fuse image doesn't match the bundle: regenerate with `caliptra2x/scripts/gen_fuse_image_2x.py` after every bundle rebuild ([FIRMWARE_AND_KEYS_2X.md §5](FIRMWARE_AND_KEYS_2X.md)) |
 | Mailbox command rejected / `0x01020009` | Mailbox used with the reserved AxUSER `0xFFFFFFFF` or an unlocked user (see the integration plan) |
 | `TIMEOUT` with no progress | Check heartbeats (`status=` bits) and `trng=` count; the run is long (≈ 36.6 M cycles) |

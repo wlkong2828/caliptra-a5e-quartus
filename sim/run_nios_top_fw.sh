@@ -7,7 +7,7 @@
 #           +max_cycles=N  (default 200000000)
 set -eo pipefail
 cd "$(dirname "$0")"
-VERILATOR_BIN=${VERILATOR_BIN:-/workspace/mamba/envs/eda/bin}; [ -d "$VERILATOR_BIN" ] && export PATH="$VERILATOR_BIN:$PATH"
+VERILATOR_BIN=${VERILATOR_BIN:-}; [ -n "$VERILATOR_BIN" ] && [ -d "$VERILATOR_BIN" ] && export PATH="$VERILATOR_BIN:$PATH"
 if [ ! -f ../external/caliptra-rtl-1x/src/integration/rtl/caliptra_top.sv ]; then
   echo "error: external/caliptra-rtl-1x missing; run ../scripts/fetch_deps.sh (caliptra-rtl v1.1)" >&2
   exit 1
