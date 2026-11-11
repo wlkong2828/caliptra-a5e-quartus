@@ -58,6 +58,8 @@ scripts/quartus_docker.sh quartus_a5e_nios 'quartus_ipgenerate nios_caliptra_a5e
 scripts/quartus_docker.sh quartus_a5e 'quartus_syn caliptra_a5e'
 scripts/quartus_docker.sh caliptra2x/quartus_a5e_2x 'quartus_syn caliptra2x_a5e'
 ```
+**Board bring-up** (pins, fit/asm/sta, `quartus_pgm`, `juart-terminal`, LED progress codes, troubleshooting): §17 of [`docs/NIOS_CALIPTRA_INTEGRATION.md`](docs/NIOS_CALIPTRA_INTEGRATION.md#17-board-bring-up-boot-and-firmware-load). The ROM, FW bundle and fuse image are baked into the bitstream, and the Nios boots Caliptra (including FIRMWARE_LOAD) by itself, so there is no separate firmware-load step.
+
 Full details (license, GUI, outputs, measured numbers, known Docker issues such as the intermittent start-up crash and a stalled `quartus_syn`, which you fix by killing the container and rerunning): §15–§16 of [`docs/NIOS_CALIPTRA_INTEGRATION.md`](docs/NIOS_CALIPTRA_INTEGRATION.md) and §16–§17 of the [2.x guide](docs/caliptra-2x/NIOS_CALIPTRA_2X_INTEGRATION.md).
 
 `quartus_a5e_nios/run_nios_a5e_docker.sh` regenerates the whole Platform Designer system from `qsys/nios_caliptra_sys.tcl`, then runs ipgenerate and synthesis. The full fit needs at least 32 GB of RAM.

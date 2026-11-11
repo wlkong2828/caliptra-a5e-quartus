@@ -73,6 +73,10 @@ Caliptra registers through the window (base 0x0004_0000 + offset):
 
 Same sequence as `../sim/tb_nios_top_fw.sv`. After editing main.c, rerun `sw/build_app.sh` so `onchip_mem.hex` matches before synthesis. If Quartus `elf2hex` is unavailable, the script falls back to `scripts/elf2hex_intel.py`.
 
+## Board bring-up
+There is no separate firmware download. `fw/caliptra-rom.hex`, `fw/caliptra-fw-bundle.hex` (`soc_fw_store`), `fw/fuse_image.hex` and `onchip_mem.hex` are baked into the bitstream, and `main.c` runs pwrgood → fuses → ROM → FIRMWARE_LOAD → runtime automatically.
+Pin assignment (remove the `VIRTUAL_PIN` lines; set `clk` 50 MHz, `reset_n`, `led[7:0]`), fit/asm/sta (≥ 32 GB RAM), `quartus_pgm -c 1 -m jtag -o "p;output_files/nios_caliptra_a5e.sof"`, `juart-terminal -c 1`, the LED/MAGIC codes and troubleshooting: [§17 of the integration note](../docs/NIOS_CALIPTRA_INTEGRATION.md#17-board-bring-up-boot-and-firmware-load). Not board-proven; STUDY keys/entropy, so use it for bring-up only.
+
 ## Rebuild
 Fetch the upstream RTL first: `../scripts/fetch_deps.sh`. Synthesis only (PD output is committed): `./dock.sh 'quartus_ipgenerate nios_caliptra_a5e && quartus_syn nios_caliptra_a5e'`.
 All Quartus/PD commands run inside Docker via `./dock.sh '<cmd>'` (needs `--net=host` + license

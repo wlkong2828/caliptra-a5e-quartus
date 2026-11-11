@@ -5,7 +5,7 @@
 - **This document:** [`docs/NIOS_CALIPTRA_INTEGRATION.md`](https://github.com/pwilliam282/caliptra-a5e-quartus/blob/main/docs/NIOS_CALIPTRA_INTEGRATION.md)
 - **RTL / spec version:** chipsalliance/caliptra-rtl **v1.1**, commit `5f85fb4bc95b753a2f7d042db7dc2644ca1e8c49` (same tree as release [rtl-20261101](https://github.com/pwilliam282/caliptra-a5e-quartus/releases/tag/rtl-20261101)). In the repo it is the pinned submodule `external/caliptra-rtl-1x/`; see §15. Official sources used for this audit: `docs/CaliptraIntegrationSpecification.md` and `docs/CaliptraHardwareSpecification.md` at that commit. **1.x has no `strap_ss_*` / AXI DMA / Caliptra-SS straps** — those belong to 2.x / Caliptra SS.
 - **Glue RTL reviewed at:** glue RTL as of `ea96100` / `ea86b5c` (unchanged since; 2FF reset synchronizers, Reset Release IP gating, warm-reset DONE-only fuse path, PAUSER lock, TIMER_CONFIG, fatal recovery, generic_input tie-off). Verilator results in §13 were built from exactly this RTL; Quartus synthesis result is from `ea86b5c`. Earlier notes: first added in `7ba4ce5` (rev 1), re-audited in `238df80` (rev 2, docs-only).
-- **Getting the sources / building:** §15 (clone, submodules, `scripts/get_caliptra_a5e.sh`, `scripts/fetch_deps.sh`) and §16 (Quartus Pro 25.3 build, Docker, license, measured results, known issues).
+- **Getting the sources / building:** §15 (clone, submodules, `scripts/get_caliptra_a5e.sh`, `scripts/fetch_deps.sh`) and §16 (Quartus Pro 25.3 build, Docker, license, measured results, known issues), and §17 (board bring-up: pins, fit/asm/sta, programming, boot monitor and LED codes, troubleshooting).
 - **Date:** 2026-11-10 (America/Chicago), revision 3 (design fixes for the rev-2 FAIL/OPEN items; checklist re-audited against the new RTL + v1.1 spec).
 - **Scope:** FPGA study / production-flow *mimic*. STUDY keys, UDS, field entropy, and TRNG are **not** production secrets or a FIPS entropy source. xorshift TRNG, study UDS/FE/obf key, and the FPGA fuse-image stand-in remain **TEST-ONLY**.
 
@@ -882,3 +882,139 @@ Expected warnings (harmless):
 - **Synthesis hangs with no CPU use.** Quartus can stop progressing, usually during the SLD/JTAG-hub `ip-deploy` step or right after RAM inference when it starts its parallel helper processes. Signs: the log stops growing, `quartus_syn` sits at about 0 % CPU, and defunct `quartus_sh` children remain. Most likely the same start-up crash, hitting a helper process. Kill the container (`docker kill <id>`; with `DOCKER_NAME=<name>` set for `scripts/quartus_docker.sh` you can `docker kill <name>`) and rerun. A healthy Nios synthesis shows 4 busy `quartus_syn` helpers with `--parallel=4`. The run then finishes normally; the earlier note recorded about 7 min at `--parallel=8`.
 - **Memory.** A&E needs about 3–4.5 GB, and full synthesis about 4 GB (1.x) or 7 GB (2.x). **Fit/route needs ≥ 32 GB**: placement passed on a 16 GB VM but routing ran out of memory, so fit, timing and `.sof` have not been produced yet.
 - **Pins.** All top-level I/O except `clk` (and `reset_n` in the Nios project) are `VIRTUAL_PIN ON`. Assign real pins and I/O standards for your board before `quartus_asm`.
+
+---
+
+## 17. Board bring-up: boot and firmware load
+
+This applies to the **1.x Nios project `quartus_a5e_nios/` only**. The 2.x design does not fit the A5E 065 (126 %, see the 2.x guide §14), so there is no 2.x bitstream.
+
+### 17.1 No separate firmware-load step
+
+Everything Caliptra needs is baked into the bitstream at synthesis. There is nothing to download over JTAG after configuration.
+
+| Content | Source file | Where it ends up |
+|---|---|---|
+| Caliptra ROM (rom-1.1.1) | `fw/caliptra-rom.hex` | `caliptra_rom_m20k` in `rtl/caliptra_passive_top.sv` (`$readmemh`) |
+| FMC + runtime FW bundle (109,000 B) | `fw/caliptra-fw-bundle.hex` | `soc_fw_store` M20K (stand-in for boot flash) |
+| Fuse image (STUDY values) | `fw/fuse_image.hex` | `soc_fuse_ctrl` image ROM |
+| Nios program | `quartus_a5e_nios/onchip_mem.hex` | Nios on-chip RAM (`nios_caliptra_sys_ram`) |
+
+After configuration, the Reset Release IP drops `ninit_done` and `main.c` runs the whole boot on its own (§7):
+1. Power-good / `rst_b` release.
+2. `ready_for_fuses` → PAUSER locks, `TIMER_CONFIG`, `WDT_CFG` → `soc_fuse_ctrl` fuse push + `FUSE_WR_DONE`.
+3. ROM boots while the host services `etrng_req`.
+4. `ready_for_fw_push` → mailbox **FIRMWARE_LOAD** from `soc_fw_store`.
+5. `ready_for_runtime`.
+6. Runtime loop: TRNG service and error polling.
+
+### 17.2 Pin assignment
+
+The QSF makes every top-level port virtual except `clk` and `reset_n` (`set_instance_assignment -name VIRTUAL_PIN ON -to *`, then `OFF` for `clk` and `reset_n`). For a board:
+
+1. Delete the three `VIRTUAL_PIN` lines in `quartus_a5e_nios/nios_caliptra_a5e.qsf`.
+2. Add a location and an I/O standard for each top port, using your board's schematic. Pin names and standards below are placeholders:
+
+```tcl
+set_location_assignment PIN_<clk_pin>    -to clk          ;# 50 MHz board oscillator (nios_caliptra.sdc: create_clock -period 20.000)
+set_location_assignment PIN_<rst_pin>    -to reset_n      ;# push-button, active low
+set_location_assignment PIN_<led0_pin>   -to led[0]       ;# ... led[1] .. led[7]
+set_instance_assignment -name IO_STANDARD "<bank standard, e.g. 1.2 V / 1.8 V / 3.3 V LVCMOS>" -to clk
+set_instance_assignment -name IO_STANDARD "<...>" -to reset_n
+set_instance_assignment -name IO_STANDARD "<...>" -to led[*]
+```
+
+| Port | Dir | Notes |
+|---|---|---|
+| `clk` | in | Single clock for Nios and Caliptra. The SDC constrains **50 MHz** (20 ns). If your oscillator differs, change `nios_caliptra.sdc`, `CPTRA_TIMER_CONFIG` (20000 ps in `main.c`) and the BSP clock |
+| `reset_n` | in | Active-low board reset, asynchronous (false-pathed in the SDC). Gated with `ninit_done` inside the top |
+| `led[7:0]` | out | `MAGIC_PIO[7:0]`, the boot progress code (§17.5) |
+
+The **JTAG UART** and Nios debug use the device's dedicated JTAG pins through the SLD hub and need no user pins.
+
+### 17.3 Fit, assemble, timing
+
+```bash
+cd quartus_a5e_nios
+./dock.sh 'quartus_ipgenerate nios_caliptra_a5e && quartus_syn nios_caliptra_a5e'   # if not done yet (§16)
+./dock.sh 'quartus_fit nios_caliptra_a5e && quartus_asm nios_caliptra_a5e && quartus_sta nios_caliptra_a5e'
+```
+
+- **Memory:** this needs **≥ 32 GB RAM**. Routing ran out of memory on a 16 GB VM (§16).
+- **Output:** `quartus_a5e_nios/output_files/nios_caliptra_a5e.sof`.
+- **Timing:** check the timing reports (`output_files/nios_caliptra_a5e.sta.rpt`, or the Timing Analyzer GUI) before trusting the board. Every corner must have **positive setup and hold slack on `clk` at 50 MHz**. Timing closure at 50 MHz has **not** been demonstrated yet, because no fit has run. If it fails, lower the clock (and update the SDC and `TIMER_CONFIG`).
+- **License:** `quartus_asm` needs a license that enables programming-file generation for this device.
+
+### 17.4 Program the FPGA
+
+Program from the Linux/Windows machine the board's USB-Blaster is plugged into. There is no Quartus Programmer for macOS. The free standalone Quartus Prime Programmer is enough for this step and needs no license.
+
+```bash
+jtagconfig                       # lists cables and the JTAG chain, e.g. "1) USB-BlasterIII [1-3]" + device IDs
+quartus_pgm -c 1 -m jtag -o "p;output_files/nios_caliptra_a5e.sof"
+# If the chain has more than one device (e.g. on some dev kits), add the device index from jtagconfig:
+#   quartus_pgm -c 1 -m jtag -o "p;output_files/nios_caliptra_a5e.sof@<index>"
+```
+
+- `-c` takes the cable number or the full cable name printed by `jtagconfig`.
+- The `-o "p;file.sof[@index]"` syntax was checked against `quartus_pgm --help=o` in Quartus Pro 25.3.
+- **From Docker:** run `DOCKER_USB=1 ../scripts/quartus_docker.sh "$PWD" 'jtagconfig && quartus_pgm …'`. This adds `--privileged -v /dev/bus/usb`. The host user still needs USB-Blaster udev permissions. This path has not been tested with real hardware.
+
+### 17.5 Monitor the boot
+
+```bash
+juart-terminal -c 1              # in Quartus Pro 25.3: $QUARTUS_ROOTDIR/bin/juart-terminal (-c CABLE, -d DEVICE, -i INSTANCE)
+# then press reset_n (or reprogram) to watch the boot from the start
+```
+
+The JTAG UART prints the progress lines below (from `main.c`; the values shown are the expected ones for the committed ROM and bundle):
+
+```
+CPTRA_HW_REV_ID   = 00000011
+FIRMWARE_LOAD bytes= 0001A9C8
+MBOX_STATUS       = 00000002
+ready_for_runtime FLOW_STATUS = ...
+CPTRA_FW_REV_ID0  = ...
+```
+
+The `led[7:0]` value is `MAGIC[7:0]`:
+
+| `MAGIC` | `led[7:0]` | Meaning (`main.c`) |
+|---|---|---|
+| `0x00000001` | `0x01` | Nios alive; `caliptra_cold_release()` (pwrgood, then `rst_b`) |
+| `0x00000002` | `0x02` | `ready_for_fuses` seen; `CPTRA_HW_REV_ID` read OK |
+| `0x00000003` | `0x03` | PAUSER (fuse, TRNG, mailbox) locked; `TIMER_CONFIG` and `WDT_CFG` written |
+| `0x00000004` | `0x04` | `soc_fuse_ctrl` fuse push + `FUSE_WR_DONE` complete; ROM running |
+| `0x00000005` | `0x05` | `ready_for_fw_push`; ROM waiting for firmware |
+| `0x00000006` | `0x06` | FIRMWARE_LOAD written to the mailbox and `EXECUTE` set; waiting for `MBOX_STATUS` |
+| `0x00000007` | `0x07` | FIRMWARE_LOAD accepted (`MBOX_STATUS` = 2, CMD_COMPLETE); waiting for `ready_for_runtime` |
+| `0xCA11F00D` | `0x0D` | **`ready_for_runtime`**: boot complete; host keeps serving TRNG |
+| `0xDEAD000E` | `0x0E` | Fail: timeout waiting for a status bit |
+| `0xDEAD000F` | `0x0F` | Fail: bad `HW_REV_ID`, fuse controller error, or FIRMWARE_LOAD `MBOX_STATUS` = 3 (CMD_FAILURE) |
+| `0xDEAD00FF` | `0xFF` | Fail: more than `FATAL_RETRY_LIMIT` (3) fatal errors / pwrgood recoveries |
+| `0xDEAD0010` | `0x10` | Fail: cold re-boot after a runtime fatal error did not succeed |
+| `0x13`, `0x14`, `0x15`, `0x17` | same | Warm-reset path (`caliptra_warm_reset()`), only if you call it |
+
+In simulation, `ready_for_runtime` comes about 24.06 M cycles after release (§13.1), so expect about 0.5 s at 50 MHz plus the Nios polling overhead.
+
+### 17.6 Troubleshooting
+
+| Symptom | Likely cause / what to check |
+|---|---|
+| LEDs dark or stuck at `0x01` | Nios runs but Caliptra never reaches `ready_for_fuses`. Check that `reset_n` is released and has the right polarity. Check that the Reset Release IP's `ninit_done` went low (`sys_reset_n = reset_n & ~ninit_done`). Check that `ctrl_pio` drives pwrgood/`rst_b` (bits 0 and 1). If the LEDs are dark, Nios is not running at all: check `clk`, the pins and `onchip_mem.hex` |
+| Stuck at `0x04` or `0x05` (then `0x0E`) | The ROM is not progressing. Read `CPTRA_FW_ERROR_FATAL` / `CPTRA_FW_ERROR_NON_FATAL` (`0x3_0008` / `0x3_000C` in the Caliptra window, Nios address `0x0004_0000 +` offset) and `CPTRA_HW_ERROR_*`, for example from the Nios debugger or a debug print. Typical causes: `etrng_req` not served (TRNG PAUSER not locked to 1, or the host loop not running); or a fuse/bundle mismatch, where the `KEY_MANIFEST_PK_HASH` and owner fuses don't match `fw/caliptra-fw-bundle.bin` |
+| Fails at `0x06` / `0x07` (`0x0F`, `MBOX_STATUS = 3`) | The ROM rejected the image. The bundle and the fuse image don't belong together. Regenerate the fuses from the bundle with `python3 scripts/gen_fuse_image.py` (writes `fw/fuse_image.hex`), then re-synthesize and fit. Check `fw/SHA256SUMS`. Also check that `FW_BYTES` in `nios_caliptra_top.sv` (109,000) matches the bundle size |
+| `0xFF` / `0x10` | Repeated `cptra_error_fatal`. Read `CPTRA_HW_ERROR_FATAL` / `CPTRA_FW_ERROR_FATAL` before the pwrgood cycle clears them (add a print in `handle_errors()`) |
+
+### 17.7 Changing the Nios firmware
+
+`main.c` lives in the Nios on-chip RAM image, which is part of the bitstream. To change it:
+1. Edit `quartus_a5e_nios/sw/app/main.c`.
+2. Run `RISCV_BIN=/path/to/xpack-riscv-none-elf-gcc/bin quartus_a5e_nios/sw/build_app.sh`. This rebuilds the ELF and regenerates `quartus_a5e_nios/onchip_mem.hex`.
+3. Re-run synthesis, fit, asm and sta (§17.3) and reprogram.
+
+The same rebuild applies to a new Caliptra ROM, bundle or fuse image in `fw/`, because they are `$readmemh`-initialised. (Updating only the memory-initialisation contents without a refit is possible in Quartus, but has not been set up here.)
+
+### 17.8 Caveat
+
+This flow is **not board-proven**: no fit, timing closure or hardware run has been done yet. It also uses **STUDY** values everywhere: UDS, field entropy, the `cptra_obf_key` strap, test-signed firmware, and an xorshift TRNG that is not an entropy source. Use the bitstream for **bring-up only**. It must not hold or attest anything real (§10 High items).

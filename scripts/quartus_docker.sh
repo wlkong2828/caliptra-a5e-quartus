@@ -15,6 +15,8 @@
 #                 /workspace/altera_license/SW-AGILEX-5E.dat.
 #   QUARTUS_IMAGE Docker image (default alterafpga/quartuspro-v25.3:agilex5).
 #   DOCKER_NAME   optional container name.
+#   DOCKER_USB=1  pass the host USB bus into the container (--privileged -v /dev/bus/usb) so
+#                 jtagconfig / quartus_pgm / juart-terminal can reach a USB-Blaster (Linux host).
 #
 # --net=host is required: FlexLM reads the host-ID from the NIC; without it quartus_syn
 # can segfault in the license host-ID lookup. The image is linux/amd64: use a Linux
@@ -38,6 +40,7 @@ if [ ! -f "$REPO/external/caliptra-rtl-1x/src/integration/rtl/caliptra_top.sv" ]
   echo "error: external/caliptra-rtl-* missing; run scripts/fetch_deps.sh first" >&2; exit 1
 fi
 NAME=(); [ -n "${DOCKER_NAME:-}" ] && NAME=(--name "$DOCKER_NAME")
+[ "${DOCKER_USB:-0}" = 1 ] && NAME+=(--privileged -v /dev/bus/usb:/dev/bus/usb)
 exec docker run --rm "${NAME[@]+"${NAME[@]}"}" --net=host --platform linux/amd64 \
   -u "$(id -u):$(id -g)" -e HOME=/tmp \
   -e LM_LICENSE_FILE=/licenses/quartus.dat -e ALTERA_LICENSE_FILE=/licenses/quartus.dat \
