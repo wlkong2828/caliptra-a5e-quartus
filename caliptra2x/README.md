@@ -14,6 +14,6 @@ These are the sources for the Caliptra 2.x (caliptra-rtl v2.1.2) study, copied f
 
 Notes:
 - **The FW bundle is signed with caliptra-sw's public fake keys. It is for simulation only.** See `docs/caliptra-2x/FIRMWARE_AND_KEYS_2X.md`. No private keys are in this repo.
-- Not vendored: caliptra-rtl v2.1.2 (`49370266`, clone with `--recursive`) and caliptra-sw `dd1e79d`. `sim_2x/boot2x.f` expects caliptra-rtl at `/workspace/caliptra-rtl`; its repo-local paths are relative.
-- `quartus_a5e_2x/caliptra2x_a5e.qsf`, `gen_qsf.py` and `run_syn_docker.sh` still contain absolute paths from the build box (`/workspace/...`) and reference `ref/agilex7-2x-phaseA/` from the 2.x tree, which is not copied here. Regenerate the QSF before using it elsewhere.
+- caliptra-rtl v2.1.2 (`49370266`, with adams-bridge `b77e3d8`) is the `external/caliptra-rtl-2x` submodule (run `scripts/fetch_deps.sh`). caliptra-sw `dd1e79d` is not vendored. `sim_2x/boot2x.f` and the QSF use paths relative to their own directory.
+- `quartus_a5e_2x/caliptra2x_a5e.qsf` is committed with repo-relative paths. `gen_qsf.py` regenerates it only from the 2.x tree's Verilator list (`FLIST=…/caliptra_passive_top.f REGEN_QSF=1 ./run_syn_docker.sh`). That list is not copied here.
 - The 2.x design **does not fit** the A5EC065: 279,685 / 222,400 ALMs (126 %).

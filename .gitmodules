@@ -1,0 +1,6 @@
+[submodule "external/caliptra-rtl-1x"]
+	path = external/caliptra-rtl-1x
+	url = https://github.com/chipsalliance/caliptra-rtl.git
+[submodule "external/caliptra-rtl-2x"]
+	path = external/caliptra-rtl-2x
+	url = https://github.com/chipsalliance/caliptra-rtl.git

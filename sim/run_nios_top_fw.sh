@@ -2,14 +2,14 @@
 # Sim the real nios_caliptra_top glue (fuse ctrl IP + FW store + mailbox FIRMWARE_LOAD,
 # 2FF reset sync, PAUSER lock, warm-reset START_DONE, fatal pwrgood recovery)
 # with a behavioral Nios.
-# Needs verilator >= 5.0 and caliptra-rtl/ at the repo root (v1.1 / rtl-20261101).
+# Needs verilator >= 5.0 and external/caliptra-rtl-1x (v1.1): run ../scripts/fetch_deps.sh first.
 # Plusargs: +test=prod|sync|pauser|warm|fatal|all  (default all)
 #           +max_cycles=N  (default 200000000)
 set -eo pipefail
 cd "$(dirname "$0")"
-export PATH="${VERILATOR_BIN:-/workspace/mamba/envs/eda/bin}:$PATH"
-if [ ! -f ../caliptra-rtl/src/integration/rtl/caliptra_top.sv ]; then
-  echo "error: caliptra-rtl not found at repo root; clone chipsalliance/caliptra-rtl v1.1 or unpack the rtl-20261101 release" >&2
+VERILATOR_BIN=${VERILATOR_BIN:-/workspace/mamba/envs/eda/bin}; [ -d "$VERILATOR_BIN" ] && export PATH="$VERILATOR_BIN:$PATH"
+if [ ! -f ../external/caliptra-rtl-1x/src/integration/rtl/caliptra_top.sv ]; then
+  echo "error: external/caliptra-rtl-1x missing; run ../scripts/fetch_deps.sh (caliptra-rtl v1.1)" >&2
   exit 1
 fi
 N=../quartus_a5e_nios/rtl

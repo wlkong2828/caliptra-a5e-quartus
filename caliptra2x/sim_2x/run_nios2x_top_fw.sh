@@ -4,7 +4,7 @@
 #   env THREADS (default 4), BUILD=0 to skip rebuild. Log: nios2x_top_fw_run.log
 set -eo pipefail
 cd "$(dirname "$0")"
-export PATH="${VERILATOR_BIN:-/workspace/mamba/envs/eda/bin}:$PATH"
+VERILATOR_BIN=${VERILATOR_BIN:-/workspace/mamba/envs/eda/bin}; [ -d "$VERILATOR_BIN" ] && export PATH="$VERILATOR_BIN:$PATH"
 if [ "${BUILD:-1}" = 1 ]; then
   verilator --binary --threads ${THREADS:-4} -j 8 -O3 -Wno-fatal -Wno-lint -Wno-style -Wno-UNOPTFLAT \
     -Wno-MULTIDRIVEN -Wno-TIMESCALEMOD --top-module tb_nios2x_top_fw -Mdir obj_nios2x -f boot2x.f \

@@ -74,6 +74,7 @@ Caliptra registers through the window (base 0x0004_0000 + offset):
 Same sequence as `../sim/tb_nios_top_fw.sv`. After editing main.c, rerun `sw/build_app.sh` so `onchip_mem.hex` matches before synthesis. If Quartus `elf2hex` is unavailable, the script falls back to `scripts/elf2hex_intel.py`.
 
 ## Rebuild
+Fetch the upstream RTL first: `../scripts/fetch_deps.sh`. Synthesis only (PD output is committed): `./dock.sh 'quartus_ipgenerate nios_caliptra_a5e && quartus_syn nios_caliptra_a5e'`.
 All Quartus/PD commands run inside Docker via `./dock.sh '<cmd>'` (needs `--net=host` + license
 `LIC_HOST=/path/SW-AGILEX-5E.dat`; the fixed license is tied to the build host's NIC MAC).
 ```bash
@@ -87,7 +88,7 @@ RISCV_BIN=/path/to/xpack-riscv-none-elf-gcc/bin sw/build_app.sh
 # 4. Synthesis (IP generate + quartus_syn).  'fit' also routes – needs >=32 GB RAM.
 ./run_nios_a5e_docker.sh syn
 ```
-Quartus files: `nios_caliptra_a5e.qpf/.qsf` (paths relative: `../caliptra-rtl`, `../rtl`, `../quartus/syn_src`),
+Quartus files: `nios_caliptra_a5e.qpf/.qsf` (paths relative: `../external/caliptra-rtl-1x` (submodule, `../scripts/fetch_deps.sh`), `../rtl`, `../quartus/syn_src`),
 `nios_caliptra.sdc` (50 MHz clk). Order: build the app first so `onchip_mem.hex` exists before synthesis.
 
 ## Not done / blockers for "talk on hardware"

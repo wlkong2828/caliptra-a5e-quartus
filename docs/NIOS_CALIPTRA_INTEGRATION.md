@@ -716,7 +716,7 @@ Limits of this verification:
 - Verilator uses `sim/rst_release_stub.sv` for the Reset Release IP and upstream `caliptra_sram` (no FPGA `initial` zero-fill).
 - The prod/warm/fatal logs were produced by a TB build that also printed a trailing `TB_ALL PASS` line in single-test runs (Verilator `$finish` completes the time step). The TB now prints `TB_ALL` only for `+test=all`; the sync/pauser logs were re-run with that build. This does not change any result.
 
-Rerun: `sim/run_nios_top_fw.sh +test=<name>` (builds into `sim/obj_nios_top_fw/`, needs `caliptra-rtl/` at the repo root). A full `+test=all` takes about an hour on this 15 GB box.
+Rerun: `sim/run_nios_top_fw.sh +test=<name>` (builds into `sim/obj_nios_top_fw/`, needs `external/caliptra-rtl-1x`: run `scripts/fetch_deps.sh` first). A full `+test=all` takes about an hour on this 15 GB box.
 
 ### 13.2 Synthesis (Quartus Prime Pro 25.3.0 Build 109, A5EC065BB32AE6S)
 

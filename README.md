@@ -6,6 +6,56 @@ Passive Caliptra 1.x (v1.1) Quartus Prime Pro 25.3 project targeting **A5EC065BB
 
 **Nios ↔ Caliptra integration (signal map, TRNG, fuses, reset, watchdog, spec checklist):** [`docs/NIOS_CALIPTRA_INTEGRATION.md`](docs/NIOS_CALIPTRA_INTEGRATION.md) (revision 3).
 
+## Getting the sources and compiling
+
+The upstream Caliptra RTL is **not copied into this repo**. It is pulled in as pinned git submodules under `external/`:
+
+| Path | Upstream | Version | Commit | Used by |
+|---|---|---|---|---|
+| `external/caliptra-rtl-1x` | chipsalliance/caliptra-rtl | v1.1 | `5f85fb4` | `quartus_a5e/`, `quartus_a5e_nios/`, `sim/` |
+| `external/caliptra-rtl-2x` | chipsalliance/caliptra-rtl | v2.1.2 | `4937026` | `caliptra2x/quartus_a5e_2x/`, `caliptra2x/sim_2x/` |
+| `external/caliptra-rtl-2x/submodules/adams-bridge` | chipsalliance/adams-bridge | v2.0.3 | `b77e3d8` | 2.x (ML-DSA) |
+
+The upstream trees are used unmodified. All FPGA changes are in this repo: `rtl/`, `quartus/syn_src/`, `quartus_a5e_nios/rtl/`, `caliptra2x/rtl_2x/`, `caliptra2x/quartus_a5e_2x/syn_src/`. Every path in the `.qsf`, `.f` and run scripts is relative to the file's own directory, so the checkout can live anywhere. If you see `caliptra_passive_top` or `caliptra_top` undefined, the submodules have not been fetched.
+
+**1. Get the sources** (Linux or macOS, needs git; about 1 GB):
+```bash
+git clone --recursive https://github.com/pwilliam282/caliptra-a5e-quartus.git
+cd caliptra-a5e-quartus
+scripts/fetch_deps.sh          # inits/updates the submodules and checks the pinned commits ("deps OK")
+```
+If you cloned without `--recursive`, or downloaded a ZIP, run `scripts/fetch_deps.sh` anyway. It runs `git submodule update --init --recursive`, or clones the pinned commits when there is no `.git`.
+
+**2. Tools.** Quartus Prime **Pro 25.3.0** (Build 109) with Agilex 5 device support, and the no-cost **SW-AGILEX-5E** license. That license is node-locked to the NIC MAC of the machine that runs Quartus. Quartus Pro runs only on Linux/Windows x86-64, so on a Mac (including Apple silicon) use a Linux x86-64 PC, VM or server. The official Docker image `alterafpga/quartuspro-v25.3:agilex5` is linux/amd64 only and needs `--net=host` for the license. It is not usable under emulation on Apple-silicon Docker Desktop.
+
+**3. Open or compile a project** (Quartus GUI: *File → Open Project*, then pick the `.qpf`):
+
+| Project | Top | Directory / `.qpf` |
+|---|---|---|
+| Nios V + Caliptra 1.x (main design) | `nios_caliptra_top` | `quartus_a5e_nios/nios_caliptra_a5e.qpf` |
+| Caliptra 1.x core only (size study) | `caliptra_passive_top` | `quartus_a5e/caliptra_a5e.qpf` |
+| Caliptra 2.x core only (size study, does not fit) | `caliptra_passive_top` | `caliptra2x/quartus_a5e_2x/caliptra2x_a5e.qpf` |
+
+The Nios project's Platform Designer output (`qsys/nios_caliptra_sys/`, `qsys/ip/…`) is committed. The Reset Release IP (`ip/rst_release.ip`) is generated locally (`ip/rst_release/` is gitignored), so **run `quartus_ipgenerate` once before synthesis**. In the GUI the equivalent is *Tools → Generate IP*, or let the compile prompt you.
+
+Native Quartus on Linux:
+```bash
+cd quartus_a5e_nios
+quartus_ipgenerate nios_caliptra_a5e
+quartus_syn nios_caliptra_a5e                     # full synthesis (~7 min, ~4 GB)
+# quick check only: quartus_syn --analysis_and_elaboration nios_caliptra_a5e
+cd ../quartus_a5e              && quartus_syn caliptra_a5e
+cd ../caliptra2x/quartus_a5e_2x && quartus_syn caliptra2x_a5e   # ~22 min, ~7 GB
+```
+With Docker (`scripts/quartus_docker.sh <dir> '<cmd>'` mounts the repo and your license):
+```bash
+export LIC_HOST=$HOME/licenses/SW-AGILEX-5E.dat
+scripts/quartus_docker.sh quartus_a5e_nios 'quartus_ipgenerate nios_caliptra_a5e && quartus_syn nios_caliptra_a5e'
+scripts/quartus_docker.sh quartus_a5e 'quartus_syn caliptra_a5e'
+scripts/quartus_docker.sh caliptra2x/quartus_a5e_2x 'quartus_syn caliptra2x_a5e'
+```
+`quartus_a5e_nios/run_nios_a5e_docker.sh` regenerates the whole Platform Designer system from `qsys/nios_caliptra_sys.tcl`, then runs ipgenerate and synthesis. The full fit needs at least 32 GB of RAM.
+
 ## Contents
 - `quartus_a5e/` — Caliptra-only A5E synth study (QSF/QPF, reports)
 - `quartus_a5e_nios/` — **Nios V/m host + Avalon→APB + Caliptra 1.x** (synth ~62% ALMs)
@@ -23,11 +73,7 @@ Passive Caliptra 1.x (v1.1) Quartus Prime Pro 25.3 project targeting **A5EC065BB
 Requires Altera **SW-AGILEX-5E** (no-cost) for your host NIC. Do **not** commit license `.dat` files. Request one from Altera SSLC for your MAC.
 
 ## Build
-```bash
-cd quartus_a5e
-# set LM_LICENSE_FILE to your SW-AGILEX-5E.dat
-./run_a5e_docker.sh   # alterafpga/quartuspro-v25.3:agilex5, --net=host
-```
+See [Getting the sources and compiling](#getting-the-sources-and-compiling). Docker wrapper: `LIC_HOST=/path/to/SW-AGILEX-5E.dat quartus_a5e/run_a5e_docker.sh [syn|fit]`.
 
 ## Nios V host (new)
 
@@ -36,14 +82,14 @@ Synthesis succeeded on A5EC065BB32AE6S: **~138.7K / 222.4K ALMs (62%)**.
 
 ## rtl/ (passive wrapper)
 
-`rtl/caliptra_passive_top.sv` is the thin Caliptra 1.x passive-mode wrapper referenced by the Quartus QSF as `../rtl/caliptra_passive_top.sv` (sibling of `quartus_a5e_nios/`). The full `caliptra-rtl/` tree is **not** in git: get it from release [rtl-20261101](https://github.com/pwilliam282/caliptra-a5e-quartus/releases/tag/rtl-20261101) or `git clone --branch v1.1 https://github.com/chipsalliance/caliptra-rtl.git` into `caliptra-rtl/` at the repo root.
+`rtl/caliptra_passive_top.sv` is the thin Caliptra 1.x passive-mode wrapper referenced by the Quartus QSF as `../rtl/caliptra_passive_top.sv` (sibling of `quartus_a5e_nios/`). The upstream caliptra-rtl v1.1 tree is the `external/caliptra-rtl-1x` submodule (run `scripts/fetch_deps.sh`).
 
 ## quartus/syn_src/ (FPGA synthesis overrides)
 Referenced by the QSF as `../quartus/syn_src/*.sv`:
 - `caliptra_top_tb_pkg.sv` – tb_pkg variant without SystemVerilog classes (guarded for `SYNTHESIS`), fixes "caliptra_top_tb_pkg is not declared".
 - `caliptra_veer_sram_export.sv` – VeeR SRAM export wrapper.
 - `caliptra_sram.sv` – M20K-friendly SRAM model.
-Full caliptra-rtl is still from the rtl-20261101 release (or chipsalliance v1.1).
+Everything else comes from the unmodified upstream tree in `external/caliptra-rtl-1x` (chipsalliance v1.1).
 
 ## Caliptra bootROM (`fw/`)
 

@@ -3,15 +3,12 @@
 # Quartus Pro 25.3 Docker + SW-AGILEX-5E fixed license (--net=host: FlexLM host-ID = NIC MAC).
 # Usage (detached):  QPAR=4 nohup setsid ./run_syn_docker.sh > run.out 2>&1 &
 set -uo pipefail
-export PATH=/workspace/docker-bin:$PATH
 cd "$(dirname "$0")"
 QPAR=${QPAR:-4}
-LIC_HOST=${LIC_HOST:-/workspace/altera_license/SW-AGILEX-5E.dat}
-python3 gen_qsf.py
+# License: LIC_HOST=/path/to/SW-AGILEX-5E.dat (see ../../scripts/quartus_docker.sh).
+# The committed caliptra2x_a5e.qsf is used as-is; REGEN_QSF=1 regenerates it with gen_qsf.py.
+[ "${REGEN_QSF:-0}" = 1 ] && python3 gen_qsf.py
 start=$(date +%s); echo "start $(date)"
-docker run --rm --name q2x_syn --net=host -u "$(id -u):$(id -g)" -e HOME=/tmp \
-  -e LM_LICENSE_FILE=/licenses/SW-AGILEX-5E.dat -e ALTERA_LICENSE_FILE=/licenses/SW-AGILEX-5E.dat \
-  -v /workspace:/workspace -v "$LIC_HOST":/licenses/SW-AGILEX-5E.dat:ro -w "$PWD" \
-  alterafpga/quartuspro-v25.3:agilex5 bash -lc "quartus_syn --parallel=$QPAR caliptra2x_a5e" > syn.log 2>&1
+DOCKER_NAME=q2x_syn ../../scripts/quartus_docker.sh "$PWD" "quartus_syn --parallel=$QPAR caliptra2x_a5e" > syn.log 2>&1
 rc=$?
 echo "rc=$rc wall_s=$(( $(date +%s)-start )) end $(date)"

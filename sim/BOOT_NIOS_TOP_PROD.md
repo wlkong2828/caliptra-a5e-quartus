@@ -13,7 +13,7 @@ Production-flow **mimic** using STUDY keys/entropy (not real production secrets)
 - Glue: 2FF async-assert / sync-deassert on `cptra_pwrgood` and `cptra_rst_b`;
   `generic_input_wires` tied 0; `soc_fuse_ctrl` CTRL bit 2 = START_DONE (warm-reset path).
 
-Run (needs `caliptra-rtl/` at the repo root and Verilator ≥ 5.0):
+Run (needs `external/caliptra-rtl-1x` from `scripts/fetch_deps.sh`, and Verilator ≥ 5.0):
 
 ```bash
 ./run_nios_top_fw.sh                          # default +test=all +max_cycles=200000000
