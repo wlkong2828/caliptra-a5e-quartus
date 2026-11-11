@@ -14,6 +14,13 @@ defs=$("$cxx" -dM -E -x c++ /dev/null 2>/dev/null) || defs=""
 if [ "${VERILATOR_PCH_FIX:-1}" = 1 ] && ! grep -q '__clang__' <<<"$defs"; then
   printf -- '-MAKEFLAGS CFG_CXXFLAGS_PCH_I=-include '
 fi
+# The same site builds also leave CFG_LDLIBS_THREADS empty, so --threads links
+# fail with undefined pthread_create / pthread_setaffinity_np. Always link
+# with -pthread (harmless where it is already present). Disable with
+# VERILATOR_PTHREAD_FIX=0.
+if [ "${VERILATOR_PTHREAD_FIX:-1}" = 1 ]; then
+  printf -- '-CFLAGS -pthread -LDFLAGS -pthread -LDFLAGS -lpthread '
+fi
 if [ -n "${VERILATOR_CFLAGS+x}" ]; then
   [ -n "$VERILATOR_CFLAGS" ] && printf -- '-CFLAGS %q ' $VERILATOR_CFLAGS
   exit 0
