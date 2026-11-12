@@ -64,7 +64,7 @@ flowchart TB
   rstn --> gate
   rr --> gate
 
-  subgraph pd ["nios_caliptra2x_sys (Platform Designer, NOT YET CREATED — TB stand-in)"]
+  subgraph pd ["nios_caliptra2x_sys (Platform Designer; behavioral stand-in in the TB)"]
     cpu["Nios V/m"]
     ctrl["ctrl_pio out"]
     stpio["status_pio in"]
@@ -106,6 +106,18 @@ flowchart TB
   end
   ctop -->|"ready_for_*, mailbox_*, errors,<br/>etrng_req, generic_out[23:0]"| stpio
 ```
+
+### 2.1 Signal map (Nios V ↔ Caliptra)
+
+Every signal on the `caliptra_passive_top` boundary and where it comes from on the Nios side, drawn from `nios_caliptra2x_top.sv` and `caliptra_passive_top.sv`. Blue is the Nios / Platform Designer side, green is the top-level glue, orange is the Caliptra boundary. Window offsets are `cl_address[19:0]`; the Nios address is `0x0010_0000` + offset (§5.1).
+
+![Nios V to Caliptra 2.x signal map](img/nios_caliptra2x_signal_map.png)
+
+- **Data path:** one 1 MiB Avalon window. Offsets `0x80000`–`0xFFFFF` go through `avmm_to_axi` to Caliptra's AXI4 subordinate with AxUSER = 1. While `soc_fuse_ctrl2x` pushes fuses (`fuse_busy`), it owns the AW/W/B channels with AxUSER = 2; AR/R always belong to the bridge (§4, §6, §7).
+- **Control:** `ctrl_pio[0]` and `ctrl_pio[1]` become `cptra_pwrgood` and `cptra_rst_b` through 2-FF syncs (reset value 0 holds Caliptra in reset); `ctrl_pio[2]` drives `BootFSM_BrkPoint` (§10.1).
+- **Status:** all Caliptra status outputs are packed into `status_pio` (§3.3); `ready_for_fuses` also starts the fuse controller.
+- **Tie-offs:** study (non-secret) `cptra_obf_key` / `cptra_csr_hmac_key`, lifecycle PRODUCTION, debug locked, JTAG / internal TRNG / scan mode tied to 0, `generic_input_wires` = 0 (§3.4).
+- Vector version: [`img/nios_caliptra2x_signal_map.svg`](img/nios_caliptra2x_signal_map.svg). Regenerate with `python3 gen_signal_map.py` in `docs/caliptra-2x/img/`.
 
 ---
 
