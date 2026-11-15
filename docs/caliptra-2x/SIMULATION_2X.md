@@ -10,6 +10,7 @@
 - **Scope:** Verilator simulation of the **real** 2.x glue RTL (`caliptra2x/rtl_2x/`) around caliptra-rtl v2.1.2 (`49370266`) core-only. It runs the real ROM `rom-2.1.3-1` and the real FW bundle `fw-2.1.4` (FMC + runtime), and boots from cold power-on to `ready_for_runtime`.
 - **Result:** **PASS**: `TB_NIOS2X PASS cyc=36617987 trng=217 (prod, debug locked)`.
 - **Attestation and DPE:** `+test=attest` continues after `ready_for_runtime` with 34 runtime mailbox commands (DICE cert chain, `STASH_MEASUREMENT`, PCR quotes, DPE GetProfile/CertifyKey/GetCertificateChain): **PASS** at cycle 59,280,395, certificates byte-identical to the sw-emulator. See [§8](#8-rom-boot-firmware-load-attestation-and-dpe-in-simulation). What the Nios model covers: [§8.1](#81-what-this-simulation-covers-nios-model). Quick start: [§8.2](#82-quick-start-run-it-yourself).
+- **Crypto exercise:** the same mode with `attest/crypto_driver.py` has Caliptra generate keys, sign and verify with ML-DSA-87 and ECDSA P-384, and verify LMS (31 commands, negative cases included, OpenSSL cross-check). Emulator: **CRYPTO PASS**; RTL run in progress. EdDSA is not supported by Caliptra 2.x. See [§9](#9-crypto-exercise-ml-dsa-87-ecdsa-p-384-and-lms).
 - **Related:** [NIOS_CALIPTRA_2X_INTEGRATION.md](NIOS_CALIPTRA_2X_INTEGRATION.md) (design), [FIRMWARE_AND_KEYS_2X.md](FIRMWARE_AND_KEYS_2X.md) (ROM, bundle, fuse image). The raw record is in `caliptra2x/sim_2x/BOOT_NIOS2X.md` and `caliptra2x/sim_2x/nios2x_top_fw_run.log`.
 
 ---
@@ -450,3 +451,75 @@ The reference run was ≈ 3 h wall time on the development box (wrapper `wall_ti
 | `analyze.py`: `ANALYZE FAIL: DER mismatch` | You rebuilt the ROM/bundle/fuses, or changed straps. Compare against your own emulator run instead of `attest_ref/emu` |
 | `ANALYZE WARN … digest != … recomputation` (3×) | Expected: emulator hashes the nonce in the opposite word order (§8.8); not a failure |
 | Second run replays old answers | Use `rm -rf attest_out/rtl` before starting (the driver also clears stale `req_*`/`resp_*` at start) |
+
+## 9. Crypto exercise: ML-DSA-87, ECDSA P-384 and LMS
+
+This is the same `+test=attest` run as §8, driven by a different host script, `attest/crypto_driver.py`. Instead of the attestation commands, the Nios host asks Caliptra's runtime to generate keys, sign and verify through the mailbox. Every negative case (a flipped message bit or a wrong seed size) must be **rejected**. The host then cross-checks the signatures with OpenSSL.
+
+### 9.1 What the firmware supports (fw-2.1.4)
+
+| Algorithm | Key generation | Sign | Verify | Mailbox commands |
+|---|---|---|---|---|
+| ML-DSA-87 | yes, from a 32-byte seed | yes, deterministic | yes, with an internal key or an external public key | `CM_IMPORT` (usage 4), `CM_MLDSA_PUBLIC_KEY`, `CM_MLDSA_SIGN`, `CM_MLDSA_VERIFY`, `MLDSA87_SIGNATURE_VERIFY` |
+| ECDSA P-384 | yes, from a 48-byte seed (HMAC-DRBG) | yes, firmware hashes the message with SHA-384 | yes, with an internal key or an external public key (caller supplies the SHA-384 digest) | `CM_IMPORT` (usage 3), `CM_ECDSA_PUBLIC_KEY`, `CM_ECDSA_SIGN`, `CM_ECDSA_VERIFY`, `ECDSA384_SIGNATURE_VERIFY` |
+| LMS | no (stateful, done on the host) | no | yes, only `LMS_SHA256_M24_H15` + `LMOTS_SHA256_N24_W4` (SHA-256/192) | `LMS_SIGNATURE_VERIFY` |
+| EdDSA / Ed25519 | — | — | — | **Not available.** fw-2.1.4 has no command and Caliptra 2.x has no Ed25519 engine |
+
+Random seeds come from `CM_RANDOM_GENERATE`. The key handle (CMK) that `CM_IMPORT` returns is a 128-byte encrypted blob that the host stores and passes back in later commands. The host never sees the private key.
+
+### 9.2 Command sequence (31 commands)
+
+| # | Command | Expect |
+|---|---|---|
+| 000–003 | `CM_RANDOM_GENERATE` 32 B; `CM_IMPORT` random ML-DSA seed, fixed seed, wrong-size seed | pass, pass, pass, reject `0x000E005D` |
+| 004–009 | ML-DSA, random key: public key, sign, verify good, verify flipped bit, external verify good, external verify flipped bit | pass ×4 with rejects `0xA0050000` / `0x000E006C` on the flipped-bit cases |
+| 010–012 | ML-DSA, fixed key: public key, sign, verify | pass |
+| 013–014 | `CM_RANDOM_GENERATE` 48 B; `CM_IMPORT` ECDSA with a 32-byte seed | pass, reject `0x000E005D` |
+| 015–024 | ECDSA, random key and fixed key: import, public key, sign, verify good, verify flipped bit | pass, reject `0xA0050000` on flipped bit |
+| 025–027 | `ECDSA384_SIGNATURE_VERIFY`: host OpenSSL key good, flipped bit, and Caliptra's own signature | pass, reject `0x000E0004`, pass |
+| 028–030 | `LMS_SIGNATURE_VERIFY`: host key good, flipped bit, caliptra-sw known-answer vector | pass, reject `0x000E0042`, pass |
+
+Host-side checks after the mailbox steps:
+- OpenSSL 3.5 verifies each ML-DSA signature with Caliptra's public key, re-derives both key pairs from the seeds, and checks that the fixed-seed signature is byte-identical.
+- OpenSSL verifies each ECDSA signature against Caliptra's public key, good message and flipped bit.
+
+The LMS key and signature come from `attest/lms_n24.py` (RFC 8554 / NIST SP 800-208), which also checks the caliptra-sw test vector in `attest/lms_kat_fw214.txt`.
+
+### 9.3 Run it
+
+Requires Python 3 and OpenSSL ≥ 3.5 on PATH (for ML-DSA; on macOS: `brew install openssl@3`). The host ECDSA key is made fresh on each run.
+
+```bash
+cd caliptra2x/sim_2x
+
+# RTL (Verilator) — same boot as §8.2, about 60 M cycles plus the crypto steps
+rm -rf crypto_out/rtl && mkdir -p crypto_out/rtl
+LOG=crypto_rtl.log nohup setsid ./run_nios2x_top_fw.sh +test=attest +attest_dir=crypto_out/rtl \
+    +max_cycles=4000000000 > crypto_rtl.out 2>&1 &
+nohup setsid python3 attest/crypto_driver.py crypto_out/rtl crypto_rtl.log > crypto_out/rtl_driver.log 2>&1 &
+grep -E 'MILESTONE|STEP|CRYPTO|PASS|FAIL|TIMEOUT' crypto_out/rtl_driver.log crypto_rtl.log
+
+# sw-emulator (about 25 s) — build attest_emu once as in ATTEST_2X.md "Step A"
+rm -rf crypto_out/emu && mkdir -p crypto_out/emu
+$CALIPTRA_SW/target/release/examples/attest_emu ../fw_2x/caliptra-rom.bin ../fw_2x/caliptra-fw-bundle.bin \
+    ../fw_2x/fuse_image_2x.hex crypto_out/emu &
+python3 attest/crypto_driver.py crypto_out/emu
+```
+
+Success is the line `CRYPTO PASS` at the end of the driver log, followed by a per-command table (with RTL cycle counts when the TB log is given). Outputs in the run folder:
+- `crypto_summary.json`
+- the public keys and signatures (`mldsa87_*`, `ecdsa384_*`, `lms_host_*`)
+- the request and response files
+
+The LMS tree cache `lms_n24h15_testkey.tree` (1.5 MB) is also written there. It's ignored by git.
+
+`attest/mldsa_driver.py` is the ML-DSA-only subset (commands 000–012).
+
+### 9.4 Results
+
+| Backend | Result | Notes |
+|---|---|---|
+| sw-emulator (`attest_emu`, same ROM, bundle and fuses) | **CRYPTO PASS**: 31 commands, 42 checks, about 25 s | All rejects return the expected error codes; all OpenSSL cross-checks pass |
+| RTL (Verilator, `tb_nios2x_top_fw`) | *running; results and per-command cycle counts will be added here* | |
+
+TEST material only: the seeds, the host ECDSA key and the LMS tree are for simulation and must not be used for real devices.
