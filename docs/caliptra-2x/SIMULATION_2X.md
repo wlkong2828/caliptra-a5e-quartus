@@ -485,26 +485,77 @@ Host-side checks after the mailbox steps:
 
 The LMS key and signature come from `attest/lms_n24.py` (RFC 8554 / NIST SP 800-208), which also checks the caliptra-sw test vector in `attest/lms_kat_fw214.txt`.
 
-### 9.3 Run it
+### 9.3 Run it, step by step
 
-Requires Python 3 and OpenSSL ≥ 3.5 on PATH (for ML-DSA; on macOS: `brew install openssl@3`). The host ECDSA key is made fresh on each run.
+There are two ways to run it. The sw-emulator takes about 25 s and needs no Verilator. The RTL run uses Verilator with the Nios behavioral model and takes several hours. Both use the same ROM, firmware bundle, fuse image and Python driver.
+
+**Step 1: Prerequisites (one time)**
+
+- `git`, Python 3, `make` and gcc.
+- `openssl` 3.5 or newer on PATH, needed for the ML-DSA checks. On macOS: `brew install openssl@3`.
+- Rust, for the emulator: `curl https://sh.rustup.rs -sSf | sh`, then `source ~/.cargo/env`.
+- For the RTL run only: Verilator 5.040. With GCC 12 (for example on SLES15), also `export VERILATOR_CFLAGS=-fcoroutines`.
+
+**Step 2: Get the repo**
 
 ```bash
-cd caliptra2x/sim_2x
+git clone https://github.com/pwilliam282/caliptra-a5e-quartus
+cd caliptra-a5e-quartus && git pull
+export REPO=$PWD
+```
 
-# RTL (Verilator) — same boot as §8.2, about 60 M cycles plus the crypto steps
+**Step 3: Build the emulator (one time)**
+
+`attest_emu` isn't in the repo. It's built from caliptra-sw at the `fw-2.1.4` tag, which matches the firmware in `fw_2x/`.
+
+```bash
+git clone https://github.com/chipsalliance/caliptra-sw ~/caliptra-sw
+cd ~/caliptra-sw && git checkout fw-2.1.4 && git submodule update --init --recursive
+export CALIPTRA_SW=$PWD
+cp $REPO/caliptra2x/sim_2x/attest/emu/attest_emu.rs $CALIPTRA_SW/hw-model/examples/
+cargo build --release -p caliptra-hw-model --example attest_emu
+```
+
+**Step 4: Run the crypto test on the emulator (about 25 s)**
+
+`attest_emu` boots the caliptra-sw emulator with the same ROM, firmware bundle and fuses as the RTL, and stands in for the Nios on the mailbox. Requests and responses go through files in `crypto_out/emu`. The `&` keeps it running in the background while the driver sends the commands.
+
+```bash
+cd $REPO/caliptra2x/sim_2x
+rm -rf crypto_out/emu && mkdir -p crypto_out/emu
+$CALIPTRA_SW/target/release/examples/attest_emu ../fw_2x/caliptra-rom.bin \
+    ../fw_2x/caliptra-fw-bundle.bin ../fw_2x/fuse_image_2x.hex crypto_out/emu &
+python3 attest/crypto_driver.py crypto_out/emu
+```
+
+The last line printed should be `CRYPTO PASS`, followed by the table of 31 commands.
+
+**Step 5: Run the same test on the RTL (optional, several hours)**
+
+This uses the same boot as §8.2: about 60 M cycles, plus the crypto steps.
+
+```bash
+cd $REPO/caliptra2x/sim_2x
 rm -rf crypto_out/rtl && mkdir -p crypto_out/rtl
 LOG=crypto_rtl.log nohup setsid ./run_nios2x_top_fw.sh +test=attest +attest_dir=crypto_out/rtl \
     +max_cycles=4000000000 > crypto_rtl.out 2>&1 &
 nohup setsid python3 attest/crypto_driver.py crypto_out/rtl crypto_rtl.log > crypto_out/rtl_driver.log 2>&1 &
-grep -E 'MILESTONE|STEP|CRYPTO|PASS|FAIL|TIMEOUT' crypto_out/rtl_driver.log crypto_rtl.log
 
-# sw-emulator (about 25 s) — build attest_emu once as in ATTEST_2X.md "Step A"
-rm -rf crypto_out/emu && mkdir -p crypto_out/emu
-$CALIPTRA_SW/target/release/examples/attest_emu ../fw_2x/caliptra-rom.bin ../fw_2x/caliptra-fw-bundle.bin \
-    ../fw_2x/fuse_image_2x.hex crypto_out/emu &
-python3 attest/crypto_driver.py crypto_out/emu
+# check progress
+grep -E 'MILESTONE|STEP|CRYPTO|PASS|FAIL|TIMEOUT' crypto_out/rtl_driver.log crypto_rtl.log
 ```
+
+The run is finished when `crypto_out/rtl_driver.log` ends with `CRYPTO PASS`. Its table then also shows cycle counts for each command.
+
+**What it covers**
+
+- **ML-DSA-87:** keygen, sign and verify.
+- **ECDSA P-384:** keygen, sign and verify.
+- **LMS:** verify only. The firmware has no LMS keygen or sign.
+- **Negative tests:** each tampered message is rejected with the expected error code.
+- **OpenSSL cross-checks:** every key and signature is also checked with OpenSSL.
+
+EdDSA isn't included because Caliptra 2.x doesn't support it (see §9.1). A new host ECDSA key is generated on each run.
 
 Success is the line `CRYPTO PASS` at the end of the driver log, followed by a per-command table (with RTL cycle counts when the TB log is given). Outputs in the run folder:
 - `crypto_summary.json`
