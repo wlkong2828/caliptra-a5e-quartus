@@ -585,6 +585,62 @@ The LMS tree cache `lms_n24h15_testkey.tree` (1.5 MB) is also written there. It'
 
 `attest/mldsa_driver.py` is the ML-DSA-only subset (commands 000–012).
 
+### 9.3.1 Verify the output files yourself
+
+The driver already runs these checks. To repeat them by hand, `cd` into the run folder (`crypto_out/emu` or `crypto_out/rtl`) and use OpenSSL 3.5 or newer (check with `openssl version`).
+
+| File | What it is |
+|---|---|
+| `mldsa87_{fixed,rand}_pub.der` | ML-DSA-87 public key from Caliptra `CM_MLDSA_PUBLIC_KEY`, wrapped as a SubjectPublicKeyInfo |
+| `mldsa87_{fixed,rand}_sig.bin` | ML-DSA-87 signature from `CM_MLDSA_SIGN` (4627 B) over `mldsa_msg.bin` |
+| `ecdsa384_{fixed,rand}_pub.der` | P-384 public key from `CM_ECDSA_PUBLIC_KEY` |
+| `ecdsa384_{fixed,rand}_sig.der` | ECDSA r and s from `CM_ECDSA_SIGN`, DER-encoded, over SHA-384(`ecdsa_msg.bin`) |
+| `ecdsa384_host_pub.der` | host P-384 key used for the `ECDSA384_SIGNATURE_VERIFY` test |
+| `lms_host_pub.bin`, `lms_host_sig.bin` | host LMS key and signature that Caliptra `LMS_SIGNATURE_VERIFY` checked |
+| `crypto_summary.json` | every command's result, error code and the OpenSSL check results |
+| `req_*.hex`, `resp_*.hex` | raw mailbox requests and responses |
+
+**ML-DSA-87.** Each command should print `Signature Verified Successfully`.
+
+```bash
+openssl pkeyutl -verify -pubin -keyform DER -inkey mldsa87_fixed_pub.der -rawin -in mldsa_msg.bin -sigfile mldsa87_fixed_sig.bin
+openssl pkeyutl -verify -pubin -keyform DER -inkey mldsa87_rand_pub.der  -rawin -in mldsa_msg.bin -sigfile mldsa87_rand_sig.bin
+```
+
+**ECDSA P-384.** OpenSSL hashes the message with SHA-384, as Caliptra does. Each command should print `Verified OK`.
+
+```bash
+openssl dgst -sha384 -keyform DER -verify ecdsa384_fixed_pub.der -signature ecdsa384_fixed_sig.der ecdsa_msg.bin
+openssl dgst -sha384 -keyform DER -verify ecdsa384_rand_pub.der  -signature ecdsa384_rand_sig.der  ecdsa_msg.bin
+```
+
+**Negative check.** A changed message must fail with `Verification failure`.
+
+```bash
+printf tamper > bad.bin
+openssl dgst -sha384 -keyform DER -verify ecdsa384_fixed_pub.der -signature ecdsa384_fixed_sig.der bad.bin
+```
+
+**Inspect the keys and signatures**
+
+```bash
+openssl pkey -pubin -inform DER -in mldsa87_fixed_pub.der  -noout -text   # ML-DSA-87 public key
+openssl pkey -pubin -inform DER -in ecdsa384_fixed_pub.der -noout -text   # P-384 x, y
+openssl asn1parse -inform DER -in ecdsa384_fixed_sig.der                  # r and s
+```
+
+**LMS.** OpenSSL 3.5 has no LMS verify, so use the repo's RFC 8554 checker (`attest/lms_n24.py`). Run it from `caliptra2x/sim_2x`; it should print `True | True`. The first value is the good message, the second is a tampered message being rejected.
+
+```bash
+python3 -c "
+import sys,hashlib; sys.path.insert(0,'attest'); import lms_n24 as L
+d='crypto_out/emu/'; pub=open(d+'lms_host_pub.bin','rb').read(); sig=open(d+'lms_host_sig.bin','rb').read()
+m=b'Nios V -> Caliptra 2.x: LMS SHA256/192 H15 W4 verify test, A5E-065'
+print(L.verify(pub,sig,hashlib.sha384(m).digest()), '|', not L.verify(pub,sig,hashlib.sha384(b'X'+m[1:]).digest()))"
+```
+
+The LMS signature is made on the host. What this test proves on the Caliptra side is that `LMS_SIGNATURE_VERIFY` accepted it and rejected the tampered copies, and both results are recorded in `crypto_summary.json`. To check the RTL output, change `d='crypto_out/emu/'` to `d='crypto_out/rtl/'`.
+
 ### 9.4 Results
 
 | Backend | Result | Notes |
