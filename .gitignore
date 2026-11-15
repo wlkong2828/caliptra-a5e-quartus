@@ -58,3 +58,9 @@ caliptra2x/sim_2x/crypto_run.log
 caliptra2x/sim_2x/crypto_rtl.log
 caliptra2x/sim_2x/crypto_rtl.out
 *.tree
+# crypto exercise 2 (SIMULATION_2X §10) run outputs
+caliptra2x/sim_2x/crypto2_out/
+caliptra2x/sim_2x/crypto2_*.log
+caliptra2x/sim_2x/crypto2_*.out
+caliptra2x/sim_2x/crypto_run_timeout*.log
+__pycache__/

@@ -11,6 +11,7 @@
 - **Result:** **PASS**: `TB_NIOS2X PASS cyc=36617987 trng=217 (prod, debug locked)`.
 - **Attestation and DPE:** `+test=attest` continues after `ready_for_runtime` with 34 runtime mailbox commands (DICE cert chain, `STASH_MEASUREMENT`, PCR quotes, DPE GetProfile/CertifyKey/GetCertificateChain): **PASS** at cycle 59,280,395, certificates byte-identical to the sw-emulator. See [§8](#8-rom-boot-firmware-load-attestation-and-dpe-in-simulation). What the Nios model covers: [§8.1](#81-what-this-simulation-covers-nios-model). Quick start: [§8.2](#82-quick-start-run-it-yourself).
 - **Crypto exercise:** the same mode with `attest/crypto_driver.py` has Caliptra generate keys, sign and verify with ML-DSA-87 and ECDSA P-384, and verify LMS (31 commands, negative cases included, OpenSSL cross-check). Emulator: **CRYPTO PASS**; RTL run in progress. EdDSA is not supported by Caliptra 2.x. See [§9](#9-crypto-exercise-ml-dsa-87-ecdsa-p-384-and-lms).
+- **Crypto exercise 2:** `attest/crypto2_driver.py` covers SHA-384/512, SHAKE256, HMAC, AES-256 CBC/CTR/GCM, the SP 800-108 counter KDF, HKDF, ECDH P-384 and ML-KEM-1024 (100 commands, negative cases included, OpenSSL cross-check). Emulator: **CRYPTO2 PASS**; RTL not run yet. See [§10](#10-crypto-exercise-2-aes-sha-hmac-kdf-ecdh-ml-kem).
 - **Related:** [NIOS_CALIPTRA_2X_INTEGRATION.md](NIOS_CALIPTRA_2X_INTEGRATION.md) (design), [FIRMWARE_AND_KEYS_2X.md](FIRMWARE_AND_KEYS_2X.md) (ROM, bundle, fuse image). The raw record is in `caliptra2x/sim_2x/BOOT_NIOS2X.md` and `caliptra2x/sim_2x/nios2x_top_fw_run.log`.
 
 ---
@@ -649,3 +650,201 @@ The LMS signature is made on the host. What this test proves on the Caliptra sid
 | RTL (Verilator, `tb_nios2x_top_fw`) | *running; results and per-command cycle counts will be added here* | |
 
 TEST material only: the seeds, the host ECDSA key and the LMS tree are for simulation and must not be used for real devices.
+
+## 10. Crypto exercise 2: AES, SHA, HMAC, KDF, ECDH, ML-KEM
+
+This is a second host script for the same `+test=attest` run, `attest/crypto2_driver.py`. It works the same way as §9, but it exercises the rest of the fw-2.1.4 cryptographic mailbox: hashing, HMAC, AES (CBC, CTR, GCM), the key derivation functions, ECDH and ML-KEM. Every result is checked on the host with OpenSSL or the Python standard library, and every negative case must be rejected. The host side needs only `openssl` 3.5 or newer and Python 3, with no pip packages. The OpenSSL/GHASH reference code is in `attest/cm_host.py`.
+
+### 10.1 What the firmware supports (fw-2.1.4)
+
+| Algorithm | What the firmware offers | Mailbox commands |
+|---|---|---|
+| SHA-384, SHA-512 | Streaming hash: init, update, final. Each call carries up to 4096 B. The 200-byte context goes back to the host between calls. | `CM_SHA_INIT`, `CM_SHA_UPDATE`, `CM_SHA_FINAL` |
+| SHA-256 | Not offered through the crypto mailbox | — |
+| One-shot SHA (`CM_SHA`, "CMSH") | Defined in `api/src/mailbox.rs`, but fw-2.1.4 runtime does not dispatch it. It returns `0x000E0002` (unimplemented). | — |
+| SHAKE256 | Streaming, 64-byte output | `CM_SHAKE256_INIT`, `_UPDATE`, `_FINAL` |
+| HMAC-SHA384, HMAC-SHA512 | With an imported 48 or 64 B key (`CM_IMPORT` usage 1) | `CM_HMAC` |
+| AES-256-CBC, AES-256-CTR | Encrypt and decrypt, init plus update. Caliptra chooses the 16-byte IV on encrypt and returns it. CBC data must be a multiple of 16 B. AES-128 is not offered. | `CM_AES_ENCRYPT_INIT`, `_UPDATE`, `CM_AES_DECRYPT_INIT`, `_UPDATE` |
+| AES-256-GCM | Encrypt and decrypt with AAD, init, update and final. Caliptra chooses the 12-byte IV on encrypt. Decrypt takes the IV and the tag, and returns `tag_verified` = 1 or 0. | `CM_AES_GCM_ENCRYPT_INIT`, `_UPDATE`, `_FINAL`, `CM_AES_GCM_DECRYPT_INIT`, `_UPDATE`, `_FINAL` |
+| HMAC KDF, counter mode (NIST SP 800-108) | One block, `HMAC(K, 00000001 ‖ label)`, truncated to the key size. No L or context field. The output is a new CMK. | `CM_HMAC_KDF_COUNTER` |
+| HKDF (RFC 5869) | Extract with a salt CMK and an IKM CMK. Expand returns the first block `T(1)`. Both outputs are CMKs. | `CM_HKDF_EXTRACT`, `CM_HKDF_EXPAND` |
+| ECDH P-384 | Caliptra makes an ephemeral key pair and returns x‖y plus an encrypted context. Finish takes the peer's x‖y and returns the shared secret as a CMK: the x-coordinate, 48 B for HMAC, or its first 32 B for AES. | `CM_ECDH_GENERATE`, `CM_ECDH_FINISH` |
+| ML-KEM-1024 | Keygen from a 64-byte seed d‖z (`CM_IMPORT` usage 5) returns the 1568 B encapsulation key. Encapsulate to any encapsulation key, and decapsulate. The 32 B shared secret comes back as a CMK. | `CM_MLKEM_KEY_GEN`, `CM_MLKEM_ENCAPSULATE`, `CM_MLKEM_DECAPSULATE` |
+| Key store | Number of AES key-usage slots used, delete one CMK, clear all | `CM_STATUS`, `CM_DELETE`, `CM_CLEAR` |
+| DRBG | `CM_RANDOM_GENERATE` works. `CM_RANDOM_STIR` is rejected with `0x00100003` (`DRIVER_TRNG_UPDATE_NOT_SUPPORTED`) because this design uses the external TRNG (the Nios answers TRNG requests), and fw-2.1.4 can only stir its internal CSRNG. | `CM_RANDOM_GENERATE`, `CM_RANDOM_STIR` |
+
+Secrets derived inside Caliptra (KDF, HKDF, ECDH and ML-KEM outputs) never leave it. They come back only as 128-byte encrypted CMKs. The driver checks them indirectly. It uses the CMK in `CM_HMAC` or AES-CBC, then compares the result with the host running the same KDF, ECDH or ML-KEM operation in OpenSSL and the same HMAC or AES.
+
+Key usages and sizes accepted by `CM_IMPORT`: HMAC = 1 (48 or 64 B), AES = 2 (32 B), ECDSA = 3 (48 B), ML-DSA = 4 (32 B), ML-KEM = 5 (64 B). Any other combination returns `0x000E005D`.
+
+One firmware quirk was found. With a 64 B HMAC key, `CM_HMAC` using SHA-384 keys the HMAC with only the **first 48 bytes** of the key (`common/src/hmac_cm.rs` uses `key_material[..48]`). Standard HMAC-SHA384 would use all 64 bytes. The driver records this as a check ("== hmac(first 48 B of key)"). Use 48 B keys with SHA-384 and 64 B keys with SHA-512 to get standard results.
+
+### 10.2 Command sequence (100 commands)
+
+| # | Command | Expect |
+|---|---|---|
+| 000–002 | `CM_STATUS`; `CM_RANDOM_STIR` 48 B; `CM_RANDOM_GENERATE` 64 B | pass; reject `0x00100003` (external TRNG); pass |
+| 003–012 | SHA-384, then SHA-512: init (5 B), update (200 B, 1 B, 3001 B), final (77 B) | pass; digest equals `hashlib` |
+| 013–016 | SHA-384 of an empty message; `CM_SHA_INIT` with algorithm 3; one-shot `CM_SHA` | pass; reject `0x000E0009`; reject `0x000E0002` |
+| 017–019 | SHAKE256 init (10 B), update (150 B), final (33 B) | pass; 64 B output equals `hashlib.shake_256` |
+| 020–022 | `CM_IMPORT` HMAC keys of 48 B and 64 B, and one of 32 B | pass, pass, reject `0x000E005D` |
+| 023–028 | `CM_HMAC`: 48 B key with SHA-384, 64 B key with SHA-512, 64 B key with SHA-384 (quirk), flipped-bit message, a different key, 48 B key with SHA-512 | MACs equal Python `hmac`; the negative cases differ from the reference; the last is rejected with `0xA0055024` |
+| 029–037 | `CM_IMPORT` AES; CBC encrypt init (64 B) + update (64 B), CBC decrypt init (48 B) + update (80 B); the same for CTR with 37 + 63 B and 50 + 50 B | ciphertext equals `openssl enc` with the IV Caliptra returned; decryption round-trips |
+| 038–040 | CBC with 20 B; AES with an HMAC CMK; `CM_IMPORT` AES with a 16 B key | reject `0x000E0009`, `0x000E005D`, `0x000E005D` |
+| 041–043 | GCM encrypt: init (20 B AAD), update (40 B), final (37 B) | ciphertext and tag equal the reference (OpenSSL AES + GHASH) |
+| 044–055 | GCM decrypt (init, update, final ×4): Caliptra's ciphertext, a host-encrypted ciphertext with a host IV, a tampered tag, a tampered AAD | `tag_verified=1` and the plaintext matches for the first two; `tag_verified=0` for the tampered cases (status 1, no error code) |
+| 056–064 | `CM_HMAC_KDF_COUNTER`: SHA-384 → HMAC key, used in `CM_HMAC`; SHA-384 → AES key, used in AES-CBC; SHA-384 asking for a 64 B HMAC key; SHA-512 → 64 B HMAC key, used in `CM_HMAC` | outputs equal host SP 800-108 + HMAC/AES; the invalid size is rejected with `0x000E0009` |
+| 065–078 | HKDF: import salt and IKM (48 B and 64 B); extract (SHA-384), PRK used in `CM_HMAC`; expand → HMAC key and → AES key; extract and expand with SHA-512; extract with an AES CMK as salt | outputs equal host RFC 5869 + HMAC/AES; the AES salt is rejected with `0x000E0009` |
+| 079–084 | `CM_ECDH_GENERATE`; finish with the host OpenSSL P-384 key as an HMAC key and as an AES key, each used once; finish with the invalid point (1,1) | HMAC/AES equal the host values computed with `openssl pkeyutl -derive`; the invalid point is rejected with `0x00050011` (`DRIVER_ECC384_HW_ERROR`, emulator) |
+| 085–093 | `CM_IMPORT` ML-KEM seed (64 B), and one of 32 B; `CM_MLKEM_KEY_GEN`; decapsulate an OpenSSL ciphertext → AES key; decapsulate a tampered ciphertext; encapsulate to a host OpenSSL key → ciphertext + AES key | pass, reject `0x000E005D`; the encapsulation key equals OpenSSL keygen from the same seed, byte for byte; both shared secrets match OpenSSL (used via AES-CBC); the tampered ciphertext gives a different secret (ML-KEM implicit rejection, no error) |
+| 094–099 | `CM_STATUS`; `CM_DELETE` of the AES CMK; `CM_STATUS`; GCM with the deleted CMK; `CM_CLEAR`; `CM_STATUS` | used slots drop by 1; the deleted key is rejected with `0x000E0009`; used = 0 after clear |
+
+On RTL, the error code for the invalid ECDH point may differ from the emulator's. The driver accepts any failure status for that step and records the code in `crypto2_summary.json`.
+
+### 10.3 Run it, step by step
+
+It reuses the `attest_emu` build from §9.3 Step 3, and the prerequisites from §9.3 Step 1. Nothing else needs to be installed, and there is no LMS tree step.
+
+**On the emulator (about 12 s, boot included)**
+
+```bash
+cd $REPO/caliptra2x/sim_2x
+rm -rf crypto2_out/emu && mkdir -p crypto2_out/emu
+$CALIPTRA_SW/target/release/examples/attest_emu ../fw_2x/caliptra-rom.bin \
+    ../fw_2x/caliptra-fw-bundle.bin ../fw_2x/fuse_image_2x.hex crypto2_out/emu &
+python3 attest/crypto2_driver.py crypto2_out/emu
+```
+
+Each check prints a `STEP ... PASS` line. At the end the driver prints the per-command table, a per-group count (`misc 8/8, sha 6/6, hmac 9/9, aes 8/8, gcm 6/6, kdf 23/23, ecdh 7/7, mlkem 9/9`) and finally `CRYPTO2 PASS`. If a check fails it prints `FAILED: <step>` lines and `CRYPTO2 FAIL (n)`. The troubleshooting notes in §9.3 apply here as well. In particular, all four `attest_emu` arguments are required, and a leftover emulator can be stopped with `pkill attest_emu`.
+
+**On the RTL (optional, several hours)**
+
+```bash
+cd $REPO/caliptra2x/sim_2x
+rm -rf crypto2_out/rtl && mkdir -p crypto2_out/rtl
+LOG=crypto2_rtl.log nohup setsid ./run_nios2x_top_fw.sh +test=attest +attest_dir=crypto2_out/rtl \
+    +max_cycles=4000000000 > crypto2_rtl.out 2>&1 &
+nohup setsid python3 attest/crypto2_driver.py crypto2_out/rtl crypto2_rtl.log > crypto2_out/rtl_driver.log 2>&1 &
+
+# check progress
+grep -E 'MILESTONE|STEP|CRYPTO2|PASS|FAIL|TIMEOUT' crypto2_out/rtl_driver.log crypto2_rtl.log
+```
+
+The driver waits up to 72 h for each response. Set `CRYPTO_TIMEOUT_H` to change that; the §9 driver reads the same variable. The run is finished when `crypto2_out/rtl_driver.log` ends with `CRYPTO2 PASS`. The table then includes cycle counts for each command.
+
+**What it covers**
+
+- **SHA-384, SHA-512 and SHAKE256:** multi-part input with lengths that are not multiples of 4, crossing the 128-byte block size.
+- **HMAC-SHA384 and HMAC-SHA512.**
+- **AES-256:** CBC, CTR, and GCM with AAD, in both directions. Ciphertexts made by Caliptra are checked against OpenSSL, and ciphertexts made on the host are decrypted by Caliptra.
+- **Key derivation:** the SP 800-108 counter KDF and HKDF extract/expand, with SHA-384 and SHA-512, deriving HMAC and AES keys.
+- **ECDH P-384:** with a fresh host OpenSSL key on each run.
+- **ML-KEM-1024:** keygen (byte-exact against OpenSSL from the same seed), decapsulation of an OpenSSL ciphertext, and encapsulation to an OpenSSL key.
+- **Key store:** status, delete and clear.
+- **Negative tests:** wrong key sizes and usages, a non-block-multiple CBC length, an unknown hash algorithm, tampered GCM tag and AAD, an invalid ECDH point, a tampered ML-KEM ciphertext, and use of a deleted key.
+
+Outputs in the run folder:
+- `crypto2_summary.json`, with every command, status and error code, every check, the per-group counts and the wall time
+- the host-checkable files listed in §10.3.1
+- the raw `req_*.hex` and `resp_*.hex` files
+
+### 10.3.1 Verify the output files yourself
+
+The driver already runs these checks. To repeat them by hand, `cd` into the run folder (`crypto2_out/emu` or `crypto2_out/rtl`) and paste the commands below. Each should print its `OK` line. They were run as written on the emulator output. They need OpenSSL 3.5 or newer and work with the stock tools on Linux and macOS.
+
+| File | What it is |
+|---|---|
+| `sha_msg.bin`, `sha384_caliptra.bin`, `sha512_caliptra.bin` | 3284 B message and Caliptra's streamed digests |
+| `shake256_msg.bin`, `shake256_caliptra.bin` | SHAKE256 input and Caliptra's 64 B output |
+| `hmac_key48.bin`, `hmac_key64.bin`, `hmac_msg.bin`, `hmac_sha{384,512}_caliptra.bin` | imported HMAC keys, message and Caliptra's MACs |
+| `aes_key.bin`, `aes_pt.bin`, `aes_{cbc,ctr}_iv.bin`, `aes_{cbc,ctr}_ct.bin` | imported AES key, plaintext (CTR uses the first 100 B), Caliptra's IVs and ciphertexts |
+| `gcm_aad.bin`, `gcm_pt.bin`, `gcm_iv.bin`, `gcm_ct.bin`, `gcm_tag.bin` | GCM input, Caliptra's IV, ciphertext and tag (key = `aes_key.bin`) |
+| `kdf_key48.bin`, `hkdf_{salt,ikm}{48,64}.bin` | imported KDF input keys |
+| `probe_pt.bin`, `{kdfc,hkdf,ecdh,mlkem_decap,mlkem_encap}_aes_{iv,ct}.bin` | 32 B plaintext that Caliptra AES-CBC encrypted with each derived key, and the resulting IV and ciphertext |
+| `ecdh_host_priv.pem`, `ecdh_host_pub.der`, `ecdh_caliptra_pub.der`, `ecdh_hmac_caliptra.bin` | host ECDH key, Caliptra's ECDH public key, HMAC of `hmac_msg.bin` keyed with the ECDH secret |
+| `mlkem_seed.bin`, `mlkem_caliptra_ek.der`, `mlkem_host_ct.bin` | Caliptra ML-KEM seed, its encapsulation key, and the OpenSSL ciphertext Caliptra decapsulated |
+| `mlkem_host_priv.pem`, `mlkem_host_ek.der`, `mlkem_caliptra_ct.bin` | host ML-KEM key and the ciphertext Caliptra encapsulated to it |
+
+First define a helper that prints a file as hex, used for `-K`, `-iv` and `hexkey:`:
+
+```bash
+hex() { od -An -tx1 -v "$1" | tr -d ' \n'; }
+```
+
+**SHA, SHAKE and HMAC**
+
+```bash
+openssl dgst -sha384 -binary sha_msg.bin | cmp - sha384_caliptra.bin && echo "SHA-384 OK"
+openssl dgst -sha512 -binary sha_msg.bin | cmp - sha512_caliptra.bin && echo "SHA-512 OK"
+openssl dgst -shake256 -xoflen 64 -binary shake256_msg.bin | cmp - shake256_caliptra.bin && echo "SHAKE256 OK"
+openssl mac -digest SHA384 -macopt hexkey:$(hex hmac_key48.bin) -in hmac_msg.bin -binary HMAC | cmp - hmac_sha384_caliptra.bin && echo "HMAC-SHA384 OK"
+openssl mac -digest SHA512 -macopt hexkey:$(hex hmac_key64.bin) -in hmac_msg.bin -binary HMAC | cmp - hmac_sha512_caliptra.bin && echo "HMAC-SHA512 OK"
+```
+
+**AES-256-CBC and CTR**, with the IV Caliptra chose:
+
+```bash
+openssl enc -aes-256-cbc -nopad -K $(hex aes_key.bin) -iv $(hex aes_cbc_iv.bin) -in aes_pt.bin | cmp - aes_cbc_ct.bin && echo "AES-256-CBC OK"
+head -c 100 aes_pt.bin | openssl enc -aes-256-ctr -K $(hex aes_key.bin) -iv $(hex aes_ctr_iv.bin) | cmp - aes_ctr_ct.bin && echo "AES-256-CTR OK"
+openssl enc -d -aes-256-cbc -nopad -K $(hex aes_key.bin) -iv $(hex aes_cbc_iv.bin) -in aes_cbc_ct.bin | cmp - aes_pt.bin && echo "AES-256-CBC decrypt OK"
+```
+
+**AES-256-GCM.** `openssl enc` has no GCM mode, so this uses the driver's reference code (`attest/cm_host.py`: OpenSSL AES plus GHASH in Python). It should print `AES-256-GCM ct OK | tag OK`.
+
+```bash
+python3 -c "
+import sys; sys.path.insert(0, '../../attest'); import cm_host as H
+r = lambda f: open(f, 'rb').read()
+ct, tag = H.gcm_encrypt(r('aes_key.bin'), r('gcm_iv.bin'), r('gcm_aad.bin'), r('gcm_pt.bin'))
+print('AES-256-GCM ct', 'OK' if ct == r('gcm_ct.bin') else 'MISMATCH', '| tag', 'OK' if tag == r('gcm_tag.bin') else 'MISMATCH')"
+```
+
+**KDF counter and HKDF.** OpenSSL derives the same AES key that Caliptra derived (and kept to itself), then encrypts `probe_pt.bin` with it. `use-l:0` and `use-separator:0` match the firmware's one-block format.
+
+```bash
+openssl kdf -keylen 32 -kdfopt mac:HMAC -kdfopt digest:SHA384 -kdfopt hexkey:$(hex kdf_key48.bin) \
+  -kdfopt salt:"A5E crypto2 KDF label: aes" -kdfopt use-l:0 -kdfopt use-separator:0 -binary -out kdfc_aes_key.bin KBKDF
+openssl enc -aes-256-cbc -nopad -K $(hex kdfc_aes_key.bin) -iv $(hex kdfc_aes_iv.bin) -in probe_pt.bin | cmp - kdfc_aes_ct.bin && echo "KDF counter OK"
+
+openssl kdf -keylen 32 -kdfopt digest:SHA384 -kdfopt hexkey:$(hex hkdf_ikm48.bin) -kdfopt hexsalt:$(hex hkdf_salt48.bin) \
+  -kdfopt info:"A5E crypto2 HKDF info: aes" -binary -out hkdf_aes_key.bin HKDF
+openssl enc -aes-256-cbc -nopad -K $(hex hkdf_aes_key.bin) -iv $(hex hkdf_aes_iv.bin) -in probe_pt.bin | cmp - hkdf_aes_ct.bin && echo "HKDF OK"
+```
+
+**ECDH P-384.** The host derives the shared secret from its private key and Caliptra's public key. It then checks both uses of the secret: as an HMAC key (48 B) and as an AES key (first 32 B).
+
+```bash
+openssl pkeyutl -derive -inkey ecdh_host_priv.pem -peerkey ecdh_caliptra_pub.der -peerform DER -out ecdh_secret.bin
+openssl mac -digest SHA384 -macopt hexkey:$(hex ecdh_secret.bin) -in hmac_msg.bin -binary HMAC | cmp - ecdh_hmac_caliptra.bin && echo "ECDH (HMAC key) OK"
+head -c 32 ecdh_secret.bin > ecdh_secret32.bin
+openssl enc -aes-256-cbc -nopad -K $(hex ecdh_secret32.bin) -iv $(hex ecdh_aes_iv.bin) -in probe_pt.bin | cmp - ecdh_aes_ct.bin && echo "ECDH (AES key) OK"
+```
+
+**ML-KEM-1024.** First, OpenSSL rebuilds Caliptra's key pair from the same seed, and its public key must match byte for byte. Then two shared secrets are checked: the one Caliptra decapsulated from the host's ciphertext, and the one Caliptra encapsulated to the host's key.
+
+```bash
+openssl genpkey -algorithm ML-KEM-1024 -pkeyopt hexseed:$(hex mlkem_seed.bin) -out mlkem_caliptra_twin.pem
+openssl pkey -in mlkem_caliptra_twin.pem -pubout -outform DER | cmp - mlkem_caliptra_ek.der && echo "ML-KEM keygen OK"
+openssl pkeyutl -decap -inkey mlkem_caliptra_twin.pem -in mlkem_host_ct.bin -secret mlkem_ss_decap.bin
+openssl enc -aes-256-cbc -nopad -K $(hex mlkem_ss_decap.bin) -iv $(hex mlkem_decap_aes_iv.bin) -in probe_pt.bin | cmp - mlkem_decap_aes_ct.bin && echo "ML-KEM decapsulate OK"
+openssl pkeyutl -decap -inkey mlkem_host_priv.pem -in mlkem_caliptra_ct.bin -secret mlkem_ss_encap.bin
+openssl enc -aes-256-cbc -nopad -K $(hex mlkem_ss_encap.bin) -iv $(hex mlkem_encap_aes_iv.bin) -in probe_pt.bin | cmp - mlkem_encap_aes_ct.bin && echo "ML-KEM encapsulate OK"
+```
+
+**Negative check.** A changed input must not match. This should print nothing:
+
+```bash
+printf tamper > bad.bin
+openssl dgst -sha384 -binary bad.bin | cmp -s - sha384_caliptra.bin && echo "unexpected match"
+```
+
+The negative cases inside Caliptra (rejected commands, `tag_verified=0`, the ML-KEM implicit rejection) are recorded with their status and error code in `crypto2_summary.json`.
+
+### 10.4 Results
+
+| Backend | Result | Notes |
+|---|---|---|
+| sw-emulator (`attest_emu`, same ROM, bundle and fuses) | **CRYPTO2 PASS**: 100 commands, 76 checks, about 12 s including boot | misc 8/8, sha 6/6, hmac 9/9, aes 8/8, gcm 6/6, kdf 23/23, ecdh 7/7, mlkem 9/9. Every reject returned the expected code. `CM_RANDOM_STIR` is rejected (external TRNG). One-shot `CM_SHA` is not dispatched. HMAC-SHA384 with a 64 B key uses the first 48 B (quirk, §10.1). |
+| RTL (Verilator, `tb_nios2x_top_fw`) | *not run yet* | Same command stream. Per-command cycle counts will be added here. |
+
+TEST material only: all keys, seeds and the host ECDH and ML-KEM keys are for simulation and must not be used for real devices.

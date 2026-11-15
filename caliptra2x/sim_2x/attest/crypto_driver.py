@@ -55,7 +55,7 @@ def checksum(cmd, data):          # caliptra-sw api/src/checksum.rs
     return (-(sum(struct.pack("<I", cmd)) + sum(data))) & 0xFFFFFFFF
 
 n_req = 0
-def mbox(name, cmd, payload=b"", timeout_s=6 * 3600):
+def mbox(name, cmd, payload=b"", timeout_s=float(os.environ.get("CRYPTO_TIMEOUT_H", "72")) * 3600):
     """Send one mailbox command (checksum prepended); return (status, resp bytes, fw_err_non_fatal)."""
     global n_req
     name = re.sub(r"[^A-Za-z0-9_]", "", name.replace(" ", "_").replace("-", "_"))
