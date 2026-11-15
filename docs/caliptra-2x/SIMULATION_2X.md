@@ -12,6 +12,7 @@
 - **Attestation and DPE:** `+test=attest` continues after `ready_for_runtime` with 34 runtime mailbox commands (DICE cert chain, `STASH_MEASUREMENT`, PCR quotes, DPE GetProfile/CertifyKey/GetCertificateChain): **PASS** at cycle 59,280,395, certificates byte-identical to the sw-emulator. See [§8](#8-rom-boot-firmware-load-attestation-and-dpe-in-simulation). What the Nios model covers: [§8.1](#81-what-this-simulation-covers-nios-model). Quick start: [§8.2](#82-quick-start-run-it-yourself).
 - **Crypto exercise:** the same mode with `attest/crypto_driver.py` has Caliptra generate keys, sign and verify with ML-DSA-87 and ECDSA P-384, and verify LMS (31 commands, negative cases included, OpenSSL cross-check). Emulator: **CRYPTO PASS**; RTL run in progress. EdDSA is not supported by Caliptra 2.x. See [§9](#9-crypto-exercise-ml-dsa-87-ecdsa-p-384-and-lms).
 - **Crypto exercise 2:** `attest/crypto2_driver.py` covers SHA-384/512, SHAKE256, HMAC, AES-256 CBC/CTR/GCM, the SP 800-108 counter KDF, HKDF, ECDH P-384 and ML-KEM-1024 (100 commands, negative cases included, OpenSSL cross-check). Emulator: **CRYPTO2 PASS**; RTL not run yet. See [§10](#10-crypto-exercise-2-aes-sha-hmac-kdf-ecdh-ml-kem).
+- **Attestation exercise 3:** `attest/attest3_driver.py` covers `EXTEND_PCR`, `INCREMENT_PCR_RESET_COUNTER`, `DPE_TAG_TCI`, `DPE_GET_TAGGED_TCI`, `CERTIFY_KEY_EXTENDED_ECC384`/`_MLDSA87` (X.509 and CSR), `CERTIFY_KEY_CHUNKS`, `ADD_SUBJECT_ALT_NAME`, `REALLOCATE_DPE_CONTEXT_LIMITS` and `DISABLE_ATTESTATION` (95 commands, 128 checks, negative cases included, OpenSSL cross-check). Emulator: **ATTEST3 PASS**; RTL not run yet. See [§11](#11-attestation-exercise-3-pcrs-dpe-tagging-certifykey-extended-san-context-limits-disable).
 - **Related:** [NIOS_CALIPTRA_2X_INTEGRATION.md](NIOS_CALIPTRA_2X_INTEGRATION.md) (design), [FIRMWARE_AND_KEYS_2X.md](FIRMWARE_AND_KEYS_2X.md) (ROM, bundle, fuse image). The raw record is in `caliptra2x/sim_2x/BOOT_NIOS2X.md` and `caliptra2x/sim_2x/nios2x_top_fw_run.log`.
 
 ---
@@ -848,3 +849,186 @@ The negative cases inside Caliptra (rejected commands, `tag_verified=0`, the ML-
 | RTL (Verilator, `tb_nios2x_top_fw`) | *not run yet* | Same command stream. Per-command cycle counts will be added here. |
 
 TEST material only: all keys, seeds and the host ECDH and ML-KEM keys are for simulation and must not be used for real devices.
+
+## 11. Attestation exercise 3: PCRs, DPE tagging, CertifyKey extended, SAN, context limits, disable
+
+This is a third host script for the same `+test=attest` run, `attest/attest3_driver.py`. It covers the 10 runtime attestation and DPE commands that §8 does not send. Every result is checked on the host with OpenSSL or Python, and every negative case must be rejected with the exact error code. `DISABLE_ATTESTATION` runs last, because it cannot be undone until the next cold boot. The host side needs only `openssl` 3.5 or newer and Python 3, with no pip packages. For a teaching walk-through of DPE concepts and of each command, with worked examples from this run, see [DPE_LEARNING_GUIDE.md](DPE_LEARNING_GUIDE.md) (PDF: `DPE_LEARNING_GUIDE.pdf`; it is also the last appendix of the combined guide PDF).
+
+### 11.1 What each command does (fw-2.1.4)
+
+| Command (ID) | What it does | Rules found in the source and the run |
+|---|---|---|
+| `EXTEND_PCR` (`PCRE`, `0x50435245`) | Extends one PCR with 48 bytes: PCR = SHA-384(PCR ‖ data) | PL0 only. PCR0–3 are reserved for ROM, FMC and RT (`0x000E003C`). An index of 32–255 gives `0x000E003D`, and above 255 gives `0x000E0009`. A wrong data length gives `0x000E0003`. |
+| `INCREMENT_PCR_RESET_COUNTER` (`PCRR`, `0x50435252`) | Adds 1 to a PCR's reset counter. The counters are returned in every `QUOTE_PCRS`. | Any index from 0 to 31, **including PCR0–3**. Index 32 or above gives `0x000E0009`. |
+| `DPE_TAG_TCI` (`0x54514754`) | Gives a DPE context a 32-bit tag | One tag per context (`0x000E0020`). A tag cannot be used twice (`0x000E001F`). An unknown handle gives `0x000E001E`. |
+| `DPE_GET_TAGGED_TCI` (`GTGD`, `0x47544744`) | Returns the tagged context's `tci_cumulative`, `tci_current` and SVN | An unknown tag gives `0x000E001E` |
+| `CERTIFY_KEY_EXTENDED_ECC384` (`CKEX`, `0x434B4558`) | DPE CertifyKey (P-384) as a mailbox command. It returns the derived key and an X.509 cert or a CSR signed by the RT Alias key. Flag bit 31 (`DMTF_OTHER_NAME`) adds the stored SAN. | PL0 only. Any DPE error comes back as `0x000E0040`. |
+| `CERTIFY_KEY_EXTENDED_MLDSA87` (`CKXM`, `0x434B584D`) | The same for ML-DSA-87. It has an extra 12-byte AXI response field. | Flag bit 30 (`EXTERNAL_AXI_RESPONSE`) is subsystem-only. In passive mode it gives `0x000E0009`. |
+| `CERTIFY_KEY_CHUNKS` (`CKCH`, `0x434B4348`) | The same CertifyKey response, returned in chunks of `max_size` bytes from `offset` | Flag bit 31 selects ML-DSA. `max_size` 0 means 15 KiB. An offset past the end returns `chunk_len` 0. X.509 needs PL0. |
+| `ADD_SUBJECT_ALT_NAME` (`ALTN`, `0x414C544E`) | Stores a DMTF device-info string. Later CertifyKey-extended certs with flag bit 31 carry it as SAN otherName `1.3.6.1.4.1.412.274.1` (UTF8String). | ASCII only, exactly two `:`, at most 128 B. A bad string gives `0x000E003E`, and a size above 128 gives `0x000E0009`. A new call replaces the old value. A rejected call keeps the old value. |
+| `REALLOCATE_DPE_CONTEXT_LIMITS` (`RCTX`, `0x52435458`) | Splits the 64 DPE contexts between PL0 and PL1, returning the new limits | PL0 only. PL0 must be from 2 to 64 (`0x000E0070`, `0x000E0071`). It cannot go below the contexts in use (`0x000E0072`, PL1: `0x000E0073`). |
+| `DISABLE_ATTESTATION` (`DSBL`, `0x4453424C`) | Erases the RT CDI and the RT ECC and ML-DSA keys. It replaces the CDI with a KDF of zeros, derives new keys from it, and sets `FW_INFO.attestation_disabled` = 1. | PL0 only. It stays set until a cold reset, and an update reset keeps it. |
+
+The Nios is PL0 because the bundle's `pl0_pauser` = 1 matches the Nios AXI user (`FW_INFO` step 000).
+
+**Firmware quirks found (fw-2.1.4):**
+
+1. **`DPE_TAG_TCI` ID.** `api/src/mailbox.rs` labels it `"TAGT"`, but the value is `0x54514754` (ASCII `TQGT`). Sending ASCII `TAGT` (`0x54414754`) returns `0x000E0002` (unimplemented command). The driver uses `0x54514754` and records the wrong-ID reject as a check.
+2. **A short request reports "insufficient memory".** A wrong request length gives `0x000E0003` (`RUNTIME_INSUFFICIENT_MEMORY`), not `0x000E0009`. The same mapping is used by the other fixed-size commands here.
+3. **Reset counters ignore the reserved list.** `INCREMENT_PCR_RESET_COUNTER` accepts PCR0–3, which `EXTEND_PCR` refuses.
+4. **TCB `type` byte order.** The firmware writes the 4-byte `tci_type` little-endian into the DICE MultiTcbInfo. Its own contexts `RTMR` and `CCIV` therefore show as `RMTR` and `VICC`. The driver passes its own types (`NIO3`, `F000`…) little-endian, so they read correctly in the cert.
+5. **CSR CMS signer ID.** With format 1 (CSR), DPE returns a CMS SignedData (no signed attributes) around a PKCS#10 CSR. The SignerInfo `sid` is encoded as `[0] { OCTET STRING SKI }` (`80 16 04 14 …`) instead of `[0] IMPLICIT SKI` (`80 14 …`). As a result, `openssl cms -verify` fails with *signer certificate not found* even with the RT Alias cert supplied. The SKI value itself is right. The signature verifies when it is checked directly (§11.3.1).
+6. **DPE errors are hidden.** CertifyKey-extended and chunk failures always return `0x000E0040`. The DPE error code goes to the firmware extended-error register, which the file protocol does not capture.
+7. **CertifyKey still works after `DISABLE_ATTESTATION`.** It answers with status 0 and a well-formed cert, but the key and signature come from the zero CDI, so the cert no longer chains to RT Alias. `QUOTE_PCRS` is still signed by the FMC Alias key, PCRs and reset counters are kept, `DPE_GET_TAGGED_TCI` still works, and a second `DISABLE_ATTESTATION` is accepted.
+8. **A retired context keeps its tag.** After a `MAKE_DEFAULT` DeriveContext, the old default context is retired, but its tag still returns its old TCI values.
+
+### 11.2 Command sequence (95 commands)
+
+Besides the 10 commands, the driver uses `FW_INFO`, the FMC/RT Alias cert getters, `QUOTE_PCRS_ECC384`/`_MLDSA87` (to read PCRs and counters) and DPE `DeriveContext` (to create contexts with a known measurement and to fill the PL0 context budget) through `INVOKE_DPE_ECC384`.
+
+| # | Command | Expect |
+|---|---|---|
+| 000–004 | `FW_INFO`; FMC and RT Alias certs (ECC, ML-DSA) | `pl0_pauser` = 1, `attestation_disabled` = 0 |
+| 005–010 | quote; `EXTEND_PCR` PCR10 twice (D1, D2) and PCR4 (D3); ECC quote; ML-DSA quote | PCR10 = SHA-384(SHA-384(old ‖ D1) ‖ D2), PCR4 = SHA-384(old ‖ D3), the other 30 PCRs unchanged, both quote signatures verify with FMC Alias |
+| 011–018 | `EXTEND_PCR` PCR0, 1, 2, 3; index 32; index 256; 47 B data; quote | `0x000E003C` ×4, `0x000E003D`, `0x000E0009`, `0x000E0003`; no PCR changed |
+| 019–025 | `INCREMENT_PCR_RESET_COUNTER` PCR10 ×2, PCR31 ×1; quote; index 32; PCR0; quote | counters 10: 0→2, 31: 0→1, others and PCRs unchanged; `0x000E0009`; PCR0 accepted (0→1) |
+| 026–032 | tag with ID `TAGT`; get an unknown tag; tag the default (CCIV) context `A5E1`; get it; tag it again; reuse `A5E1` on another handle; tag an unknown handle | `0x000E0002`; `0x000E001E`; pass; cumulative = SHA-384(0⁴⁸ ‖ current), SVN 0; `0x000E0020`; `0x000E001F`; `0x000E001E` |
+| 033–036 | DeriveContext (`MAKE_DEFAULT`, measurement M, type `NIO3`, SVN 3); tag it `A5E2`; get `A5E2`; get `A5E1` | `tci_current` = M, `tci_cumulative` = SHA-384(0⁴⁸ ‖ M), SVN 3; the retired parent still returns its TCI |
+| 037–040 | `CERTIFY_KEY_EXTENDED` ECC and ML-DSA, X.509, then CSR | certs verify against RT Alias, cert key = returned key, MultiTcbInfo has `NIO3`/fwid M/SVN 3, no SAN; the CSR CMS signature verifies with RT Alias, the inner CSR self-signature verifies, CSR key = cert key |
+| 041–043 | ECC format 2; ECC unknown handle; ML-DSA with `EXTERNAL_AXI_RESPONSE` | `0x000E0040`, `0x000E0040`, `0x000E0009` |
+| 044–054 | `CERTIFY_KEY_CHUNKS` ECC with 256 B chunks (6 chunks), single-shot ECC; ML-DSA with 4096 B chunks (3 chunks), single-shot ML-DSA | reassembled = single-shot response byte for byte (1305 B, 10823 B); the cert verifies against RT Alias; every chunk carries the default handle |
+| 055–057 | ECC `max_size` 0; offset 100000; format 2 | one chunk; `chunk_len` 0 and `remaining` 0; `0x000E0040` |
+| 058–061 | `ADD_SUBJECT_ALT_NAME` `Intel:A5EC065BB32AE6S:NIOSV-A5E-0001`; CertifyKey ECC and ML-DSA with `DMTF_OTHER_NAME`; ECC without the flag | SAN otherName `1.3.6.1.4.1.412.274.1` = the string (UTF8String, not critical), certs verify; no SAN without the flag |
+| 062–069 | one `:`; three `:`; non-ASCII; empty; size 129; cert; a new value `…-0002`; cert | `0x000E003E` ×4, `0x000E0009`; the first value kept; then replaced |
+| 070–078 | `REALLOCATE` 1; 65; 8; DeriveContext until refused | `0x000E0070`, `0x000E0071`, limits 8/56; 5 succeed, the 6th gives `0x000E0037` (PL0 threshold reached) |
+| 079–084 | `REALLOCATE` 7; 8; 64; 32; DeriveContext; CertifyKey ECC | `0x000E0072`; 8/56; 64/0; 32/32; pass; the leaf MultiTcbInfo lists the whole chain `RMTR, VICC, NIO3, F000…F004, F999` |
+| 085–094 | CertifyKey ML-DSA (before); `DISABLE_ATTESTATION`; `FW_INFO`; RT Alias certs; CertifyKey ECC and ML-DSA; quote; get `A5E2`; `DISABLE_ATTESTATION` again | `attestation_disabled` = 1; RT Alias certs byte-identical; new derived keys, and the leaves **fail** to verify against RT Alias; the quote is still FMC Alias-signed, PCRs and counters kept; TCI still readable; the second disable is accepted |
+
+The 5 successful derives plus the reallocation results show how many contexts PL0 had in use: 2 base contexts (the `RTMR` root and `CCIV`) plus `NIO3` = 3. `REALLOCATE 7` failing and `8` passing after the fill confirm 8 in use.
+
+### 11.3 Run it, step by step
+
+It reuses the `attest_emu` build from §9.3 Step 3 and the prerequisites from §9.3 Step 1. There is no LMS tree step.
+
+**On the emulator (about 17 s, boot included)**
+
+```bash
+cd $REPO/caliptra2x/sim_2x
+rm -rf attest3_out/emu && mkdir -p attest3_out/emu
+$CALIPTRA_SW/target/release/examples/attest_emu ../fw_2x/caliptra-rom.bin \
+    ../fw_2x/caliptra-fw-bundle.bin ../fw_2x/fuse_image_2x.hex attest3_out/emu &
+python3 attest/attest3_driver.py attest3_out/emu | tee attest3_emu.log
+```
+
+Each check prints a `STEP ... PASS` line. At the end the driver prints the per-command table, the per-group count (`info 5/5, pcr 17/17, pcrrst 9/9, tag 14/14, ckx 24/24, chunks 13/13, san 19/19, ctx 13/13, disable 14/14`) and finally `ATTEST3 PASS`. The exit code is 0 on pass and 1 on fail. If a check fails it prints `FAILED: <step>` lines and `ATTEST3 FAIL (n)`. The §9.3 troubleshooting applies here too: all four `attest_emu` arguments are required, and a leftover emulator can be stopped with `pkill attest_emu`. Because the run ends with `DISABLE_ATTESTATION`, start a fresh emulator for each run. The driver cannot be re-run against the same emulator.
+
+**On the RTL (optional, several hours)**
+
+```bash
+cd $REPO/caliptra2x/sim_2x
+rm -rf attest3_out/rtl && mkdir -p attest3_out/rtl
+LOG=attest3_rtl.log nohup setsid ./run_nios2x_top_fw.sh +test=attest +attest_dir=attest3_out/rtl \
+    +max_cycles=4000000000 > attest3_rtl.out 2>&1 &
+nohup setsid python3 attest/attest3_driver.py attest3_out/rtl attest3_rtl.log > attest3_out/rtl_driver.log 2>&1 &
+
+# check progress
+grep -E 'MILESTONE|STEP|ATTEST3|PASS|FAIL|TIMEOUT' attest3_out/rtl_driver.log attest3_rtl.log
+```
+
+The driver waits up to 72 h for each response (`CRYPTO_TIMEOUT_H` changes it, as in §9 and §10). The run is finished when `attest3_out/rtl_driver.log` ends with `ATTEST3 PASS`. The per-command table then includes cycle counts.
+
+Outputs in the run folder:
+- `attest3_summary.json`, with every command, status and error code, every check, the per-group counts, the TCB types found in the leaves, the CSR signer IDs and the wall time
+- the host-checkable files listed in §11.3.1
+- the raw `req_*.hex`, `resp_*.hex` and `resp_NNN_<name>.bin` files
+
+### 11.3.1 Verify the output files yourself
+
+The driver already runs these checks. To repeat them by hand, `cd` into the run folder (`attest3_out/emu` or `attest3_out/rtl`) and paste the commands below. They were run as written on the emulator output, and they work with the stock tools on Linux and macOS (OpenSSL 3.5 or newer for ML-DSA).
+
+| File | What it is |
+|---|---|
+| `pcr_extend_d{1,2,3}.bin`, `pcr{4,10}_{before,after}.bin` | extend data, and PCR4/PCR10 from the quotes before and after |
+| `quote_ext_pcrs.bin`, `quote_ext_digest.bin`, `quote_ext_sig.der`, `fmc_alias_ecc384_pub.pem` | the 32 PCRs, digest and DER signature of the post-extend ECC quote, and the FMC Alias public key |
+| `tci_measurement.bin`, `tci_a5e2_{current,cumulative}.bin` | measurement M given to DeriveContext, and the TCIs read back with `DPE_GET_TAGGED_TCI` |
+| `rt_alias_{ecc384,mldsa87}.pem`, `rt_alias_*_pub.pem` | RT Alias certs and public keys (the DPE issuer) |
+| `ckx_{ecc,mldsa}_x509.pem` | `CERTIFY_KEY_EXTENDED` X.509 leaves |
+| `ckx_{ecc,mldsa}_csr.p7b`, `ckx_*_csr.der`, `ckx_*_csr_sig.bin` | CSR-format output (CMS), the inner PKCS#10 CSR, and the CMS signature |
+| `chunks_{ecc,mldsa}_resp.bin`, `ckx_*_single_resp.bin`, `chunks_*.pem` | reassembled `CERTIFY_KEY_CHUNKS` response, the single-shot response, and the cert from the chunks |
+| `san_{ecc,mldsa}_dmtf.pem`, `san_ecc_noflag.pem`, `san_ecc_replaced.pem` | leaves with and without the DMTF SAN, and after the replacement |
+| `ckx_ecc_after_fill.pem` | leaf after the context fill (long MultiTcbInfo chain) |
+| `disabled_{ecc,mldsa}.pem` | leaves made after `DISABLE_ATTESTATION` |
+
+```bash
+hex() { od -An -tx1 -v "$1" | tr -d ' \n'; }
+```
+
+**EXTEND_PCR and the quote**
+
+```bash
+cat pcr10_before.bin pcr_extend_d1.bin | openssl dgst -sha384 -binary > t1.bin
+cat t1.bin pcr_extend_d2.bin | openssl dgst -sha384 -binary | cmp - pcr10_after.bin && echo "PCR10 extend OK"
+cat pcr4_before.bin pcr_extend_d3.bin | openssl dgst -sha384 -binary | cmp - pcr4_after.bin && echo "PCR4 extend OK"
+tail -c +$((10*48+1)) quote_ext_pcrs.bin | head -c 48 | cmp - pcr10_after.bin && echo "PCR10 is in the quote"
+openssl pkeyutl -verify -pubin -inkey fmc_alias_ecc384_pub.pem -in quote_ext_digest.bin -sigfile quote_ext_sig.der
+rm -f t1.bin
+```
+
+**DPE tagging (TCI = measurement chain)**
+
+```bash
+cmp tci_measurement.bin tci_a5e2_current.bin && echo "TCI current == M"
+head -c 48 /dev/zero | cat - tci_measurement.bin | openssl dgst -sha384 -binary | cmp - tci_a5e2_cumulative.bin && echo "TCI cumulative OK"
+hex ckx_ecc_x509.der | grep -q $(hex tci_measurement.bin) && echo "M is in the ECC leaf MultiTcbInfo"
+```
+
+**CERTIFY_KEY_EXTENDED: X.509 and CSR**
+
+```bash
+openssl verify -partial_chain -CAfile rt_alias_ecc384.pem ckx_ecc_x509.pem
+openssl verify -partial_chain -CAfile rt_alias_mldsa87.pem ckx_mldsa_x509.pem
+openssl req -inform DER -in ckx_ecc_csr.der -verify -noout
+openssl dgst -sha384 -verify rt_alias_ecc384_pub.pem -signature ckx_ecc_csr_sig.bin ckx_ecc_csr.der
+openssl req -inform DER -in ckx_mldsa_csr.der -verify -noout
+openssl pkeyutl -verify -pubin -inkey rt_alias_mldsa87_pub.pem -rawin -in ckx_mldsa_csr.der -sigfile ckx_mldsa_csr_sig.bin
+```
+
+`openssl cms -verify -binary -inform DER -in ckx_ecc_csr.p7b -certfile rt_alias_ecc384.pem -noverify` fails with *signer certificate not found* (quirk 5). Use the two direct checks above instead. To see the DICE TCB entries, run `openssl x509 -in ckx_ecc_after_fill.pem -noout -text`. The MultiTcbInfo extension (`2.23.133.5.4.5`) appears as a hex dump.
+
+**CERTIFY_KEY_CHUNKS**
+
+```bash
+cmp chunks_ecc_resp.bin ckx_ecc_single_resp.bin && echo "ECC chunks == single shot"
+cmp chunks_mldsa_resp.bin ckx_mldsa_single_resp.bin && echo "ML-DSA chunks == single shot"
+openssl verify -partial_chain -CAfile rt_alias_ecc384.pem chunks_ecc.pem
+openssl verify -partial_chain -CAfile rt_alias_mldsa87.pem chunks_mldsa.pem
+```
+
+**ADD_SUBJECT_ALT_NAME**
+
+```bash
+openssl x509 -in san_ecc_dmtf.pem -noout -ext subjectAltName
+openssl x509 -in san_mldsa_dmtf.pem -noout -ext subjectAltName
+openssl x509 -in san_ecc_noflag.pem -noout -ext subjectAltName     # prints "No extensions in certificate"
+openssl x509 -in san_ecc_replaced.pem -noout -ext subjectAltName   # ...:NIOSV-A5E-0002
+```
+
+The first two print `othername: 1.3.6.1.4.1.412.274.1:Intel:A5EC065BB32AE6S:NIOSV-A5E-0001`.
+
+**DISABLE_ATTESTATION: these must FAIL**
+
+```bash
+openssl verify -partial_chain -CAfile rt_alias_ecc384.pem disabled_ecc.pem      # error ... verification failed
+openssl verify -partial_chain -CAfile rt_alias_mldsa87.pem disabled_mldsa.pem   # error ... verification failed
+```
+
+The other expected results print `OK`, `Verified OK`, `Signature Verified Successfully` or `Certificate request self-signature verify OK`.
+
+### 11.4 Results
+
+| Backend | Result | Notes |
+|---|---|---|
+| sw-emulator (`attest_emu`, same ROM, bundle and fuses) | **ATTEST3 PASS**: 95 commands, 128 checks, about 17 s including boot | info 5/5, pcr 17/17, pcrrst 9/9, tag 14/14, ckx 24/24, chunks 13/13, san 19/19, ctx 13/13, disable 14/14. All 10 commands work as the source describes. Every reject returned the expected code. The eight quirks are listed in §11.1. |
+| RTL (Verilator, `tb_nios2x_top_fw`) | *not run yet* | Same command stream. Per-command cycle counts will be added here. |
+
+TEST material only: the labels, measurements and the DMTF device-info string are simulation values.

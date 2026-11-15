@@ -64,3 +64,7 @@ caliptra2x/sim_2x/crypto2_*.log
 caliptra2x/sim_2x/crypto2_*.out
 caliptra2x/sim_2x/crypto_run_timeout*.log
 __pycache__/
+# attestation exercise 3 (SIMULATION_2X §11) run outputs
+caliptra2x/sim_2x/attest3_out/
+caliptra2x/sim_2x/attest3_*.log
+caliptra2x/sim_2x/attest3_*.out
