@@ -487,7 +487,7 @@ The LMS key and signature come from `attest/lms_n24.py` (RFC 8554 / NIST SP 800-
 
 ### 9.3 Run it, step by step
 
-There are two ways to run it. The sw-emulator takes about 25 s and needs no Verilator. The RTL run uses Verilator with the Nios behavioral model and takes several hours. Both use the same ROM, firmware bundle, fuse image and Python driver.
+There are two ways to run it. The sw-emulator takes about 25 s once the LMS key tree is cached (Step 4a) and needs no Verilator. The RTL run uses Verilator with the Nios behavioral model and takes several hours. Both use the same ROM, firmware bundle, fuse image and Python driver.
 
 **Step 1: Prerequisites (one time)**
 
@@ -516,19 +516,37 @@ cp $REPO/caliptra2x/sim_2x/attest/emu/attest_emu.rs $CALIPTRA_SW/hw-model/exampl
 cargo build --release -p caliptra-hw-model --example attest_emu
 ```
 
-**Step 4: Run the crypto test on the emulator (about 25 s)**
+**Step 4a: Build the LMS key tree once (recommended)**
+
+Caliptra can only verify LMS signatures, not generate keys, so the driver builds the host LMS key itself: a full 2^15-leaf LMS_SHA256_M24_H15 tree, about 25 million SHA-256 calls spread over all CPU cores. It prints nothing while it runs, so it looks stuck. Expect a few minutes on a laptop (for example a MacBook Air). Pressing Ctrl-C during this step gives a `KeyboardInterrupt` traceback from `threading.py` and a `resource_tracker ... leaked semaphore objects` warning. Neither is a real failure; the run was just interrupted.
+
+The tree is cached as `lms_n24h15_testkey.tree` (about 1.5 MB) in the run folder, so `rm -rf crypto_out/emu` throws it away. Build it once and copy it in before each run:
+
+```bash
+cd $REPO/caliptra2x/sim_2x
+mkdir -p lms_cache
+python3 attest/lms_n24.py lms_cache/lms_n24h15_testkey.tree     # one time, a few minutes
+```
+
+**Step 4b: Run the crypto test on the emulator (about 25 s with the cached tree)**
 
 `attest_emu` boots the caliptra-sw emulator with the same ROM, firmware bundle and fuses as the RTL, and stands in for the Nios on the mailbox. Requests and responses go through files in `crypto_out/emu`. The `&` keeps it running in the background while the driver sends the commands.
 
 ```bash
 cd $REPO/caliptra2x/sim_2x
 rm -rf crypto_out/emu && mkdir -p crypto_out/emu
+cp lms_cache/lms_n24h15_testkey.tree crypto_out/emu/            # skip to rebuild the tree (a few minutes)
 $CALIPTRA_SW/target/release/examples/attest_emu ../fw_2x/caliptra-rom.bin \
     ../fw_2x/caliptra-fw-bundle.bin ../fw_2x/fuse_image_2x.hex crypto_out/emu &
 python3 attest/crypto_driver.py crypto_out/emu
 ```
 
 The last line printed should be `CRYPTO PASS`, followed by the table of 31 commands.
+
+Troubleshooting:
+- **`index out of bounds: the len is 4 but the index is 4`** means `attest_emu` was given only three arguments. The fourth, the output folder (`crypto_out/emu`), is required.
+- **`attest_emu` looks idle** after it starts. That's normal: it's waiting for the driver's request files.
+- **After an interrupted run,** stop the leftover emulator with `pkill attest_emu` and start again from `rm -rf crypto_out/emu`.
 
 **Step 5: Run the same test on the RTL (optional, several hours)**
 
@@ -537,6 +555,7 @@ This uses the same boot as §8.2: about 60 M cycles, plus the crypto steps.
 ```bash
 cd $REPO/caliptra2x/sim_2x
 rm -rf crypto_out/rtl && mkdir -p crypto_out/rtl
+cp lms_cache/lms_n24h15_testkey.tree crypto_out/rtl/
 LOG=crypto_rtl.log nohup setsid ./run_nios2x_top_fw.sh +test=attest +attest_dir=crypto_out/rtl \
     +max_cycles=4000000000 > crypto_rtl.out 2>&1 &
 nohup setsid python3 attest/crypto_driver.py crypto_out/rtl crypto_rtl.log > crypto_out/rtl_driver.log 2>&1 &
