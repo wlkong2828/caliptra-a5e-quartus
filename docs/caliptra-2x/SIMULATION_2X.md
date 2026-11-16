@@ -1180,11 +1180,36 @@ The vendor ECC endorsement covers the vendor ML-DSA key too, so changing that ke
 
 It reuses the `attest_emu` build from §9.3 Step 3 and the prerequisites from §9.3 Step 1. The manifest generator is new and needs a one-time build in the same caliptra-sw checkout:
 
+**Step 1. Set `CALIPTRA_SW` in this shell** (the caliptra-sw fw-2.1.4 checkout from §9.3). The driver uses it to find the tool, so it must be exported in every new terminal:
+
+```bash
+export CALIPTRA_SW=/path/to/caliptra-sw     # e.g. /Users/<you>/security/caliptra/caliptra-sw
+echo $CALIPTRA_SW                           # must not be empty
+```
+
+**Step 2. Copy the example source into caliptra-sw:**
+
 ```bash
 cd $REPO/caliptra2x/sim_2x
 cp attest/emu/attest4_manifest.rs $CALIPTRA_SW/auth-manifest/app/examples/
-(cd $CALIPTRA_SW && cargo build --release -p caliptra-auth-manifest-app --example attest4_manifest)
 ```
+
+**Step 3. Build it from inside caliptra-sw:**
+
+```bash
+cd $CALIPTRA_SW && cargo build --release -p caliptra-auth-manifest-app --example attest4_manifest
+```
+
+Wait for the `Finished` line. A warning about `coverage/Cargo.toml` and `default-features ... caliptra-drivers` comes from caliptra-sw itself and is harmless.
+
+**Step 4. Check the tool exists, then go back to the sim directory:**
+
+```bash
+ls -l $CALIPTRA_SW/target/release/examples/attest4_manifest
+cd $REPO/caliptra2x/sim_2x
+```
+
+If the driver later stops with `manifest generator not found`, either `CALIPTRA_SW` is empty in that shell (repeat Step 1) or Step 3 did not finish (repeat it). You can also point straight at the binary with `export ATTEST4_MANIFEST_TOOL=/full/path/to/attest4_manifest`.
 
 The driver finds it at `$CALIPTRA_SW/target/release/examples/attest4_manifest`, or at `$ATTEST4_MANIFEST_TOOL`. It uses only the caliptra-sw default **test** keys. The IDevID certs come from `attest/testca/` (the cached certs match the repo's fuse image; the CA private keys are never committed, see §8).
 
