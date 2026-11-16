@@ -15,6 +15,7 @@
 - **Attestation exercise 3:** `attest/attest3_driver.py` covers `EXTEND_PCR`, `INCREMENT_PCR_RESET_COUNTER`, `DPE_TAG_TCI`, `DPE_GET_TAGGED_TCI`, `CERTIFY_KEY_EXTENDED_ECC384`/`_MLDSA87` (X.509 and CSR), `CERTIFY_KEY_CHUNKS`, `ADD_SUBJECT_ALT_NAME`, `REALLOCATE_DPE_CONTEXT_LIMITS` and `DISABLE_ATTESTATION` (95 commands, 128 checks, negative cases included, OpenSSL cross-check). Emulator: **ATTEST3 PASS**; RTL not run yet. See [§11](#11-attestation-exercise-3-pcrs-dpe-tagging-certifykey-extended-san-context-limits-disable).
 - **Attestation exercise 4:** `attest/attest4_driver.py` runs an end-to-end use case with `POPULATE_IDEV_ECC384_CERT`/`_MLDSA87_CERT` (vendor CA → IDevID → … → DPE leaf), `VERIFY_AUTH_MANIFEST`, `SET_AUTH_MANIFEST` and `AUTHORIZE_AND_STASH` (a real signed SoC auth manifest, stash into DPE and PCR31, 29 tampered or mis-signed manifests), and `SIGN_WITH_EXPORTED_ECDSA`/`_MLDSA` and `REVOKE_EXPORTED_CDI_HANDLE` (161 commands, 164 checks, OpenSSL cross-check). Emulator: **ATTEST4 PASS**; RTL not run yet. See [§12](#12-attestation-exercise-4-idevid-provisioning-soc-image-authorization-exported-cdi-signing).
 - **Exercise 5:** `attest/attest5_driver.py` covers the housekeeping commands (`VERSION`, `CAPABILITIES`, `GET_IMAGE_INFO`, `SELF_TEST_START`/`_GET_RESULTS`, `SHUTDOWN`), the CSR commands (`GET_IDEV_*_CSR`, `GET_FMC_ALIAS_*_CSR`, `GET_ATTESTED_*_CSR`), `FIRMWARE_VERIFY` (the real bundle and 11 tampered or wrong-size variants) and runtime `FIRMWARE_LOAD` (impactless update: 3 rejected images, then the real one), in product order (70 commands, 95 checks, OpenSSL cross-check). Emulator: **ATTEST5 PASS**; RTL not run yet. Needs a one-time rebuild of `attest_emu`. See [§13](#13-exercise-5-housekeeping-csrs-firmware_verify-and-runtime-firmware_load).
+- **Exercise 6 (measured boot + attestation, the sequence diagram):** `attest/attest6_driver.py` runs the user's five-phase diagram as one flow: Caliptra boot checked through `GET_PCR_LOG` and a quote, `ECDSA384_SIGNATURE_VERIFY` / `MLDSA87_SIGNATURE_VERIFY` of a signed bootloader and kernel, `STASH_MEASUREMENT`, DPE `DeriveContext` and `DPE_TAG_TCI`, `EXTEND_PCR` PCR8, then a nonce-based attestation (`QUOTE_PCRS_ECC384`/`_MLDSA87`, DPE `GetCertificateChain`/`CertifyKey`/`Sign`) checked by an independent Python + OpenSSL verifier that replays the event log, checks both chains to the TEST vendor CA and rejects 7 attacks (144 commands, 85 checks). Emulator: **ATTEST6 PASS**; RTL not run yet. §14.1 lists 14 corrections to the diagram (e.g. `GET_PCR_LOG` holds only ROM/FMC entries, the quote is signed by the FMC Alias key, `EXTEND_PCR` accepts PCR31). See [§14](#14-exercise-6-end-to-end-measured-boot-and-attestation-the-sequence-diagram).
 - **Related:** [NIOS_CALIPTRA_2X_INTEGRATION.md](NIOS_CALIPTRA_2X_INTEGRATION.md) (design), [FIRMWARE_AND_KEYS_2X.md](FIRMWARE_AND_KEYS_2X.md) (ROM, bundle, fuse image). The raw record is in `caliptra2x/sim_2x/BOOT_NIOS2X.md` and `caliptra2x/sim_2x/nios2x_top_fw_run.log`.
 
 ---
@@ -1543,3 +1544,271 @@ The first prints `changed PCRs: [1]`. The second shows the one flipped byte (`by
 Limits of this run: emulator steps are instruction counts with instant crypto, not RTL cycles. The DMA image sources (load and staging addresses) stay untested (the emulator crashes on DMA in passive mode, §12). PL1 cannot be tested (one AXI user). A failing self-test and the IDevID CSR success path would need a fault-injection build and a manufacturing-mode boot.
 
 TEST material only: the manifest keys are the caliptra-sw default test keys, and the images and nonces are simulation values.
+
+---
+
+## 14. Exercise 6: end-to-end measured boot and attestation (the sequence diagram)
+
+This exercise takes the user's "End-to-End Mailbox Sequence Diagram" (SoC MCU / Host OS, Caliptra RoT, Verifier; five phases, 12 numbered steps) and runs it as **one flow**, with real data, on the emulator: `attest/attest6_driver.py`. Before writing it, every step of the diagram was checked against the fw-2.1.4 source and then against the run. Most of the diagram is right. Fourteen details are not, and §14.1 lists them; the sequence in §14.2 is the corrected one that actually runs.
+
+What the run does, in the diagram's phases:
+
+1. **Phase 1, Caliptra boot.** The ROM-phase `FIRMWARE_LOAD` is done by the boot path (the `attest_emu` boot, or the testbench's Nios model) before the first request. The driver then proves what was loaded: `FW_INFO` digests, `GET_PCR_LOG`, a PCR quote that replays from the log, and `EXTEND_PCR` on PCR0–3 refused.
+2. **Provisioning.** `POPULATE_IDEV_*_CERT` with the attest4 TEST vendor CA (not in the diagram, but without it the verifier has no root, see §14.1 item 14).
+3. **Phase 2, SoC TCB boot.** A test SoC signing key (ECC P-384, generated per run, never committed) signs a 96 KiB fake bootloader. The host hashes it and calls `ECDSA384_SIGNATURE_VERIFY`, with three negatives. Then `STASH_MEASUREMENT` (DPE + PCR31).
+4. **Phase 3, OS hand-off.** A 512 KiB fake kernel is verified with ECDSA P-384 **and** ML-DSA-87 (hybrid), then DPE `DeriveContext` and `DPE_TAG_TCI`.
+5. **Phase 4, user mode.** `EXTEND_PCR` PCR8 with the application, driver and config hashes. The host writes every measurement into its own event log.
+6. **Phase 5, attestation.** The verifier makes a fresh 32-byte nonce. The host runs `GET_PCR_LOG`, `QUOTE_PCRS_ECC384` and `_MLDSA87`, DPE `GetCertificateChain`, `CertifyKey` and `Sign` (ECC and ML-DSA) and hands the bundle over.
+7. **The verifier** is independent Python + OpenSSL code inside the driver. It sees only the bundle, its own nonce and the reference values (the "golden manifest": SHA-384 of every released image, the vendor CA). It must ACCEPT the honest bundle and REJECT seven attacks.
+
+The concepts are explained for a newcomer in [DPE_LEARNING_GUIDE.md](DPE_LEARNING_GUIDE.md) Part 4 (§12–§14).
+
+### 14.1 Differences from the original diagram (checked against fw-2.1.4 and the run)
+
+| # | Diagram | What fw-2.1.4 really does | Shown by |
+|---|---|---|---|
+| 1 | Phase 1: host sends `1. FIRMWARE_LOAD`, Caliptra answers `RDY_FOR_RT` | `FIRMWARE_LOAD` here is the **ROM-phase** load: the ROM's own mailbox handler takes the bundle after `ready_for_fw`, verifies it, and the mailbox answers "complete". `RDY_FOR_RT` is **not a mailbox reply**: it is `CPTRA_FLOW_STATUS.ready_for_runtime` (bit 29), set later by the runtime after the FMC has run. The Nios must poll that bit, not wait for a response. (The runtime `FIRMWARE_LOAD` of §13 is a different thing: an update reset.) | `boot`: flow status `0xB0000000`, `FW_INFO` FMC/RT digests = bundle |
+| 2 | "Locks PCRs 0-3" | ROM measures device status, vendor key hash, owner key hash and the FMC into **PCR0 (current) and PCR1 (journey)**; FMC measures the runtime into **PCR2 / PCR3**. ROM sets the PCR vault *lock-for-clear* bit on PCR0, PCR1 **and PCR31**, FMC on PCR2 and PCR3. That bit only stops a *clear*. The host is kept out of PCR0–3 by a firmware check in `EXTEND_PCR` (`0x000E003C` `RUNTIME_PCR_RESERVED`). | `boot`: 4 × `0x000E003C` |
+| 3 | "derives keys" | ROM derives LDevID and FMC Alias, FMC derives RT Alias (from the measurements above). Nothing is derived by `FIRMWARE_LOAD` itself. | cert chain in `prov` |
+| 4 | `2. ECDSA384_SIG_VERIFY` "Checks SoC bootloader sig" | Caliptra holds **no SoC key and does not see the image**. The host sends the public key (x, y), the signature (r, s) and the SHA-384 it computed. The command is **stateless**: nothing is remembered and nothing is measured. An attacker's signature passes if the host also sends the attacker's key. So the key must come from somewhere the host trusts (its ROM, fuses), or use `AUTHORIZE_AND_STASH` with a signed SoC manifest (§12), which binds "verified" and "measured" inside Caliptra. | `soctcb`: `0x000E0004` for tampered image and wrong key; PASS with attacker key + attacker pubkey |
+| 5 | `3. STASH_MEASUREMENT` "Hashes BL into DPE root tree" | The **host** hashes. Caliptra creates a new DPE context (type = the 4-byte `fw_id`, `MAKE_DEFAULT`) under the runtime's context and **extends PCR31** with the measurement. PL0 only. | `soctcb`: PCR31 = SHA-384(0⁴⁸ ‖ SHA-384(BL)) |
+| 6 | `5. INVOKE_DPE DeriveContext` "isolates OS" | A new DPE context holding the kernel measurement (`OSK0`, SVN 2). It changes DPE keys and leaf certificates, **not any PCR**. With `MAKE_DEFAULT` the bootloader context is retired and the OS context becomes the default one. Real isolation needs a non-default handle or another locality. | `os`: PCRs unchanged |
+| 7 | `6. DPE_TAG_TCI` "fast lookup" | Correct. The command ID is `0x54514754` ("TQGT"), not "TAGT" (§11 quirk). The tag is a local name for `DPE_GET_TAGGED_TCI`. It is not in any certificate. | `os`: tagged TCI = kernel hash |
+| 8 | `7. EXTEND_PCR (PCR 8)` "Logs app/driver/config hash" | `EXTEND_PCR` **extends but does not log**. Allowed indices are **4..31** (32: `0x000E003D`). **PCR31 is allowed** even though `STASH_MEASUREMENT` uses it. | `user`, `neg` |
+| 9 | `8. SPDM Challenge (Nonce)` from the verifier **to Caliptra**, which forwards it to the host | In passive mode Caliptra has no network and no SPDM endpoint. The verifier talks SPDM to the **SoC** (our Nios with libspdm), and the host puts the 32-byte nonce into `QUOTE_PCRS`. | `attest` |
+| 10 | `9. GET_PCR_LOG` "Raw Event Log" | Exists (`PLOG`, `0x504C4F47`). It returns **only Caliptra's own ROM/FMC log**: 17 × 56-byte slots, 5 used here (DeviceStatus, VendorPubKeyInfoHash, OwnerPubKeyHash, FmcTci → PCR0+1; RtTci → PCR2+3). Runtime `STASH_MEASUREMENT` and `EXTEND_PCR` are **not** in it. The full event log = Caliptra's log + **the host's own log**. | `soctcb`, `user`: log unchanged |
+| 11 | `10. QUOTE_PCRS` "Signs PCRs 0-31 + nonce" | Correct, and it also returns the 32 PCR reset counters. The signer is the **FMC Alias** key (ECC `PCRQ` or ML-DSA `PCRM`), not the RT Alias or a DPE key. Digest = SHA-512(PCR0..31 ‖ nonce): first 48 B for ECC, all 64 B byte-reversed for ML-DSA. The nonce order differs between emulator and RTL (§8.8). | `verify` |
+| 12 | `11. INVOKE_DPE CertifyKey / Sign` "Signs TCB leaf cert / challenge" | `CertifyKey` returns a leaf **signed by the RT Alias key** whose MultiTcbInfo lists every context (`RMTR`, `VICC`, `SBL0`, `OSK0`). `Sign` signs a **host-chosen** digest with the leaf's key; the host must put the nonce in it itself. ML-DSA `Sign` takes a 64-byte external *mu*; the "raw message" form does not fit in `INVOKE_DPE` (512 B limit, `0x000E0003`). | `attest` |
+| 13 | `12.` bundle; the verifier "verifies TCB & nonce" | The verifier also needs **reference values** (SHA-384 of every released image, golden PCR8 and PCR31) and a **root**: the IDevID CA. It replays the logs, compares every PCR, checks both signatures and both chains. | `verify`, `neg` |
+| 14 | (missing) | In passive 2.x the IDevID certificate is **not stored by Caliptra**. The host gives it back with `POPULATE_IDEV_*_CERT` on every boot, or the DPE chain stops at the LDevID and no verifier can reach a root. | `prov` |
+
+### 14.2 The corrected flow
+
+```mermaid
+sequenceDiagram
+    participant V as Verifier
+    participant H as SoC host (Nios V)
+    participant C as Caliptra (ROM/FMC/RT)
+    Note over C: Phase 1: ROM boots, reads fuses
+    H->>C: FIRMWARE_LOAD (ROM phase, bundle)
+    Note over C: ROM: verify, PCR0/1 (FMC), lock 0,1,31, derive LDevID + FMC Alias<br/>FMC: PCR2/3 (RT), lock 2,3, derive RT Alias
+    H-->>C: poll CPTRA_FLOW_STATUS.ready_for_runtime
+    H->>C: FW_INFO, GET_PCR_LOG, POPULATE_IDEV_*_CERT
+    Note over H,C: Phase 2: SoC TCB
+    H->>H: SHA-384(bootloader)
+    H->>C: ECDSA384_SIGNATURE_VERIFY(SoC pubkey, r,s, hash)
+    C-->>H: OK (stateless)
+    H->>C: STASH_MEASUREMENT('SBL0', hash)
+    Note over C: DPE context SBL0 + extend PCR31
+    H->>H: event log += {PCR31, hash}
+    Note over H,C: Phase 3: OS hand-off
+    H->>C: ECDSA384 / MLDSA87_SIGNATURE_VERIFY(kernel)
+    H->>C: INVOKE_DPE DeriveContext('OSK0', hash)
+    H->>C: DPE_TAG_TCI('OS01')
+    Note over H,C: Phase 4: user mode
+    H->>C: EXTEND_PCR(8, app / driver / config)
+    H->>H: event log += 3 entries
+    Note over V,C: Phase 5: attestation
+    V->>H: SPDM challenge, nonce (32 B)
+    H->>C: GET_PCR_LOG
+    H->>C: QUOTE_PCRS_ECC384 / _MLDSA87(nonce)
+    C-->>H: PCRs, counters, signature (FMC Alias key)
+    H->>C: INVOKE_DPE GetCertificateChain, CertifyKey
+    C-->>H: chain IDevID..RT Alias, leaf (RT Alias signs)
+    H->>C: INVOKE_DPE Sign(SHA-384(nonce || quote digests))
+    H->>V: bundle: Caliptra log + host log + quotes + chain + leaf + DPE signature
+    Note over V: nonce, digest recompute, signatures, chains to vendor CA,<br/>replay = all 32 PCRs, reference values -> ACCEPT / REJECT
+```
+
+### 14.3 Commands used (fw-2.1.4)
+
+| Command (ID) | Request → response | Used for |
+|---|---|---|
+| `GET_PCR_LOG` (`PLOG`, `0x504C4F47`) | – → `data_size` + 952 B (17 × {`id` u16, pad, `pcr_ids` u32 bitmask, data 48 B}) | Caliptra's ROM/FMC measurements. DeviceStatus data is 18 B, the others 48 B |
+| `QUOTE_PCRS_ECC384` (`PCRQ`) / `_MLDSA87` (`PCRM`) | `nonce[32]` → 32 PCRs × 48 B, nonce, 32 reset counters, digest, signature | the signed PCR report |
+| `EXTEND_PCR` (`PCRE`, `0x50435245`) | `pcr_idx`, `data[48]` → header | PCR8 user-mode measurements; PCR0–3 refused |
+| `ECDSA384_SIGNATURE_VERIFY` (`ECV2`, `0x45435632`) | `x[48] y[48] r[48] s[48] digest[48]` → header | bootloader and kernel signatures; fail `0x000E0004` |
+| `MLDSA87_SIGNATURE_VERIFY` (`MLV2`, `0x4D4C5632`) | `pubkey[2592] sig[4628] msg_len msg` → header | hybrid kernel signature over the kernel's SHA-384; fail `0x000E006C` |
+| `STASH_MEASUREMENT` (`MEAS`, `0x4D454153`) | `fw_id[4] measurement[48] context[48] svn` → `dpe_result` | bootloader into DPE + PCR31 |
+| `INVOKE_DPE_ECC384` (`DPEC`) / `_MLDSA87` (`DPEM`) | DPE command 0x08 DeriveContext, 0x09 CertifyKey, 0x0A Sign, 0x10 GetCertificateChain | OS context, leaf, signature, chain |
+| `DPE_TAG_TCI` (`0x54514754`) / `DPE_GET_TAGGED_TCI` (`GTGD`) | `handle[16] tag` / `tag` → `tci_cumulative`, `tci_current`, … | tag the OS context |
+| `POPULATE_IDEV_ECC384_CERT` (`IDEP`) / `_MLDSA87_CERT` (`IDMP`) | `cert_size` + DER | IDevID back into the chain |
+| `FW_INFO`, `GET_IDEV_*_INFO`, `GET_{LDEVID,FMC_ALIAS,RT_ALIAS}_*_CERT` | | identity and reference certificates |
+
+### 14.4 Command sequence (144 commands)
+
+| Req | Group | Commands | What is checked |
+|---|---|---|---|
+| 000–006 | boot | `FW_INFO`, `GET_PCR_LOG`, `QUOTE_PCRS_ECC384`, `EXTEND_PCR` 0/1/2/3 | ready_for_runtime; FMC/RT digest = SHA-384(image); 5 log entries with the right PCR masks and data (vendor/owner key hash = fuses); DeviceStatus lifecycle 3, debug locked, passive; PCR0–3 = log replay, PCR4–31 zero; PCR0 = PCR1, PCR2 = PCR3; 4 × `0x000E003C` |
+| 007–016 | prov | 6 certificate reads, `GET_IDEV_*_INFO`, `POPULATE_IDEV_ECC384/MLDSA87_CERT` | TEST vendor CA → IDevID (cached cert from §12, key = IDevID info) |
+| 017–024 | soctcb | `ECDSA384_SIGNATURE_VERIFY` ×4, quote, `STASH_MEASUREMENT`, quote, `GET_PCR_LOG` | good / tampered BL / attacker key / attacker key + attacker pubkey; `dpe_result` 0; PCR31 = SHA-384(0⁴⁸ ‖ H(BL)), no other PCR; log unchanged |
+| 025–033 | os | `ECDSA384_SIGNATURE_VERIFY` ×2, `MLDSA87_SIGNATURE_VERIFY` ×2, quote, DeriveContext, `DPE_TAG_TCI`, `DPE_GET_TAGGED_TCI`, quote | good / tampered kernel for both algorithms; tagged `tci_current` = H(kernel), `tci_cumulative` = SHA-384(0⁴⁸ ‖ H(kernel)); PCRs unchanged |
+| 034–040 | user | quote, `EXTEND_PCR` 8 ×3, quote, `EXTEND_PCR` 32, `GET_PCR_LOG` | PCR8 = SHA-384(SHA-384(SHA-384(0⁴⁸ ‖ app) ‖ drv) ‖ cfg), nothing else; `0x000E003D`; log unchanged |
+| 041–066 | attest | round 1 with nonce N1: `GET_PCR_LOG`, 2 quotes, ECC chain (2 chunks) + CertifyKey, ML-DSA chain (16 chunks of 2 KiB) + CertifyKey, DPE Sign ECC, DPE Sign ML-DSA (mu), DPE Sign ML-DSA IS_RAW | both quotes same PCRs and nonce; chains [IDevID, LDevID, FMC Alias, RT Alias]; leaf MultiTcbInfo has `SBL0` (svn 1) and `OSK0` (svn 2) with the right digests; IS_RAW `0x000E0003` |
+| – | verify | (no commands) | the verifier on round 1: 19 checks, **ACCEPT**; quote nonce order = emulator |
+| 067–091 | neg | round 2 with nonce N2 | replayed round-1 bundle REJECT; round 2 ACCEPT; tampered log, dropped log entry, tampered quote PCR8, tampered DPE leaf: REJECT |
+| 092–117 | neg | `EXTEND_PCR` 8 with an unknown driver, round 3 | REJECT (unknown measurement, PCR8 ≠ golden), although the replay matches |
+| 118–143 | neg | `EXTEND_PCR` **31** (accepted), not logged, round 4 | REJECT (PCR31 not explained by the logs) |
+
+**The verifier's checks** (all must pass for ACCEPT): both quotes carry its nonce; both quote digests recompute from the PCRs + nonce (either nonce order); per algorithm, the FMC Alias (quote signer) and the DPE leaf chain to the TEST vendor CA through the populated IDevID; the quote signature verifies with the FMC Alias key; the DPE signature over `"A5E-ATTEST6 transcript v1" ‖ nonce ‖ ECC quote digest ‖ ML-DSA quote digest` verifies with the leaf key; the leaf TCB contains the reference bootloader and kernel hashes; the Caliptra log + host log replay to all 32 quoted PCRs; FmcTci / RtTci / vendor and owner key hashes equal the reference; lifecycle production and debug locked; every host-logged digest is in the reference manifest; PCR8 and PCR31 equal the golden values; reset counters 0.
+
+**Firmware quirks found (fw-2.1.4):**
+
+1. **`GET_PCR_LOG` holds only Caliptra's own entries.** ROM: DeviceStatus (18 B), VendorPubKeyInfoHash, OwnerPubKeyHash, FmcTci → PCR0 and PCR1. FMC: RtTci → PCR2 and PCR3. Nothing from the runtime. A product needs a host event log for PCR4–31.
+2. **The log's FmcTci / RtTci are plain SHA-384 of the images**; the bundle's TOC digests are the same values word-swapped (Caliptra's register format). A verifier should hash the released images itself.
+3. **`EXTEND_PCR` accepts PCR31.** Only 0–3 are reserved. Anyone with PL0 can extend the PCR that `STASH_MEASUREMENT` uses. The verifier caught the unlogged extend through the replay, but a product should keep its own measurements away from PCR31 (or treat PCR31 as "stash only" in its policy).
+4. **`ECDSA384_SIGNATURE_VERIFY` and `MLDSA87_SIGNATURE_VERIFY` are pure crypto services.** The trust comes from the public key the host sends.
+5. **The quote is signed by the FMC Alias key**, ECC and ML-DSA. A verifier that expects the RT Alias key rejects every quote.
+6. **DPE `DeriveContext` and `DPE_TAG_TCI` do not touch PCRs.** OS-layer measurements show up only in DPE leaf certificates.
+7. **ECC and ML-DSA DPE share one context tree.** The bootloader was stashed through the ECC profile, but the ML-DSA leaf lists it too.
+8. **The ML-DSA DPE `Sign` "raw message" form can't be sent.** The 1096-byte DPE command exceeds `INVOKE_DPE`'s 512-byte limit (`0x000E0003`). Send the 64-byte external *mu* instead: mu = SHAKE256(SHAKE256(leaf public key, 64) ‖ 0x00 ‖ 0x00 ‖ message, 64). OpenSSL then verifies the signature over the message as normal ML-DSA (`pkeyutl -rawin`).
+9. **The leaf's MultiTcbInfo shows four TCBs:** `RMTR` (runtime; its fwid equals PCR2), `VICC` (the CCIV default context, as the type bytes are stored), `SBL0` and `OSK0`.
+10. **Quote nonce order:** the emulator digests match the emulator order. On Agilex hardware (RTL order, §8.8) the same verifier accepts the RTL order and reports which one matched.
+
+### 14.5 Run it, step by step
+
+It needs nothing new: the attest5 build of `attest_emu` (§13.3 Step 2) and the TEST vendor CA's cached IDevID certificates in `attest/testca/` (committed, §12). `CALIPTRA_SW` is only used to find the emulator. The CA private keys are not needed.
+
+**Step 1. Set `CALIPTRA_SW`** (as in §12.3):
+
+```bash
+export CALIPTRA_SW=/path/to/caliptra-sw     # e.g. /Users/<you>/security/caliptra/caliptra-sw
+ls -l $CALIPTRA_SW/target/release/examples/attest_emu
+```
+
+If you never rebuilt it for attest5, do §13.3 Step 2 first; otherwise the driver stops with `this attest_emu is the pre-attest5 build`.
+
+**Step 2. Run it on the emulator (about 30 s)**
+
+```bash
+cd $REPO/caliptra2x/sim_2x
+pkill -f attest_emu; sleep 1           # stop any emulator left from an earlier try
+pgrep -fl attest_emu                   # must print nothing
+rm -rf attest6_out/emu && mkdir -p attest6_out/emu
+nice -n 19 $CALIPTRA_SW/target/release/examples/attest_emu ../fw_2x/caliptra-rom.bin \
+    ../fw_2x/caliptra-fw-bundle.bin ../fw_2x/fuse_image_2x.hex attest6_out/emu &
+sleep 3; pgrep -fl attest_emu          # exactly one
+python3 attest/attest6_driver.py attest6_out/emu | tee attest6_emu.log
+```
+
+**Expected output.** Each check prints a `STEP ... PASS` line, and the verifier prints one line per round:
+
+```
+[attest6] STEP boot    GET_PCR_LOG (PLOG) exists in fw-2.1.4: 952 B = 17 x 56-B entries, 5 used PASS ...
+[attest6] STEP soctcb  quirk: the same attacker signature PASSES if the host sends the attacker's public key ... PASS
+[attest6] STEP soctcb  PCR31 == SHA-384(PCR31_old || SHA-384(BL)), no other PCR changed   PASS
+[attest6] VERIFIER round1                       ACCEPT
+[attest6] VERIFIER replay_old_bundle            REJECT nonce: both quotes carry the verifier's nonce; ...
+[attest6] VERIFIER round2                       ACCEPT
+[attest6] VERIFIER tampered_event_log           REJECT PCRs not explained by the logs: [8]; unknown measurements: ['FPGA driver v3.1']
+[attest6] VERIFIER dropped_log_entry            REJECT PCRs not explained by the logs: [8]
+[attest6] VERIFIER tampered_quote_pcr8          REJECT PCRs not explained by the logs: [8]; quote digest == ...
+[attest6] VERIFIER tampered_dpe_leaf            REJECT ECC: DPE leaf chains to the vendor CA (6 certs)
+[attest6] VERIFIER rogue_driver_in_pcr8         REJECT unknown measurements: ['unsigned debug driver']; PCR8 == golden PCR8 ...
+[attest6] VERIFIER hidden_pcr31_extend          REJECT PCRs not explained by the logs: [31]; ...
+[attest6] per group: boot 14/14, prov 10/10, soctcb 7/7, os 8/8, user 6/6, attest 8/8, verify 21/21, neg 11/11
+[attest6] done, 144 commands, 85 steps, 28.5 s; ATTEST6 PASS
+```
+
+The `REJECT` lines are the negative tests and are expected; each one is also a `STEP neg ... PASS`. The exit code is 0 on pass and 1 on fail. The nonces are random, so quote digests and signatures change from run to run; the measurements and PCR values do not.
+
+**Troubleshooting:** the same as §13.3 (`pkill` and rerun the block if the driver sits at `req 000`, or if `EMU req NN ... done` prints twice). `IDevID key not in ... and the TEST CA private key ... is not available`: your `attest/testca/` lost the cached `idev_*_*.cert.der`. Restore it from git, or set `ATTEST_CA_DIR` to an empty folder to make a new local TEST CA.
+
+**On the RTL (optional, several hours)**
+
+```bash
+cd $REPO/caliptra2x/sim_2x
+rm -rf attest6_out/rtl && mkdir -p attest6_out/rtl
+LOG=attest6_rtl.log nohup setsid nice ./run_nios2x_top_fw.sh +test=attest +attest_dir=attest6_out/rtl \
+    +max_cycles=4000000000 > attest6_rtl.out 2>&1 &
+nohup setsid python3 attest/attest6_driver.py attest6_out/rtl attest6_rtl.log > attest6_out/rtl_driver.log 2>&1 &
+grep -E 'STEP|VERIFIER|ATTEST6|PASS|FAIL|TIMEOUT' attest6_out/rtl_driver.log attest6_rtl.log
+```
+
+Not run yet. In RTL mode the `ready_for_runtime` flow-status check is skipped (the testbench does not report it; it waits for the bit itself before request 0), so `boot` has 13 checks, and the nonce-order check expects the **RTL** order.
+
+Outputs in the run folder (gitignored with `attest6_*.log`/`.out`): `attest6_summary.json` (every command, every check, the decoded Caliptra log and DeviceStatus, the host event log, the leaf TCBs, the reference values, all verifier results), `verifier/<round>_result.json`, and the files below.
+
+### 14.5.1 Verify the output files yourself
+
+`cd attest6_out/emu`. Run as written (OpenSSL 3.5.7).
+
+| File | What it is |
+|---|---|
+| `soc_bootloader.bin`, `os_kernel.bin`, `app_v1.4.bin`, `driver_v3.1.ko`, `config.json`, `rogue_driver.ko` | the TEST images (deterministic) |
+| `soc_signing_ecc384.pub.pem`, `soc_signing_mldsa87.pub.pem` (+ `.key`, never committed) | the per-run TEST SoC signing keys |
+| `*.sig.der`, `os_kernel.sha384.mldsa.sig` | SoC signatures |
+| `caliptra_pcr_log_boot.bin` | raw `GET_PCR_LOG` data (952 B) |
+| `host_event_log.json` | the host's event log after Phase 4 |
+| `attestation_bundle_round1.json` | everything the host sent the verifier in round 1 (hex) |
+| `verifier/round1_*` | the verifier's working files: CA, chain, leaf, keys, quote digest and signature, transcript, DPE signatures |
+
+**The SoC signatures (what Caliptra checked):**
+
+```bash
+openssl dgst -sha384 -verify soc_signing_ecc384.pub.pem -signature soc_bootloader.bin.sig.der soc_bootloader.bin
+openssl dgst -sha384 -verify soc_signing_ecc384.pub.pem -signature soc_bootloader.bin.sig.der soc_bootloader_tampered.bin
+openssl pkeyutl -verify -pubin -inkey soc_signing_mldsa87.pub.pem -rawin -in os_kernel.sha384 -sigfile os_kernel.sha384.mldsa.sig
+```
+
+`Verified OK`, `Verification failure` (the tampered copy), `Signature Verified Successfully`.
+
+**Replay the event log** (the verifier's core step, in 15 lines of Python):
+
+```bash
+python3 - <<'EOF'
+import json, hashlib, struct
+H = lambda *a: hashlib.sha384(b"".join(a)).digest()
+log = open("caliptra_pcr_log_boot.bin", "rb").read(); ev = json.load(open("host_event_log.json"))
+q = [bytes.fromhex(p) for p in json.load(open("attestation_bundle_round1.json"))["quote_ecc"]["pcrs"]]
+pc = [b"\0" * 48] * 32
+for i in range(0, len(log), 56):                     # Caliptra's ROM/FMC entries
+    eid, mask = struct.unpack_from("<H2xI", log, i)
+    if eid == 0: continue
+    d = log[i + 8:i + 8 + (18 if eid == 1 else 48)]
+    for k in range(32):
+        if mask >> k & 1: pc[k] = H(pc[k], d)
+for e in ev:                                         # the host's own entries
+    if e["pcr"] is not None: pc[e["pcr"]] = H(pc[e["pcr"]], bytes.fromhex(e["digest"]))
+print("PCRs that do not match:", [k for k in range(32) if pc[k] != q[k]])
+EOF
+```
+
+It prints `PCRs that do not match: []`.
+
+**Quote signature, chains and DPE signatures:**
+
+```bash
+openssl pkeyutl -verify -pubin -inkey verifier/round1_ecc_fmc_alias_pub.pem -in verifier/round1_ecc_quote_digest.bin -sigfile verifier/round1_ecc_quote_sig
+openssl pkeyutl -verify -pubin -inkey verifier/round1_mldsa_fmc_alias_pub.pem -in verifier/round1_mldsa_quote_digest.bin -sigfile verifier/round1_mldsa_quote_sig
+openssl verify -CAfile verifier/round1_vendor_ca_ecc.pem -untrusted verifier/round1_ecc_untrusted_all.pem verifier/round1_ecc_leaf.pem
+openssl verify -CAfile verifier/round1_vendor_ca_mldsa.pem -untrusted verifier/round1_mldsa_untrusted_all.pem verifier/round1_mldsa_leaf.pem
+openssl dgst -sha384 -verify verifier/round1_ecc_leaf_pub.pem -signature verifier/round1_dpe_sig_ecc.der verifier/round1_transcript.bin
+openssl pkeyutl -verify -pubin -inkey verifier/round1_mldsa_leaf_pub.pem -rawin -in verifier/round1_transcript.bin -sigfile verifier/round1_dpe_sig_mldsa.bin
+openssl dgst -sha384 -verify verifier/round1_ecc_leaf_pub.pem -signature verifier/replay_old_bundle_dpe_sig_ecc.der verifier/replay_old_bundle_transcript.bin
+```
+
+`Signature Verified Successfully` ×2, `verifier/round1_ecc_leaf.pem: OK`, `verifier/round1_mldsa_leaf.pem: OK`, `Verified OK`, `Signature Verified Successfully`, and the last one (the round-1 signature checked against the round-2 nonce) `Verification failure`.
+
+**The values in this run** (deterministic test images; the nonce is random):
+
+| Item | Value (first 12 bytes) |
+|---|---|
+| SHA-384(bootloader) = PCR31 input = `SBL0` fwid | `bf69a6d441b45a00bc54bb00…` |
+| SHA-384(kernel) = `OSK0` fwid = tagged `tci_current` | `c9a67b7d8d0201ea20bc97eb…` |
+| PCR0 = PCR1 (ROM: 4 entries) | `07f29b073cf205987556cccd…` |
+| PCR2 = PCR3 (FMC: RtTci) = `RMTR` fwid | `12b8f5b035d78baee97e33ce…` |
+| PCR8 (app, driver, config) = golden | `7207be6e47c786d710245276…` |
+| PCR31 = SHA-384(0⁴⁸ ‖ H(BL)) | `c9616ba419d04a375de595b6…` |
+| DPE leaf sizes | ECC 1,331 B, ML-DSA 8,354 B |
+
+### 14.6 Results
+
+| Backend | Result | Notes |
+|---|---|---|
+| sw-emulator (`attest_emu` attest5 build, same ROM, bundle and fuses) | **ATTEST6 PASS**: 144 commands, 85 checks, about 29 s including boot | boot 14/14, prov 10/10, soctcb 7/7, os 8/8, user 6/6, attest 8/8, verify 21/21, neg 11/11. Verifier: rounds 1 and 2 ACCEPT; replayed nonce, tampered event log, dropped log entry, tampered quote, tampered DPE leaf, unknown PCR8 driver and hidden PCR31 extend all REJECT. Fourteen corrections to the diagram in §14.1, ten quirks in §14.4. |
+| RTL (Verilator, `tb_nios2x_top_fw`) | *not run yet* | Same command stream. Per-command cycle counts will be added here. |
+
+Limits of this run: emulator steps are instruction counts with instant crypto, not RTL cycles. The SPDM transport between verifier and host is not simulated (the nonce goes straight into the driver). The ROM-phase `FIRMWARE_LOAD` is done by the boot path, not by `attest6_driver.py` (§8 covers it on the RTL). PL1 cannot be tested (one AXI user). Measured boot through `AUTHORIZE_AND_STASH` instead of `ECDSA384_SIGNATURE_VERIFY` + `STASH_MEASUREMENT` is in §12.
+
+TEST material only: the SoC signing keys are generated per run, the vendor CA is the attest4 TEST CA, and the images are deterministic simulation data.

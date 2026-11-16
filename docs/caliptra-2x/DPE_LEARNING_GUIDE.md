@@ -1,8 +1,8 @@
 # DPE on Caliptra 2.x: a learner's guide (with real simulation output)
 
-> **What this is.** A teaching document for engineers new to DICE Protection Environment (DPE) on Caliptra 2.x. It explains the concepts first, then walks through the 10 attestation/DPE mailbox commands that our `attest3` simulation exercises (Part 1, §1–§5) the 8 provisioning, image-authorization and exported-CDI commands of `attest4` as one end-to-end use case (Part 2, §6–§8), and the housekeeping, self-test, CSR, firmware-verify, firmware-load and shutdown commands of `attest5` (Part 3, §9–§11). For each command it covers why the command exists, when a real product uses it, its request and response fields, its preconditions and common errors, and a worked example taken from the real `attest3` emulator run.
+> **What this is.** A teaching document for engineers new to DICE Protection Environment (DPE) on Caliptra 2.x. It explains the concepts first, then walks through the 10 attestation/DPE mailbox commands that our `attest3` simulation exercises (Part 1, §1–§5) the 8 provisioning, image-authorization and exported-CDI commands of `attest4` as one end-to-end use case (Part 2, §6–§8), and the housekeeping, self-test, CSR, firmware-verify, firmware-load and shutdown commands of `attest5` (Part 3, §9–§11), and one end-to-end measured boot and remote attestation built from the user's sequence diagram, with a verifier and seven attacks, from `attest6` (Part 4, §12–§14). For each command it covers why the command exists, when a real product uses it, its request and response fields, its preconditions and common errors, and a worked example taken from the real `attest3` emulator run.
 >
-> **Source of truth:** caliptra-sw `fw-2.1.4` (`runtime/src/*.rs`, `api/src/mailbox.rs`) and caliptra-dpe `f2b7121`. The run is `caliptra2x/sim_2x/attest/attest3_driver.py` against the `attest_emu` sw-emulator with our ROM, firmware bundle and fuses: **ATTEST3 PASS**, 95 commands, 128 checks; Part 2: `attest4_driver.py`, **ATTEST4 PASS**, 161 commands, 164 checks; Part 3: `attest5_driver.py`, **ATTEST5 PASS**, 70 commands, 95 checks. See [SIMULATION_2X.md §11](SIMULATION_2X.md#11-attestation-exercise-3-pcrs-dpe-tagging-certifykey-extended-san-context-limits-disable) for run steps and the hand-verification commands. Files quoted below are in `caliptra2x/sim_2x/attest3_out/emu/` after a run. That folder is not committed, so re-run it to get them.
+> **Source of truth:** caliptra-sw `fw-2.1.4` (`runtime/src/*.rs`, `api/src/mailbox.rs`) and caliptra-dpe `f2b7121`. The run is `caliptra2x/sim_2x/attest/attest3_driver.py` against the `attest_emu` sw-emulator with our ROM, firmware bundle and fuses: **ATTEST3 PASS**, 95 commands, 128 checks; Part 2: `attest4_driver.py`, **ATTEST4 PASS**, 161 commands, 164 checks; Part 3: `attest5_driver.py`, **ATTEST5 PASS**, 70 commands, 95 checks; Part 4: `attest6_driver.py`, **ATTEST6 PASS**, 144 commands, 85 checks. See [SIMULATION_2X.md §11](SIMULATION_2X.md#11-attestation-exercise-3-pcrs-dpe-tagging-certifykey-extended-san-context-limits-disable) for run steps and the hand-verification commands. Files quoted below are in `caliptra2x/sim_2x/attest3_out/emu/` after a run. That folder is not committed, so re-run it to get them.
 >
 > TEST material only: labels, measurements and device-info strings are simulation values.
 
@@ -1297,3 +1297,255 @@ sequenceDiagram
 8. The attested LDevID CSR has a null signature by design. Trust it through the EAT signature.
 9. `CPTRA_BOOT_STATUS` is written only with debug unlocked. Do not use it in product code.
 10. After `SHUTDOWN`, only a cold reset brings Caliptra back.
+
+---
+
+# Part 4: measured boot and remote attestation, end to end (`attest6`)
+
+Parts 1 to 3 looked at the commands one at a time. Part 4 puts them together into the story they exist for: **a device boots, measures every layer of software as it starts it, and later proves to a remote verifier exactly what is running.** It follows the user's five-phase sequence diagram (SoC host, Caliptra, verifier), corrects the places where fw-2.1.4 behaves differently, and adds the part the diagram leaves out: what the verifier actually does with the evidence.
+
+The examples come from `caliptra2x/sim_2x/attest/attest6_driver.py` on the `attest_emu` sw-emulator: **ATTEST6 PASS**, 144 commands, 85 checks. Run steps and the hand checks are in [SIMULATION_2X.md §14](SIMULATION_2X.md#14-exercise-6-end-to-end-measured-boot-and-attestation-the-sequence-diagram). Files quoted below are in `caliptra2x/sim_2x/attest6_out/emu/` after a run (not committed).
+
+## 12. Concepts for Part 4
+
+### 12.1 Measured boot in one picture
+
+"Secure boot" and "measured boot" are different ideas, and a product needs both:
+
+- **Secure boot** answers "may this code run?" Before starting an image, someone checks its signature against a trusted key and refuses to run it if the check fails.
+- **Measured boot** answers "what code did run?" Before starting an image, someone hashes it and records the hash somewhere that the image itself cannot rewrite later.
+
+Secure boot alone cannot tell a remote party anything. Measured boot alone does not stop bad code. Together they give: only signed code runs, **and** there is an unforgeable record of which signed code it was (which version, which config).
+
+On our device the layers are:
+
+```
+ layer          who checks the signature      who measures it          where the measurement goes
+ Caliptra FMC   Caliptra ROM                  Caliptra ROM             PCR0, PCR1 + Caliptra's log
+ Caliptra RT    Caliptra ROM                  Caliptra FMC             PCR2, PCR3 + Caliptra's log
+ bootloader     host + ECDSA384_SIG_VERIFY    host (SHA-384)           STASH_MEASUREMENT: DPE + PCR31
+ OS kernel      host + ECDSA/MLDSA verify     host (SHA-384)           DPE DeriveContext (DPE only)
+ app/driver/cfg (OS policy)                   host (SHA-384)           EXTEND_PCR PCR8
+```
+
+Notice the pattern: Caliptra measures **itself**. For everything above it, the **host** does the hashing and Caliptra only stores what it is given. That is normal (Caliptra cannot read the SoC's flash), and it is why the first thing measured on the SoC side must be the code that does the measuring.
+
+### 12.2 PCRs: an append-only hash chain
+
+A PCR (platform configuration register) is a 48-byte register that can only be **extended**, never written:
+
+```
+PCR_new = SHA-384(PCR_old || measurement)
+```
+
+Starting from zero, after measurements m1, m2, m3:
+
+```
+PCR8 = SHA-384(SHA-384(SHA-384(0^48 || m1) || m2) || m3)
+```
+
+Two properties make this useful. You cannot reach a chosen value without knowing a SHA-384 pre-image, so malware cannot "un-measure" itself. And the order matters, so the PCR also records the sequence. In the run, PCR8 after the app, driver and config hashes was `7207be6e…`, and the driver recomputed exactly that value from the three files.
+
+Caliptra 2.x has 32 PCRs. Who owns which, in fw-2.1.4:
+
+| PCR | Owner | Contents in this run |
+|---|---|---|
+| 0 | ROM (current boot) | device status, vendor key hash, owner key hash, FMC hash |
+| 1 | ROM (journey: survives warm and update resets) | the same on a cold boot |
+| 2 | FMC (current) | runtime firmware hash |
+| 3 | FMC (journey) | the same on a cold boot |
+| 4–30 | host, via `EXTEND_PCR` | PCR8 = app, driver, config |
+| 31 | `STASH_MEASUREMENT` (and, surprisingly, `EXTEND_PCR` too) | bootloader hash |
+
+The host gets `RUNTIME_PCR_RESERVED` (`0x000E003C`) if it tries to extend PCR0–3. The diagram says "locks PCRs 0-3". The real *lock* bit in the PCR vault only stops a PCR from being **cleared**. The ROM sets it on PCR0, PCR1 and PCR31, the FMC on PCR2 and PCR3. The refusal you see is a separate firmware check.
+
+### 12.3 The event log: why a PCR alone is not enough
+
+A PCR value is a 48-byte fingerprint of a whole history. A verifier who sees `PCR8 = 7207be6e…` cannot tell what was measured from that alone. It needs the **event log**: the list of measurements, in order, with a description of each. Then it can **replay** the log (redo every extend in software) and check that it lands on the quoted PCR value. If it does, every entry in the log is genuine, because faking an entry would change the result.
+
+In fw-2.1.4 the log has two halves:
+
+- **Caliptra's half:** `GET_PCR_LOG` returns the ROM's and FMC's entries (5 here: DeviceStatus, VendorPubKeyInfoHash, OwnerPubKeyHash, FmcTci for PCR0/1, RtTci for PCR2/3), 952 bytes with room for 17 entries.
+- **The host's half:** nothing the runtime does is logged by Caliptra. Not `STASH_MEASUREMENT`, not `EXTEND_PCR`. The host keeps its own log, one entry per command it sends. Our driver writes it to `host_event_log.json`:
+
+```json
+{"seq": 0, "kind": "STASH_MEASUREMENT", "pcr": 31, "digest": "bf69a6d4…", "desc": "SoC bootloader v2.3.0 (SBL0)"}
+{"seq": 3, "kind": "EXTEND_PCR",        "pcr": 8,  "digest": "337576ea…", "desc": "application v1.4"}
+{"seq": 4, "kind": "EXTEND_PCR",        "pcr": 8,  "digest": "d0debb96…", "desc": "FPGA driver v3.1"}
+{"seq": 5, "kind": "EXTEND_PCR",        "pcr": 8,  "digest": "5133c4f3…", "desc": "runtime config"}
+```
+
+The host's log does not need to be trusted. If the host lies in it, the replay no longer matches the quote and the verifier rejects (§14.2).
+
+### 12.4 Two kinds of evidence: PCR quotes and DPE certificates
+
+Caliptra offers two independent ways to report measurements, and this flow uses both:
+
+| | PCR quote (`QUOTE_PCRS_*`) | DPE leaf certificate (`CertifyKey`) |
+|---|---|---|
+| What it reports | the 32 PCR values + reset counters | every DPE context on the path: type, SVN, measurement (MultiTcbInfo) |
+| Signed by | the **FMC Alias** key (ECC or ML-DSA) | the **RT Alias** key |
+| Freshness | the verifier's nonce is inside the signed digest | none by itself; add a DPE `Sign` over the nonce |
+| Good for | "which images were measured, in which order" (with the event log) | "which software layer owns this key"; TLS/SPDM identity |
+
+In the run, the leaf certificate's MultiTcbInfo listed four layers: `RMTR` (the runtime; its measurement equals PCR2), `VICC` (the default context Caliptra creates), `SBL0` (the bootloader, SVN 1) and `OSK0` (the kernel, SVN 2). So the same bootloader hash appears in **both** kinds of evidence: in PCR31 (through `STASH_MEASUREMENT`) and in the leaf's TCB list.
+
+### 12.5 Freshness: the nonce
+
+A signed quote proves "these PCRs were real **at some time**". Without a nonce, an attacker could record a good quote once and replay it forever after the device was compromised. So the verifier sends a fresh random **nonce** (32 bytes) and requires it inside the signature:
+
+- `QUOTE_PCRS` puts the nonce into its digest: SHA-512(PCR0 ‖ … ‖ PCR31 ‖ nonce).
+- DPE `Sign` signs whatever digest the host sends, so the host signs SHA-384("A5E-ATTEST6 transcript v1" ‖ nonce ‖ the two quote digests). That proves the DPE key (the one in the leaf certificate) is alive now, on this device.
+
+One RTL detail to remember (§8.8 of the simulation guide): the emulator feeds the nonce into the hash as NONCE[0]…NONCE[7], the real hardware as NONCE[7]…NONCE[0]. Our verifier accepts either and reports which one matched. One validated only against the emulator would reject every real quote.
+
+### 12.6 What the verifier needs in advance
+
+A verifier is only as good as what it compares against. Ours holds:
+
+1. **A root of trust for keys:** the vendor CA that issued the IDevID certificate. Everything else (LDevID, FMC Alias, RT Alias, DPE leaf) must chain up to it. In passive 2.x the host has to give the IDevID certificate back to Caliptra on every boot with `POPULATE_IDEV_*_CERT` (Part 2), otherwise the chain stops at the LDevID.
+2. **Reference values ("golden manifest"):** SHA-384 of every released image (FMC, runtime, bootloader, kernel, app, driver, config), the expected vendor and owner key hashes, and the expected lifecycle (production, debug locked).
+3. **Its own nonce** for this round.
+
+## 13. The flow, phase by phase (with the corrections)
+
+### 13.1 Phase 1: Caliptra boot
+
+**What happens.** The ROM reads the fuses and measures the device status and the key hashes. The host (in our design the Nios, after `ready_for_fw`) sends the firmware bundle with `FIRMWARE_LOAD`. This is the **ROM-phase** load, handled by the ROM's own mailbox loop, not the runtime command of Part 3. The ROM verifies vendor and owner signatures, measures the FMC into PCR0/PCR1, derives the LDevID and FMC Alias keys and jumps to the FMC. The FMC measures the runtime into PCR2/PCR3, derives the RT Alias key, and starts the runtime.
+
+**Correction:** the diagram shows `RDY_FOR_RT` as Caliptra's reply to `FIRMWARE_LOAD`. The mailbox only says "complete". Ready-for-runtime is **bit 29 of `CPTRA_FLOW_STATUS`**, set later; the host polls it. In the run: flow status `0xB0000000` (bits 31, 29, 28).
+
+**What the host checks** (and the run did):
+
+```
+FW_INFO        FMC SHA-384 and RT SHA-384 == SHA-384 of the images in our bundle
+GET_PCR_LOG    5 entries; FmcTci == SHA-384(FMC image), RtTci == SHA-384(runtime image)
+QUOTE_PCRS     PCR0..3 == replay of that log; PCR4..31 still zero
+EXTEND_PCR 0..3   -> 0x000E003C RUNTIME_PCR_RESERVED (Caliptra-owned)
+```
+
+The DeviceStatus entry (18 bytes) is worth decoding once: in our run it says owner key hash in fuses = 1, anti-rollback on, PQC key type 1 (ML-DSA), **lifecycle 3 (production), debug locked 1, subsystem mode 0 (passive)**. A verifier can refuse a device in debug mode just from this entry.
+
+### 13.2 Phase 2: the SoC's first stage (bootloader)
+
+**Step 2, verify.** The host computes SHA-384 of the bootloader and sends `ECDSA384_SIGNATURE_VERIFY` with the SoC's public key (x, y), the signature (r, s) and that hash.
+
+**Correction, and the most important lesson of Part 4:** Caliptra holds no SoC key and never sees the image. The command is a **pure crypto service**. It answers "does this signature match this key and this hash?" and forgets the answer. Our run proves the consequence:
+
+| Test | Result |
+|---|---|
+| real bootloader, SoC key | accepted |
+| bootloader with 1 bit flipped | `0x000E0004` `RUNTIME_ECDSA_VERIFY_FAILED` |
+| signed by an attacker key, checked with the SoC key | `0x000E0004` |
+| signed by an attacker key, **host sends the attacker's public key** | **accepted** |
+
+So all the trust sits in where the host gets the public key from (its own ROM, fuses or OTP), and in the host refusing to continue on a failure. If you want Caliptra itself to enforce "only stash what a signed manifest allows", use `SET_AUTH_MANIFEST` + `AUTHORIZE_AND_STASH` (Part 2) instead.
+
+**Step 3, measure.** `STASH_MEASUREMENT` with `fw_id = 'SBL0'`, the hash, a 48-byte context and SVN 1. Caliptra does two things:
+
+1. creates a DPE context of type `SBL0` holding the hash (and makes it the default context), and
+2. extends PCR31: in the run PCR31 went from zero to SHA-384(0⁴⁸ ‖ H(BL)) = `c9616ba4…`, and no other PCR changed.
+
+**Correction:** "hashes BL" is the host's job, and the stash does **not** appear in `GET_PCR_LOG` (the driver read the log again and it was unchanged). The host writes the event-log entry itself.
+
+### 13.3 Phase 3: handing over to the OS
+
+**Step 4, verify the kernel.** Same as step 2. Our run also did a hybrid check: the kernel's SHA-384 was signed with an ML-DSA-87 SoC key too and checked with `MLDSA87_SIGNATURE_VERIFY` (tampered: `0x000E006C`). A product moving to post-quantum crypto can require both signatures.
+
+**Step 5, DeriveContext.** `INVOKE_DPE` DeriveContext with the kernel hash, type `OSK0`, SVN 2, `MAKE_DEFAULT`. DPE now has a chain RT → `SBL0` → `OSK0`, and every key DPE derives from now on depends on the kernel's hash. If the kernel changes, the leaf key changes, and so does the leaf certificate's TCB list.
+
+**Correction:** "isolates the OS" is only half true. The OS gets its own context, but with `MAKE_DEFAULT` it is simply the new default context. Real isolation means giving the OS a non-default handle or a different locality. Also, DeriveContext **does not change any PCR** (the run compared two quotes around it). Kernel-level measurements live only in DPE certificates unless the host also extends a PCR.
+
+**Step 6, tag.** `DPE_TAG_TCI` (command `0x54514754`) names the OS context `OS01`. `DPE_GET_TAGGED_TCI('OS01')` then returned `tci_current` = the kernel hash and `tci_cumulative` = SHA-384(0⁴⁸ ‖ kernel hash). A tag is just a local name. It is not in any certificate.
+
+### 13.4 Phase 4: user mode
+
+**Step 7.** The OS measures what it loads into PCR8: application, driver, configuration, three `EXTEND_PCR` calls. PCR8 became `7207be6e…`, exactly the recomputed chain.
+
+**Corrections:** `EXTEND_PCR` does not log (the diagram says "logs app/driver/config hash"); the host's log entry is what makes PCR8 explainable. The allowed range is 4..31. Index 32 gives `0x000E003D`. **PCR31 is allowed**, so any PL0 code can extend the bootloader's PCR. Keep your own measurements out of it.
+
+### 13.5 Phase 5: attestation
+
+**Step 8, the challenge.** **Correction:** the verifier does not talk to Caliptra. In passive mode Caliptra has no network port and no SPDM stack. The verifier talks SPDM to the **host** (the Nios runs libspdm in our design), and the host passes the 32-byte nonce on.
+
+**Steps 9 to 11, the evidence.** The host collects, for this nonce:
+
+| Command | What it returns | Size in the run |
+|---|---|---|
+| `GET_PCR_LOG` | Caliptra's half of the log | 952 B |
+| `QUOTE_PCRS_ECC384(nonce)` | 32 PCRs, nonce, 32 reset counters, ECDSA signature by the FMC Alias key | |
+| `QUOTE_PCRS_MLDSA87(nonce)` | the same with an ML-DSA-87 signature | |
+| DPE `GetCertificateChain` | IDevID, LDevID, FMC Alias, RT Alias | ECC 2 reads, ML-DSA 16 reads of 2 KiB |
+| DPE `CertifyKey` | the leaf certificate, signed by RT Alias | ECC 1,331 B, ML-DSA 8,354 B |
+| DPE `Sign` | a signature with the leaf key over SHA-384("A5E-ATTEST6 transcript v1" ‖ nonce ‖ quote digests) | |
+
+**Correction:** the diagram says the quote is signed with "PCRs 0-31 + nonce" (right) but implies the DPE key. It is the **FMC Alias** key. The DPE `Sign` is what binds the leaf key to the nonce, and the host must put the nonce into the digest itself.
+
+**ML-DSA quirk:** DPE `Sign` for ML-DSA has a "raw message" form, but that command is 1,096 bytes and `INVOKE_DPE` accepts at most 512 bytes of DPE data (`0x000E0003`). So the host computes the 64-byte **external mu** itself, mu = SHAKE256(SHAKE256(public key, 64) ‖ 0x00 ‖ 0x00 ‖ message, 64), and sends that. The signature is then an ordinary ML-DSA signature on the message, and `openssl pkeyutl -verify -rawin` accepts it.
+
+**Step 12, the bundle.** Caliptra log + host log + both quotes + both chains + both leaves + both signatures go to the verifier (`attestation_bundle_round1.json`).
+
+## 14. What the verifier does, and the attacks it caught
+
+### 14.1 The checks
+
+The verifier in `attest6_driver.py` uses only the bundle, its nonce, its reference values and OpenSSL. It accepts only if **all** 19 checks pass:
+
+1. **Fresh:** both quotes carry this round's nonce.
+2. **Consistent:** both quote digests recompute from the PCRs and the nonce (emulator or RTL nonce order).
+3. **Rooted:** for ECC and ML-DSA, the FMC Alias certificate (the quote signer) and the DPE leaf chain to the TEST vendor CA through IDevID and LDevID (`openssl verify`).
+4. **Signed:** both quote signatures verify with the FMC Alias key from that chain.
+5. **Live key:** both DPE signatures verify over the transcript the verifier builds itself from its own nonce.
+6. **Layers:** the leaf's MultiTcbInfo contains the reference bootloader and kernel hashes.
+7. **Explained:** replaying Caliptra's log + the host log gives all 32 quoted PCRs.
+8. **Known Caliptra:** FmcTci and RtTci equal SHA-384 of the released FMC and runtime; vendor and owner key hashes match; production lifecycle, debug locked.
+9. **Known software:** every host-logged digest is in the golden manifest; PCR8 and PCR31 equal their golden values; reset counters are 0.
+
+Round 1 (nonce N1): **ACCEPT**.
+
+### 14.2 The attacks
+
+| Attack | How the run made it | Verdict | Which checks failed |
+|---|---|---|---|
+| Replay an old answer | send the round-1 bundle when the verifier asked with nonce N2 | REJECT | nonce; both DPE signatures |
+| (control) | the same device answering N2 properly | ACCEPT | – |
+| Lie in the log | change the driver's digest in the host log | REJECT | replay (PCR8); unknown measurement |
+| Hide a log entry | drop the config entry | REJECT | replay (PCR8) |
+| Edit the quote | flip one bit of PCR8 in the quote | REJECT | quote digest; replay; golden PCR8 |
+| Swap the certificate | flip one byte of the ECC leaf | REJECT | ECC leaf chain |
+| Load unknown code, honestly logged | real `EXTEND_PCR` 8 with an unsigned driver, new nonce, new quote | REJECT | unknown measurement; golden PCR8 (**the replay matches**: the evidence is genuine, the software is not trusted) |
+| Measure behind the verifier's back | real `EXTEND_PCR` **31** (accepted by fw-2.1.4), not logged | REJECT | replay (PCR31); golden PCR31 |
+
+The "unknown code" row is the one to remember. Attestation does not judge software, it **reports** it truthfully. The policy (golden manifest) is what turns a truthful report into "trusted" or "not trusted".
+
+### 14.3 A typical product flow (adds to §5.3, §8.2 and §11.2)
+
+1. **Factory:** IDevID certificate from the vendor CA (Part 2). Store it in flash.
+2. **Every boot, Nios ROM/bootloader:** `FIRMWARE_LOAD` the Caliptra bundle, poll ready-for-runtime, `POPULATE_IDEV_*_CERT`, `FW_INFO` and `GET_PCR_LOG` into the boot record.
+3. **Before running each SoC stage:** hash it, verify its signature with a key from the host's own ROM (`ECDSA384_SIGNATURE_VERIFY`, optionally `MLDSA87_SIGNATURE_VERIFY`); stop on failure; `STASH_MEASUREMENT` (first stage) or DPE `DeriveContext` (later stages); append to the host event log. Or use `AUTHORIZE_AND_STASH` (Part 2).
+4. **OS:** `EXTEND_PCR` into PCRs 4–30 (not 31) for what it loads, with a log entry for each.
+5. **On an SPDM challenge:** `GET_PCR_LOG`, `QUOTE_PCRS_*` with the nonce, DPE chain + `CertifyKey`, DPE `Sign` over the nonce and the quote digests; return everything with the host log.
+6. **Verifier:** the 9 checks of §14.1 against the golden manifest.
+
+### 14.4 Error-code cheat sheet (Part 4)
+
+| Code | Name | Command: cause |
+|---|---|---|
+| `0x000E0003` | `RUNTIME_INSUFFICIENT_MEMORY` | DPE `Sign` ML-DSA raw form (> 512 B of DPE data) |
+| `0x000E0004` | `RUNTIME_ECDSA_VERIFY_FAILED` | `ECDSA384_SIGNATURE_VERIFY`: wrong image hash or wrong key |
+| `0x000E003C` | `RUNTIME_PCR_RESERVED` | `EXTEND_PCR` 0–3 |
+| `0x000E003D` | `RUNTIME_PCR_INVALID_INDEX` | `EXTEND_PCR` index ≥ 32 |
+| `0x000E006C` | `RUNTIME_MLDSA_VERIFY_FAILED` | `MLDSA87_SIGNATURE_VERIFY` |
+
+### 14.5 Quirks to remember (Part 4, fw-2.1.4)
+
+1. `GET_PCR_LOG` has only ROM/FMC entries. Keep a host event log for everything else.
+2. `STASH_MEASUREMENT` extends PCR31 and creates a DPE context, but is not logged.
+3. `EXTEND_PCR` accepts PCR31. Only 0–3 are reserved.
+4. The signature-verify commands are stateless crypto services. Trust comes from the key the host sends.
+5. Quotes are signed by the FMC Alias key, not RT Alias or DPE.
+6. DeriveContext and tags do not change PCRs.
+7. ECC and ML-DSA DPE share one context tree (the ML-DSA leaf lists the stashed bootloader too).
+8. ML-DSA DPE `Sign`: send the 64-byte external mu; the raw form is too big for `INVOKE_DPE`.
+9. The log's FmcTci / RtTci are plain SHA-384 of the images; the bundle TOC holds them word-swapped.
+10. Quote nonce order differs between the emulator and the RTL. Verify real hardware with the RTL order.
