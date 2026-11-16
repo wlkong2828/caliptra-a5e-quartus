@@ -1217,6 +1217,7 @@ The driver finds it at `$CALIPTRA_SW/target/release/examples/attest4_manifest`, 
 
 ```bash
 cd $REPO/caliptra2x/sim_2x
+pkill -f attest_emu; sleep 1           # stop any emulator left from an earlier try (see the note below)
 rm -rf attest4_out/emu && mkdir -p attest4_out/emu
 nice -n 19 $CALIPTRA_SW/target/release/examples/attest_emu ../fw_2x/caliptra-rom.bin \
     ../fw_2x/caliptra-fw-bundle.bin ../fw_2x/fuse_image_2x.hex attest4_out/emu &
@@ -1224,6 +1225,8 @@ CALIPTRA_SW=$CALIPTRA_SW python3 attest/attest4_driver.py attest4_out/emu | tee 
 ```
 
 Each check prints a `STEP ... PASS` line. At the end the driver prints the per-command table, the per-group count (`info 8/8, keys 5/5, prov 22/22, authz 40/40, tamper 38/38, export 18/18, revoke 12/12, mldsa 14/14, lifecycle 5/5, quirks 2/2`) and finally `ATTEST4 PASS`. The exit code is 0 on pass and 1 on fail. The last thing the emulator prints is the `LoadAccessFault` panic from the DMA probe. That is expected, and the emulator exits by itself. `POPULATE` and the export without `RETAIN_PARENT` change the device state, so start a fresh emulator for each run.
+
+**Only one emulator may watch the output folder.** If a run stops early (for example `manifest generator not found`), the emulator started with `&` keeps running in the background, and `rm -rf` does not stop it. Each retry then adds another one. Several emulators then answer the same request, which shows up as the same `EMU req NN cmd ... done` line printed two or more times, and the driver crashes reading a half-written `resp_NNN.hex`: `IndexError: list index out of range` at the `fwerr` line in `mbox()`. Fix it with `pkill -f attest_emu` (check with `pgrep -fl attest_emu` that nothing is left), then rerun the whole block above. The same applies to §9–§11.
 
 **On the RTL (optional, several hours)**
 
