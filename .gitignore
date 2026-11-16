@@ -72,3 +72,7 @@ caliptra2x/sim_2x/attest3_*.out
 caliptra2x/sim_2x/attest4_out/
 caliptra2x/sim_2x/attest4_*.log
 caliptra2x/sim_2x/attest4_*.out
+# attestation exercise 5 (SIMULATION_2X §13) run outputs
+caliptra2x/sim_2x/attest5_out/
+caliptra2x/sim_2x/attest5_*.log
+caliptra2x/sim_2x/attest5_*.out

@@ -14,6 +14,7 @@
 - **Crypto exercise 2:** `attest/crypto2_driver.py` covers SHA-384/512, SHAKE256, HMAC, AES-256 CBC/CTR/GCM, the SP 800-108 counter KDF, HKDF, ECDH P-384 and ML-KEM-1024 (100 commands, negative cases included, OpenSSL cross-check). Emulator: **CRYPTO2 PASS**; RTL not run yet. See [§10](#10-crypto-exercise-2-aes-sha-hmac-kdf-ecdh-ml-kem).
 - **Attestation exercise 3:** `attest/attest3_driver.py` covers `EXTEND_PCR`, `INCREMENT_PCR_RESET_COUNTER`, `DPE_TAG_TCI`, `DPE_GET_TAGGED_TCI`, `CERTIFY_KEY_EXTENDED_ECC384`/`_MLDSA87` (X.509 and CSR), `CERTIFY_KEY_CHUNKS`, `ADD_SUBJECT_ALT_NAME`, `REALLOCATE_DPE_CONTEXT_LIMITS` and `DISABLE_ATTESTATION` (95 commands, 128 checks, negative cases included, OpenSSL cross-check). Emulator: **ATTEST3 PASS**; RTL not run yet. See [§11](#11-attestation-exercise-3-pcrs-dpe-tagging-certifykey-extended-san-context-limits-disable).
 - **Attestation exercise 4:** `attest/attest4_driver.py` runs an end-to-end use case with `POPULATE_IDEV_ECC384_CERT`/`_MLDSA87_CERT` (vendor CA → IDevID → … → DPE leaf), `VERIFY_AUTH_MANIFEST`, `SET_AUTH_MANIFEST` and `AUTHORIZE_AND_STASH` (a real signed SoC auth manifest, stash into DPE and PCR31, 29 tampered or mis-signed manifests), and `SIGN_WITH_EXPORTED_ECDSA`/`_MLDSA` and `REVOKE_EXPORTED_CDI_HANDLE` (161 commands, 164 checks, OpenSSL cross-check). Emulator: **ATTEST4 PASS**; RTL not run yet. See [§12](#12-attestation-exercise-4-idevid-provisioning-soc-image-authorization-exported-cdi-signing).
+- **Exercise 5:** `attest/attest5_driver.py` covers the housekeeping commands (`VERSION`, `CAPABILITIES`, `GET_IMAGE_INFO`, `SELF_TEST_START`/`_GET_RESULTS`, `SHUTDOWN`), the CSR commands (`GET_IDEV_*_CSR`, `GET_FMC_ALIAS_*_CSR`, `GET_ATTESTED_*_CSR`), `FIRMWARE_VERIFY` (the real bundle and 11 tampered or wrong-size variants) and runtime `FIRMWARE_LOAD` (impactless update: 3 rejected images, then the real one), in product order (70 commands, 95 checks, OpenSSL cross-check). Emulator: **ATTEST5 PASS**; RTL not run yet. Needs a one-time rebuild of `attest_emu`. See [§13](#13-exercise-5-housekeeping-csrs-firmware_verify-and-runtime-firmware_load).
 - **Related:** [NIOS_CALIPTRA_2X_INTEGRATION.md](NIOS_CALIPTRA_2X_INTEGRATION.md) (design), [FIRMWARE_AND_KEYS_2X.md](FIRMWARE_AND_KEYS_2X.md) (ROM, bundle, fuse image). The raw record is in `caliptra2x/sim_2x/BOOT_NIOS2X.md` and `caliptra2x/sim_2x/nios2x_top_fw_run.log`.
 
 ---
@@ -1334,3 +1335,211 @@ It lists each sign and revoke with status 1 (pass) or 3 and the codes from §12.
 | RTL (Verilator, `tb_nios2x_top_fw`) | *not run yet* | Same command stream, without the DMA probe. Per-command cycle counts will be added here. |
 
 TEST material only: the manufacturing CA, the manifest keys (caliptra-sw default test keys), the images and the challenge are simulation values.
+
+## 13. Exercise 5: housekeeping, CSRs, FIRMWARE_VERIFY and runtime FIRMWARE_LOAD
+
+This is a fifth host script for the same `+test=attest` run, `attest/attest5_driver.py`. It covers the runtime commands that were never sent before: the "housekeeping" commands a host uses to identify and supervise Caliptra, the CSR commands, and the two firmware-image commands. It runs them **in the order a real product uses them**:
+
+1. **Who are you, what can you do (every boot).** `FW_INFO`, `VERSION`, `CAPABILITIES`.
+2. **Where does each SoC image live (every boot).** `SET_AUTH_MANIFEST` with a two-entry SoC manifest, then `GET_IMAGE_INFO` per FW ID.
+3. **Is the crypto still healthy (periodic, FIPS).** `SELF_TEST_START`, then `SELF_TEST_GET_RESULTS`.
+4. **Enrollment (factory / owner onboarding).** The IDevID and FMC Alias CSRs and the RT-Alias-signed "attested CSRs" for LDevID, FMC Alias and RT Alias, all checked with OpenSSL.
+5. **Firmware update.** `FIRMWARE_VERIFY` the real bundle and 11 tampered or wrong-size variants (nothing changes), then a runtime `FIRMWARE_LOAD` (impactless update = update reset): three bad images that must be rejected, then the real one, with `FW_INFO`, a PCR quote, the RT Alias cert and a DPE leaf compared before and after.
+6. **Power-down.** `SHUTDOWN` last, then every command must fail.
+
+Every result is checked on the host (OpenSSL 3.5 or newer, Python 3, no pip packages), and every reject must carry the exact error code. The concepts and a per-command walk-through are in [DPE_LEARNING_GUIDE.md](DPE_LEARNING_GUIDE.md) Part 3 (§9–§11).
+
+### 13.1 What each command does (fw-2.1.4)
+
+| Command (ID) | What it does | Rules found in the source and the run |
+|---|---|---|
+| `FW_INFO` (`INFO`, `0x494E464F`) | ROM/FMC/RT revisions and digests, SVNs, PL0 PAUSER, `most_recent_fw_error` | 396 B. The runtime SHA-384 equals the bundle's runtime TOC digest. `most_recent_fw_error` keeps the code of a rejected `FIRMWARE_LOAD`. |
+| `VERSION` (`FPVR`, `0x46505652`) | FIPS module identification | 36 B: header, `mode` = `0x46495053` ("FIPS"), `fips_rev[3]` = {HW rev `0x112`, FMC version `0x1044` << 16 \| ROM version `0x1043`, RT version `0x02010004`}, `name` = "Caliptra RTM". Extra request bytes are ignored (quirk 5). |
+| `CAPABILITIES` (`CAPS`, `0x43415053`) | Feature bits of ROM and runtime | 24 B: header + 16-byte big-endian u128. The runtime sets `RT_BASE` (bit 64) and, only with the ocp-lock feature, `RT_OCP_LOCK` (bit 65). Our firmware: `RT_BASE` only. |
+| `GET_IMAGE_INFO` (`IME0`, `0x494D4530`) | Looks a FW ID up in the stored SoC manifest | Request `fw_id[4]`, `flags` (bits 2:1 manifest source: 0 vendor+owner, 1 owner). 80 B: `component_id`, IMC `flags`, load and staging address (hi/lo), digest. Unknown ID or no manifest: `0x000E0061`. Undefined flag bits: `0x000E0009`. |
+| `SELF_TEST_START` (`0x46504C54`, "FPLT") | Schedules the FIPS self-test: all KATs, ROM integrity, re-verification of the loaded image | Returns at once. The test runs when the runtime is idle and **holds the mailbox lock** while it runs. A second START before the results are read: `0x000E0011`. A failing self-test is a fatal error (source). |
+| `SELF_TEST_GET_RESULTS` (`0x46504C67`, "FPLg") | Reports that the self-test finished | Header only, status OK = pass, and the state goes back to idle. Before START, or a second time: `0x000E0012`. |
+| `GET_IDEV_ECC384_CSR` (`IDCR`, `0x49444352`) / `GET_IDEV_MLDSA87_CSR` (`IDMR`, `0x49444D52`) | Returns the IDevID CSR the ROM built at cold boot | Only if CSR generation was requested with the manufacturing flag at cold boot. Our boot did not ask: `0x000E0051` `GET_IDEV_ID_UNPROVISIONED` (both). |
+| `GET_FMC_ALIAS_ECC384_CSR` (`FMCR`, `0x464D4352`) / `_MLDSA87_CSR` (`FMDR`, `0x464D4452`) | Returns the FMC Alias CSR the FMC built at boot | Var-size data. ECC 809 B, ML-DSA 7831 B, self-signed, same key and subject as the FMC Alias cert. |
+| `GET_ATTESTED_ECC384_CSR` (`AECR`, `0x41454352`) / `_MLDSA87_CSR` (`AMCR`, `0x414D4352`) | A CSR wrapped in an EAT and signed by the **RT Alias** key (COSE_Sign1 inside a CWT tag) | Request `key_id` (1 LDevID, 2 FMC Alias, 3 RT Alias, 0 = key inventory without a CSR) and a 32-byte nonce. Other `key_id`: `0x000E0009`. The LDevID CSR has a **null signature** (quirk 8). |
+| `FIRMWARE_VERIFY` (`FWVR`, `0x46575652`) | Runs the full image verification on a bundle in the mailbox, loads nothing | The request **is the raw image** (no checksum header). 12 B response: `0xDEADC0DE` pass, `0x21523F21` fail. Status is 1 in both cases and no error code is reported (quirk 2). |
+| `FIRMWARE_LOAD` (`FWLD`, `0x46574C44`) | Runtime update: the runtime triggers an **update reset**, the ROM verifies and loads the image from the mailbox, FMC and runtime restart | Raw image. Pass: status 2 (complete, no data). Fail: status 3, the ROM's image-verifier code in `CPTRA_FW_ERROR_NON_FATAL`, and the **old** runtime resumes (non-fatal on update reset). |
+| `SHUTDOWN` (`FPSD`, `0x46505344`) | Zeroizes the crypto engines, key vault and persistent data, then the runtime leaves its command loop | Header only. Every later command fails with `0x000E0008` `RUNTIME_SHUTDOWN` (fatal and non-fatal registers). Only a cold reset brings Caliptra back. |
+
+Not sent here: `SET_OWNER_AUTH_MANIFEST` / `VERIFY_OWNER_AUTH_MANIFEST`, `CM_AES_GCM_SPDM_*_INIT`, `CM_DERIVE_STABLE_KEY`, and the OCP LOCK commands (they need the ocp-lock feature).
+
+### 13.2 Command sequence (70 commands)
+
+| Req | Group | Commands | What is checked |
+|---|---|---|---|
+| 000–005 | info | `FW_INFO`, `VERSION`, `CAPABILITIES`, `VERSION` with a wrong checksum, `VERSION` with 4 extra bytes | digests against the bundle TOC and `sha384(image)`; mode, name, versions against the bundle TOC; `RT_BASE` only; `0x000E0005` `INVALID_CHECKSUM` |
+| 006–011 | imginfo | `GET_IMAGE_INFO` before a manifest, `SET_AUTH_MANIFEST` (M5: `0x1001` → comp `0x10`, `0x1002` → comp `0x20`), `GET_IMAGE_INFO` ×5 | component IDs, IMC flags, digest = SHA-384 of the image file; unknown ID, owner source, bad flags rejected |
+| 012–017 | selftest | `GET_RESULTS` before start, `START`, `START` again, `GET_RESULTS`, `GET_RESULTS` again, `FW_INFO` | the host waited for the lock while the test ran; `0x000E0012` / `0x000E0011`; no fatal error |
+| 018–037 | csr | 6 cert reads, 2 IDevID CSRs, 2 FMC Alias CSRs, attested CSRs key 1–3 and 0 and 4 for ECC and ML-DSA | `openssl req -verify`, CSR key and subject = cert key and subject; COSE signature verified with the RT Alias key; nonce echoed; COSE `kid` = RT Alias subject key ID |
+| 038–050 | fwverify | `FIRMWARE_VERIFY` ×12, `FW_INFO` | good → `0xDEADC0DE`; 10 bad → `0x21523F21`; 4 KiB padding → `0xDEADC0DE`; nothing changed |
+| 051–065 | fwload | quote, CertifyKey, 3 × (bad `FIRMWARE_LOAD` + `FW_INFO`), quote, good `FIRMWARE_LOAD`, `FW_INFO`, quote, RT Alias cert, CertifyKey, `GET_IMAGE_INFO` | exact ROM codes, old runtime resumes, PCRs untouched by rejects; after the good load: same digests, PCR1 only changed, same RT Alias cert, same DPE leaf TCBs, manifest kept |
+| 066–069 | shutdown | `SHUTDOWN`, then `VERSION`, `FW_INFO`, `CAPABILITIES` | all three fail with `0x000E0008` |
+
+**The tampered bundles** (from `fw_2x/caliptra-fw-bundle.bin`, 253,440 B; manifest 16,956 B, FMC at 16,956 + 30,760 B, runtime at 47,716 + 205,516 B):
+
+| Variant | Change | `FIRMWARE_VERIFY` | `FIRMWARE_LOAD` (ROM code) |
+|---|---|---|---|
+| `bad_vendor_ecc_sig` | byte 4464 (vendor ECC signature) flipped | `0x21523F21` | `0x000B000C` `VENDOR_ECC_SIGNATURE_INVALID` |
+| `bad_vendor_mldsa_sig` | byte 4640 (vendor ML-DSA signature) | `0x21523F21` | – |
+| `bad_owner_ecc_sig` | byte 11876 (owner ECC signature) | `0x21523F21` | – |
+| `bad_header_svn` | header SVN (signed) | `0x21523F21` | – |
+| `bad_toc` | runtime TOC version (TOC digest mismatch) | `0x21523F21` | – |
+| `bad_fmc_digest` | an FMC image byte | `0x21523F21` | – |
+| `bad_rt_digest` | a runtime image byte | `0x21523F21` | `0x000B0016` `RUNTIME_DIGEST_MISMATCH` |
+| `bad_marker` | manifest marker `CMN2` | `0x21523F21` | – |
+| `truncated_4k` | last 4 KiB cut | `0x21523F21` | `0x000B002F` `IMAGE_LEN_MORE_THAN_BUNDLE_SIZE` |
+| `truncated_manifest` | only 16,952 B (less than the manifest) | `0x21523F21` (quirk 3) | – |
+| `padded_4k` | 4 KiB of zeros appended | **`0xDEADC0DE`** (quirk 4) | – |
+
+**Firmware quirks found (fw-2.1.4):**
+
+1. **The self-test IDs are not "FPST"/"FPGR".** `api/src/mailbox.rs` comments them so, but the values are `0x46504C54` ("FPLT") and `0x46504C67` ("FPLg"). Use the numbers.
+2. **`FIRMWARE_VERIFY` gives no reason.** A bad image returns status 1 with `0x21523F21` and no error code in either error register. To learn why, look at the image yourself (the ROM gives the reason only for `FIRMWARE_LOAD`).
+3. **A request shorter than the manifest is not refused.** `FIRMWARE_VERIFY` reads the manifest from the whole mailbox SRAM, not just `dlen`, so `IMAGE_VERIFIER_ERR_MANIFEST_SIZE_MISMATCH` never fires. The image fails verification instead (`0x21523F21`).
+4. **Trailing bytes are accepted.** The verifier only needs manifest + FMC + runtime ≤ `dlen`, so a bundle with 4 KiB of padding passes.
+5. **`VERSION` ignores extra request bytes** (accepted with 4 extra bytes).
+6. **The self-test holds the mailbox.** After `SELF_TEST_START` the runtime runs the test when idle and locks the mailbox for it (about 5.0 M emulator steps here). A host that wants the mailbox must poll the lock. A second `START` before `GET_RESULTS` is refused even when the test is done.
+7. **No IDevID CSR on this boot.** Both IDevID CSR commands return `0x000E0051`. The ROM builds the CSR only when the manufacturing "generate IDevID CSR" flag is set at cold boot. On a production part, read it once in the factory.
+8. **The attested LDevID CSR has a null signature.** The LDevID private key no longer exists at runtime, so the embedded CSR carries r = s = 0 (ECC) or an all-zero ML-DSA signature. `openssl req -verify` fails by design. The RT Alias COSE signature over the EAT vouches for it. The FMC Alias and RT Alias CSRs are properly self-signed.
+9. **A rejected `FIRMWARE_LOAD` is not fatal.** The ROM writes the image-verifier code to `CPTRA_FW_ERROR_NON_FATAL`, fails the mailbox, and goes on to the FMC and the **old** runtime (still in ICCM). It is back in its command loop about 1.1 M emulator steps later. `FW_INFO.most_recent_fw_error` keeps the code. The PCRs do not change.
+10. **A successful `FIRMWARE_LOAD` completes before the runtime is back.** The mailbox goes to complete (status 2), then the runtime needs about 1.1 M more emulator steps. Wait for `CPTRA_FLOW_STATUS.mailbox_flow_done` (bit 31) before the next command.
+11. **After `SHUTDOWN`** both error registers read `0x000E0008`, every command fails immediately, and `CPTRA_FLOW_STATUS` drops from `0xB0000000` to `0x30000000` (bit 31 `mailbox_flow_done` cleared).
+12. **`CPTRA_BOOT_STATUS` is not a production signal.** The firmware writes it only when debug is unlocked (`drivers/src/soc_ifc.rs`, `report_boot_status`). The emulator still showed `0x600`, `0x602` (self-test complete) and `0x142` (update reset rejected), but the Nios must use `CPTRA_FLOW_STATUS` and the error registers instead.
+
+### 13.3 Run it, step by step
+
+It reuses the prerequisites from §9.3 Step 1 and the manifest generator from §12.3 (Steps 1–4). **`attest_emu` must be rebuilt once**: `attest/emu/attest_emu.rs` was extended for attest5, and the old build stops the driver with `this attest_emu is the pre-attest5 build`.
+
+**Step 1. Set `CALIPTRA_SW` in this shell** (as in §12.3):
+
+```bash
+export CALIPTRA_SW=/path/to/caliptra-sw     # e.g. /Users/<you>/security/caliptra/caliptra-sw
+echo $CALIPTRA_SW                           # must not be empty
+```
+
+**Step 2. Copy the updated emulator source and rebuild it:**
+
+```bash
+cd $REPO/caliptra2x/sim_2x
+cp attest/emu/attest_emu.rs $CALIPTRA_SW/hw-model/examples/
+cd $CALIPTRA_SW && cargo build --release -p caliptra-hw-model --example attest_emu
+cd $REPO/caliptra2x/sim_2x
+```
+
+Wait for `Finished`. The `coverage/Cargo.toml` warning is harmless (§12.3). What changed, so you know why the rebuild matters:
+
+- After every command the emulated core keeps running for 200,000 steps, as the real core does while the Nios prepares the next request. This lets the background self-test start.
+- If the mailbox is locked by Caliptra (the self-test holds it), the emulator polls the lock like the Nios does: step 100,000 cycles, retry.
+- After `FIRMWARE_LOAD` (accepted or rejected) it runs until the runtime is back in its command loop (`CPTRA_FLOW_STATUS.mailbox_flow_done`).
+- Each `resp_NNN.hex` gets extra lines after `fwerr`: `fwfatal`, `boot`, `flow`, `cycles`, `lockwait`, `postcycles` and, on a failure, `err`. The attest3, attest4 and crypto2 drivers ignore them. All three were re-run on the new build and still pass.
+
+If you skip Step 2 the driver stops at the first response with a message that says so.
+
+**Step 3. Check that the manifest generator is there** (built in §12.3; attest5 uses it for `GET_IMAGE_INFO`):
+
+```bash
+ls -l $CALIPTRA_SW/target/release/examples/attest4_manifest
+```
+
+**Step 4. Run it on the emulator (about 25 s)**
+
+```bash
+cd $REPO/caliptra2x/sim_2x
+pkill -f attest_emu; sleep 1           # stop any emulator left from an earlier try
+pgrep -fl attest_emu                   # must print nothing
+rm -rf attest5_out/emu && mkdir -p attest5_out/emu
+nice -n 19 $CALIPTRA_SW/target/release/examples/attest_emu ../fw_2x/caliptra-rom.bin \
+    ../fw_2x/caliptra-fw-bundle.bin ../fw_2x/fuse_image_2x.hex attest5_out/emu &
+sleep 3; pgrep -fl attest_emu          # exactly one
+python3 attest/attest5_driver.py attest5_out/emu | tee attest5_emu.log
+```
+
+Each check prints a `STEP ... PASS` line. A `FIRMWARE_LOAD` request carries 253,440 B, so its `req_NNN.hex` takes a moment to write. At the end the driver prints the per-command table, the per-group count (`info 9/9, imginfo 10/10, selftest 8/8, csr 29/29, fwverify 13/13, fwload 22/22, shutdown 4/4`) and finally `ATTEST5 PASS`. The exit code is 0 on pass and 1 on fail. The run ends with `SHUTDOWN`, so start a fresh emulator for every run. The emulator exits by itself after the end-of-stream request.
+
+**Troubleshooting:**
+
+- **`this attest_emu is the pre-attest5 build`:** repeat Step 2.
+- **`manifest generator not found`:** `CALIPTRA_SW` is empty in this shell, or §12.3 Step 3 was not done.
+- **The driver sits at `req 000 FW_INFO_start`:** no emulator is answering. Run the Step 4 block again from `pkill`.
+- **`EMU req NN ... done` printed twice, or `IndexError` at `fwerr`:** two emulators are watching the folder (§12.3 note). `pkill -f attest_emu` and rerun the block.
+
+**On the RTL (optional, several hours)**
+
+```bash
+cd $REPO/caliptra2x/sim_2x
+rm -rf attest5_out/rtl && mkdir -p attest5_out/rtl
+LOG=attest5_rtl.log nohup setsid nice ./run_nios2x_top_fw.sh +test=attest +attest_dir=attest5_out/rtl \
+    +max_cycles=4000000000 > attest5_rtl.out 2>&1 &
+CALIPTRA_SW=$CALIPTRA_SW nohup setsid python3 attest/attest5_driver.py attest5_out/rtl attest5_rtl.log \
+    > attest5_out/rtl_driver.log 2>&1 &
+
+grep -E 'MILESTONE|STEP|ATTEST5|PASS|FAIL|TIMEOUT' attest5_out/rtl_driver.log attest5_rtl.log
+```
+
+Not run yet. Passing the TB log as the second argument puts the driver in RTL mode: the testbench writes only `status`, `dlen`, data and `fwerr`, so the three emulator-only checks (the self-test lock wait, `CPTRA_BOOT_STATUS` 0x602, the post-update step count) are skipped, and the per-command cycle counts are read from the log. The testbench already polls `MBOX_LOCK` before every request, which covers the self-test and the update reset.
+
+Outputs in the run folder (gitignored with `attest5_*.log`): `attest5_summary.json` (every command with status, both error registers, flow status and emulator steps; every check; the decoded `VERSION`, `CAPABILITIES`, `GET_IMAGE_INFO`, CSR and attested-CSR results; the tamper table; the `FIRMWARE_LOAD` results; the per-group counts), the files below, and the raw `req_*.hex`/`resp_*.hex`.
+
+### 13.3.1 Verify the output files yourself
+
+`cd attest5_out/emu`. Run as written on the emulator output (OpenSSL 3.5.7).
+
+| File | What it is |
+|---|---|
+| `{ldevid,fmc_alias,rt_alias}_{ecc384,mldsa87}.{pem,der}`, `*.pubkey.pem` | reference certs and their public keys |
+| `get_fmc_alias_{ecc384,mldsa87}_csr.{der,pem,txt}` | the FMC Alias CSRs |
+| `get_attested_*_csr_keyN.cose` | the raw COSE_Sign1 (CWT) blobs |
+| `get_attested_*_csr_keyN.msg`, `.sig.der` / `.sig` | COSE `Sig_structure` and the signature (ECC as DER) |
+| `get_attested_*_csr_keyN_csr.{der,pem,txt}` | the CSR taken out of each EAT |
+| `bundle_*.bin` | the 11 tampered or wrong-size bundles |
+| `manifest_m5.bin`, `nios_app_v1.bin`, `bitstream_revA.rbf` | the SoC manifest for `GET_IMAGE_INFO` and the two images |
+| `pcrs_{before,after}_update.bin` | the 32 PCRs (48 B each) around the good `FIRMWARE_LOAD` |
+| `leaf_ecc_{before,after}_update.pem` | DPE leaves before and after the update |
+
+**CSRs**
+
+```bash
+openssl req -inform DER -in get_fmc_alias_ecc384_csr.der -noout -verify
+openssl req -inform DER -in get_fmc_alias_mldsa87_csr.der -noout -verify
+openssl req -inform DER -in get_fmc_alias_ecc384_csr.der -noout -pubkey | cmp - fmc_alias_ecc384.pubkey.pem && echo "CSR key == FMC Alias cert key"
+openssl req -inform DER -in get_attested_ecc384_csr_key3_csr.der -noout -verify -subject
+openssl req -inform DER -in get_attested_ecc384_csr_key1_csr.der -noout -verify     # LDevID: fails by design (null signature)
+```
+
+The first four print `Certificate request self-signature verify OK` (twice), `CSR key == FMC Alias cert key`, and `verify OK` with `subject=CN=Caliptra 2.1 Ecc384 Rt Alias, serialNumber=E61EC4C2…`. The last prints `Certificate request self-signature verify failure` (quirk 8).
+
+**The attested-CSR signature (RT Alias)**
+
+```bash
+openssl dgst -sha384 -verify rt_alias_ecc384.pubkey.pem -signature get_attested_ecc384_csr_key2.sig.der get_attested_ecc384_csr_key2.msg
+openssl pkeyutl -verify -pubin -inkey rt_alias_mldsa87.pubkey.pem -rawin -in get_attested_mldsa87_csr_key2.msg -sigfile get_attested_mldsa87_csr_key2.sig
+```
+
+They print `Verified OK` and `Signature Verified Successfully`.
+
+**The update: PCRs and the tampered bytes**
+
+```bash
+python3 -c "
+b=open('pcrs_before_update.bin','rb').read(); a=open('pcrs_after_update.bin','rb').read()
+print('changed PCRs:', [i for i in range(32) if b[48*i:48*i+48]!=a[48*i:48*i+48]])"
+cmp ../../../fw_2x/caliptra-fw-bundle.bin bundle_bad_rt_digest.bin
+```
+
+The first prints `changed PCRs: [1]`. The second shows the one flipped byte (`byte 47973`, inside the runtime image that starts at 47,716).
+
+### 13.4 Results
+
+| Backend | Result | Notes |
+|---|---|---|
+| sw-emulator (`attest_emu` attest5 build, same ROM, bundle and fuses) | **ATTEST5 PASS**: 70 commands, 95 checks, about 25 s including boot | info 9/9, imginfo 10/10, selftest 8/8, csr 29/29, fwverify 13/13, fwload 22/22, shutdown 4/4. Every reject returned the expected code. Self-test passed (lock held about 5.0 M steps). IDevID CSR not available (`0x000E0051`). `FIRMWARE_VERIFY`: good `0xDEADC0DE`, 10 bad `0x21523F21`, padded accepted. `FIRMWARE_LOAD`: rejects `0x000B000C`, `0x000B0016`, `0x000B002F`, each time the old runtime resumed; the good load restarted the runtime with PCR1 the only PCR changed. Twelve quirks in §13.2. |
+| RTL (Verilator, `tb_nios2x_top_fw`) | *not run yet* | Same command stream. Per-command cycle counts will be added here. |
+
+Limits of this run: emulator steps are instruction counts with instant crypto, not RTL cycles. The DMA image sources (load and staging addresses) stay untested (the emulator crashes on DMA in passive mode, §12). PL1 cannot be tested (one AXI user). A failing self-test and the IDevID CSR success path would need a fault-injection build and a manufacturing-mode boot.
+
+TEST material only: the manifest keys are the caliptra-sw default test keys, and the images and nonces are simulation values.

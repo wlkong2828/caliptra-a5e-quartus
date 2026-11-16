@@ -1,8 +1,8 @@
 # DPE on Caliptra 2.x: a learner's guide (with real simulation output)
 
-> **What this is.** A teaching document for engineers new to DICE Protection Environment (DPE) on Caliptra 2.x. It explains the concepts first, then walks through the 10 attestation/DPE mailbox commands that our `attest3` simulation exercises (Part 1, §1–§5) and the 8 provisioning, image-authorization and exported-CDI commands of `attest4` as one end-to-end use case (Part 2, §6–§8). For each command it covers why the command exists, when a real product uses it, its request and response fields, its preconditions and common errors, and a worked example taken from the real `attest3` emulator run.
+> **What this is.** A teaching document for engineers new to DICE Protection Environment (DPE) on Caliptra 2.x. It explains the concepts first, then walks through the 10 attestation/DPE mailbox commands that our `attest3` simulation exercises (Part 1, §1–§5) the 8 provisioning, image-authorization and exported-CDI commands of `attest4` as one end-to-end use case (Part 2, §6–§8), and the housekeeping, self-test, CSR, firmware-verify, firmware-load and shutdown commands of `attest5` (Part 3, §9–§11). For each command it covers why the command exists, when a real product uses it, its request and response fields, its preconditions and common errors, and a worked example taken from the real `attest3` emulator run.
 >
-> **Source of truth:** caliptra-sw `fw-2.1.4` (`runtime/src/*.rs`, `api/src/mailbox.rs`) and caliptra-dpe `f2b7121`. The run is `caliptra2x/sim_2x/attest/attest3_driver.py` against the `attest_emu` sw-emulator with our ROM, firmware bundle and fuses: **ATTEST3 PASS**, 95 commands, 128 checks; Part 2: `attest4_driver.py`, **ATTEST4 PASS**, 161 commands, 164 checks. See [SIMULATION_2X.md §11](SIMULATION_2X.md#11-attestation-exercise-3-pcrs-dpe-tagging-certifykey-extended-san-context-limits-disable) for run steps and the hand-verification commands. Files quoted below are in `caliptra2x/sim_2x/attest3_out/emu/` after a run. That folder is not committed, so re-run it to get them.
+> **Source of truth:** caliptra-sw `fw-2.1.4` (`runtime/src/*.rs`, `api/src/mailbox.rs`) and caliptra-dpe `f2b7121`. The run is `caliptra2x/sim_2x/attest/attest3_driver.py` against the `attest_emu` sw-emulator with our ROM, firmware bundle and fuses: **ATTEST3 PASS**, 95 commands, 128 checks; Part 2: `attest4_driver.py`, **ATTEST4 PASS**, 161 commands, 164 checks; Part 3: `attest5_driver.py`, **ATTEST5 PASS**, 70 commands, 95 checks. See [SIMULATION_2X.md §11](SIMULATION_2X.md#11-attestation-exercise-3-pcrs-dpe-tagging-certifykey-extended-san-context-limits-disable) for run steps and the hand-verification commands. Files quoted below are in `caliptra2x/sim_2x/attest3_out/emu/` after a run. That folder is not committed, so re-run it to get them.
 >
 > TEST material only: labels, measurements and device-info strings are simulation values.
 
@@ -927,3 +927,373 @@ What the verifier learns from one exported cert plus its chain: the device is ge
 8. One exported CDI serves both algorithms, and either sign command accepts either handle.
 9. An export without `RETAIN_PARENT` removes the PL0 default context until reset.
 10. The `context` field of `AUTHORIZE_AND_STASH` is not used by fw-2.1.4.
+
+---
+
+# Part 3: housekeeping, CSRs, firmware verify and update (`attest5`)
+
+Parts 1 and 2 covered what Caliptra measures and what it signs. Part 3 covers the commands a product uses to **look after** Caliptra itself: ask who it is, check its crypto is healthy, get its keys certified, update its firmware without a reboot, and power it down cleanly. None of these touch DPE contexts directly, but two of them change what DPE and the PCRs report (§9.4), so they belong in the same guide.
+
+The examples come from `caliptra2x/sim_2x/attest/attest5_driver.py` on the `attest_emu` sw-emulator: **ATTEST5 PASS**, 70 commands, 95 checks. Run steps and the hand checks are in [SIMULATION_2X.md §13](SIMULATION_2X.md#13-exercise-5-housekeeping-csrs-firmware_verify-and-runtime-firmware_load). Files quoted below are in `caliptra2x/sim_2x/attest5_out/emu/` after a run (not committed).
+
+## 9. Concepts for Part 3
+
+### 9.1 The host's job over Caliptra's life
+
+Think of the Nios as Caliptra's caretaker. Over the life of one power-on it does five kinds of work, and Part 3 has one group of commands for each:
+
+```
+ cold boot ──► identify ──► (supervise ··· serve attestation ···) ──► update ──► ... ──► shut down
+               FW_INFO        SELF_TEST_START / _GET_RESULTS          FIRMWARE_VERIFY      SHUTDOWN
+               VERSION        GET_IMAGE_INFO (per SoC image)          FIRMWARE_LOAD
+               CAPABILITIES   CSRs (factory / owner onboarding)
+```
+
+- **Identify** happens on every boot. The host must know which firmware it is talking to before it trusts any answer, and which features exist before it calls them.
+- **Supervise** is periodic. FIPS 140-3 requires the module to be able to re-run its self-tests on demand.
+- **Enrol** happens once per owner (in the factory, or when a new owner takes the device). A CA needs a CSR before it will issue a certificate.
+- **Update** happens a few times in the product's life. It must be safe: a bad image must never brick the device or weaken attestation.
+- **Shut down** happens before power is removed, or as a tamper response.
+
+### 9.2 Three ways to ask "who are you?"
+
+| Command | Answers | Who reads it |
+|---|---|---|
+| `FW_INFO` | Exact build: ROM/FMC/RT git revisions, SHA-384 of FMC and runtime, SVNs, vendor/owner key hashes, the last firmware error | the host's own logic, logs, fleet inventory |
+| `VERSION` | The FIPS module identity: mode `FIPS`, hardware, FMC, ROM and runtime version numbers, name "Caliptra RTM" | a FIPS auditor, the security policy document |
+| `CAPABILITIES` | Feature bits: which optional commands this ROM and runtime support | the host, before it uses an optional feature |
+
+The rule of thumb: **`FW_INFO` to decide, `VERSION` to report, `CAPABILITIES` to gate features.** In the run, the runtime digest in `FW_INFO` equals both the bundle's runtime TOC digest and `sha384(runtime image)`, so a host can match the running firmware against a release list without trusting anything Caliptra says about itself beyond one hash.
+
+### 9.3 The FIPS self-test, and why it locks the mailbox
+
+At boot the ROM already ran the known-answer tests (KATs) for every algorithm. FIPS 140-3 also wants an **on-demand** self-test, for example once a day or before a sensitive operation. In Caliptra that is two commands:
+
+1. `SELF_TEST_START` only **schedules** the test and returns at once.
+2. When the runtime is next idle, it takes the mailbox lock itself and runs every KAT, checks the ROM's integrity and re-verifies the loaded firmware image. That takes millions of cycles (about 5.0 M emulator steps here).
+3. `SELF_TEST_GET_RESULTS` reports the outcome once. Reading it moves the state back to idle.
+
+Because Caliptra holds the mailbox lock during step 2, **the host simply waits on `MBOX_LOCK`** like for any other command. A host with a short lock timeout will think Caliptra hung. If the test fails, Caliptra raises a **fatal** error: it stops serving, because crypto that fails its KAT cannot be trusted. That is why `GET_RESULTS` on success is just "status OK".
+
+### 9.4 Getting a certificate: three kinds of CSR
+
+A device key is only useful once a CA has certified it. A CA certifies keys from a **certificate signing request** (CSR): the public key plus a subject name, signed with the matching private key to prove possession. Caliptra offers three CSR sources, for different moments:
+
+| CSR | Built by | When it exists | Use case |
+|---|---|---|---|
+| IDevID CSR (`GET_IDEV_*_CSR`) | ROM, at cold boot | only when the manufacturing "generate IDevID CSR" flag was set at that boot | **Factory**: the vendor CA signs the IDevID once. The cert then goes into fuses/flash and is given back with `POPULATE_IDEV_*_CERT` (Part 2) |
+| FMC Alias CSR (`GET_FMC_ALIAS_*_CSR`) | FMC, at every boot | always | an owner who wants its **own CA** to certify the FMC Alias key, instead of trusting the chain from LDevID |
+| Attested CSR (`GET_ATTESTED_*_CSR`) | runtime, on request | always | **remote onboarding**: a CSR for LDevID, FMC Alias or RT Alias, wrapped in a signed token that proves *this CSR came from a genuine Caliptra* |
+
+The attested CSR solves a real problem. A plain CSR proves the requester has the private key, but not that the key lives in Caliptra. An attacker with a software key can produce a perfect CSR. The attested CSR wraps the CSR in an **EAT** (Entity Attestation Token, a signed CBOR claims set) signed by the **RT Alias key**, whose certificate chains to the IDevID. The CA checks that chain, then the EAT signature, then the nonce it chose, and only then signs the CSR.
+
+The EAT is a CWT (tag 61) around a COSE_Sign1 (tag 18): `[protected, unprotected, payload, signature]`. Here is the real key 1 (LDevID) token:
+
+```
+61(18([
+  << {1: -51 (ECDSA P-384 / SHA-384; ML-DSA-87 uses -50), 3: 263 (application/eat+cwt),
+      4: h'e61ec4c252064a0af7a10408ddd6d291f9f1666a' (kid = RT Alias subject key ID)} >>,
+  {},
+  << {10: h'85d63f78…'               (32-byte nonce, our request echoed),
+      -70001: h'3082017d…'           (the LDevID CSR, 385 B DER),
+      -70002: {111(OID 1.3.6.1.4.1.42623.1.2): 3}   (key derivation attributes)} >>,
+  h'14765c56…' (96-byte ECDSA signature r||s)
+]))
+```
+
+The signature covers `["Signature1", protected, h'', payload]` (the COSE Sig_structure). The **key derivation attributes** say what the key is derived from, as a bit field from the OCP DIP specification: bit 0 UDS, bit 1 field entropy, bit 4 FMC, bit 5 runtime. The run shows exactly the DICE layering:
+
+| key_id | Key | Attribute | Meaning |
+|---|---|---|---|
+| 1 | LDevID | `3` | UDS + field entropy |
+| 2 | FMC Alias | `19` | + FMC measurement |
+| 3 | RT Alias | `51` | + runtime measurement |
+| 0 | (inventory) | `[[1, 3], [2, 19], [3, 51]]` in claim `-70003`, no CSR | "which keys do you have?" |
+
+So a CA can tell an LDevID key (survives firmware updates) from an RT Alias key (changes with the runtime image) by reading one integer.
+
+### 9.5 Verify first, then load: firmware update without a reboot
+
+A firmware update on Caliptra 2.x is an **update reset**, sometimes called an impactless update:
+
+```
+FIRMWARE_LOAD ──► runtime triggers update reset ──► ROM verifies the image in the mailbox
+                                                   ├─ good: load FMC + RT, mailbox "complete" (status 2)
+                                                   │        FMC re-derives RT Alias, new runtime starts
+                                                   └─ bad:  mailbox "failure" (status 3), code in FW_ERROR_NON_FATAL,
+                                                            ROM jumps to the FMC and the OLD runtime (still in ICCM)
+```
+
+Only the core restarts. The SoC, the Nios, DPE state, the PCR bank, the stored SoC manifest and the cold-boot keys (UDS, LDevID, FMC Alias) stay. The run checked exactly what changes:
+
+| After the good update | Result | Why |
+|---|---|---|
+| ROM/FMC/RT digests in `FW_INFO` | same | same image loaded again |
+| PCR0 (current FMC + RT) | same `07f29b07…` | re-computed from the same image |
+| PCR1 (journey) | `07f29b07…` → `03e6c4b7…` | extended with the new measurement, never reset except by cold boot: a verifier can see an update happened |
+| RT Alias cert | same | RT Alias is derived from the runtime digest, which did not change. A *different* runtime gets a new RT Alias key |
+| DPE leaf TCB entries | same (`RMTR`, `VICC`) | DPE holds the current runtime measurement, not the history |
+| SoC manifest (`GET_IMAGE_INFO`) | kept | persistent data |
+
+`FIRMWARE_VERIFY` runs the **same** image verifier in the runtime but loads nothing. That is the safe order for a product: **verify, and only load an image that verified.** The two give different detail:
+
+| | `FIRMWARE_VERIFY` | `FIRMWARE_LOAD` |
+|---|---|---|
+| Who verifies | runtime | ROM after the update reset |
+| Pass | status 1, result `0xDEADC0DE` | status 2 (complete), runtime restarts |
+| Fail | status 1, result `0x21523F21`, **no reason** | status 3, exact ROM code (e.g. `0x000B000C`) |
+| Effect | none | new firmware, or old runtime back after about 1.1 M steps |
+
+Two practical consequences. A rejected load costs a full update reset (2.3 M + 1.1 M emulator steps against 0.19 M for a verify), so verifying first is also cheaper. And `FIRMWARE_LOAD` returning does **not** mean the runtime is ready: wait for `CPTRA_FLOW_STATUS` bit 31 (`mailbox_flow_done`) before the next command.
+
+### 9.6 Shutting down
+
+`SHUTDOWN` zeroizes the crypto engines, the key vault and Caliptra's persistent data, then the runtime leaves its command loop. After it, every command fails with `0x000E0008` `RUNTIME_SHUTDOWN` and only a cold reset helps. Use it before power-off (so no key lingers in SRAM while rails decay), when the platform detects tampering, or before handing a board to repair. It is the FIPS "zeroization" service.
+
+## 10. The commands
+
+Every request starts with the checksum word (as in Parts 1 and 2), except `FIRMWARE_VERIFY` and `FIRMWARE_LOAD`. Every data response starts with checksum and `fips_status` (0 = approved). Status 1 = data ready, 2 = complete (no data), 3 = failure.
+
+### 10.1 `FW_INFO` (`0x494E464F`, "INFO")
+
+**Why:** the authoritative description of the running firmware. **When:** first command after every boot and after every update, and in field diagnostics (`most_recent_fw_error`).
+
+| Request | Response (396 B) |
+|---|---|
+| header only | `pl0_pauser`, `fw_svn`, `min_fw_svn`, `cold_boot_fw_svn`, `attestation_disabled`, ROM/FMC/RT revision (20-byte git hashes), ROM SHA-256, FMC and RT SHA-384, owner and vendor key hashes, SoC manifest digest, `most_recent_fw_error`, key indexes, SoC manifest SVNs, … |
+
+```
+req_000:  494e464f 00000004 fffffed4
+resp_000: 00000001 0000018c ffff6f41 00000000 00000001 00000000 00000000 00000000 …
+          ready    396 B    checksum fips_ok  pl0=1    fw_svn   min_svn  cold_svn
+runtime_sha384 = e3dc800c1fb2ee2e…  == bundle RT TOC digest == sha384(runtime image)   (python check)
+```
+
+`most_recent_fw_error` is `0` at boot, `0x000B000C` after the first rejected load, and stays at the last code (`0x000B002F`) even after a later successful load: it is a history field, not a "current error".
+
+### 10.2 `VERSION` (`0x46505652`, "FPVR")
+
+**Why:** FIPS module identification. **When:** for the security-policy report, or when an auditor asks.
+
+```
+req_001:  46505652 00000004 fffffec2
+resp_001: 00000001 00000024 fffff9ca 00000000 46495053 00000112 10441043 02010004 696c6143 61727470 4d545220
+                   36 B              fips_ok  "FIPS"   HW rev   FMC|ROM  RT ver   "Cali"   "ptra"   " RTM"
+```
+
+`fips_rev[1]` packs the FMC version (`0x1044`) in the upper half and the ROM version (`0x1043`) in the lower half. Both match the bundle TOC. **Errors:** a wrong checksum gives `0x000E0005` `INVALID_CHECKSUM` (req 003). Four extra request bytes are accepted (req 004).
+
+### 10.3 `CAPABILITIES` (`0x43415053`, "CAPS")
+
+**Why:** feature discovery, so one host image can drive several Caliptra builds. **When:** once per boot, before using an optional command family.
+
+```
+resp_002: 00000001 00000018 ffffffff 00000000 00000000 01000000 00000000 00000000
+                                              └── 16-byte big-endian u128 ──────────┘
+caps = 0x00000000000000010000000000000000 → bit 64 RT_BASE only (bit 65 RT_OCP_LOCK clear)
+```
+
+The lower 64 bits are for the ROM, the upper 64 for the runtime. Our runtime is built without the OCP LOCK feature, so a host must not send OCP LOCK commands.
+
+### 10.4 `GET_IMAGE_INFO` (`0x494D4530`, "IME0")
+
+**Why:** the SoC auth manifest (Part 2, §6.2) is where the vendor and owner list each SoC image. This command reads one entry back, so a loader can find **where** to load an image and **what digest** to expect without parsing the manifest itself. **When:** in the SoC boot loader, per image, before `AUTHORIZE_AND_STASH`.
+
+| Request | Response (80 B) |
+|---|---|
+| `fw_id` [4], `flags` (bits 2:1 manifest source, 0 = vendor+owner, 1 = owner) | `component_id`, IMC `flags`, load address hi/lo, staging address hi/lo, `digest` [48] |
+
+```
+req_007:  494d4530 0000000c fffffee4 00001001 00000000          fw_id 0x1001 (app), flags 0
+resp_007: 00000001 00000050 ffffebdc 00000000 00000010 00000001 00000000 00000000 00000000 00000000 1bed49aa …
+                                              comp 0x10 flags 1  load hi/lo         staging hi/lo     digest
+digest = sha384(nios_app_v1.bin)                                                  (python check: True)
+```
+
+**Errors (seen):** before any manifest, unknown FW ID or owner-only source: `0x000E0061` (req 005, 009, 010). Undefined flag bits: `0x000E0009` (req 011). Addresses are 0 because our manifest uses in-request digests.
+
+### 10.5 `SELF_TEST_START` (`0x46504C54`, "FPLT") and `SELF_TEST_GET_RESULTS` (`0x46504C67`, "FPLg")
+
+**Why:** the FIPS on-demand self-test (§9.3). **When:** periodically (for example daily) and before a FIPS-relevant operation if the policy asks for it. Not at every boot: the ROM already ran the KATs.
+
+```
+req_012 GET_RESULTS (before START)   → status 3, fwerr 000e0012 SELF_TEST_NOT_STARTED
+req_013 START  46504c54 00000004 fffffeca → 00000001 00000008 00000000 00000000   accepted
+        ... Caliptra goes idle, takes the mailbox lock, runs the test ...
+req_014 START again: host waited 5,000,000 cycles for MBOX_LOCK, then status 3, fwerr 000e0011 SELF_TEST_IN_PROGRESS
+req_015 GET_RESULTS  46504c67 00000004 fffffeb7 → 00000001 00000008 00000000 00000000   pass
+req_016 GET_RESULTS again → status 3, fwerr 000e0012 (result already read)
+```
+
+Note the source comments call these "FPST" and "FPGR". Use the numeric IDs. A second `START` is refused until the result has been read, even if the test has finished.
+
+### 10.6 `GET_IDEV_ECC384_CSR` (`0x49444352`, "IDCR") / `GET_IDEV_MLDSA87_CSR` (`0x49444D52`, "IDMR")
+
+**Why:** the factory step that starts the device's identity: the vendor CA signs the IDevID public key. **When:** once, on the manufacturing line, on a boot with the "generate IDevID CSR" flag set in `CPTRA_DBG_MANUF_SERVICE_REG`. The ROM builds the CSR at that cold boot and the runtime only hands it out.
+
+```
+req_024: 49444352 00000004 fffffede → status 3, fwerr 000e0051 GET_IDEV_ID_UNPROVISIONED
+req_025: 49444d52 …                 → status 3, fwerr 000e0051
+```
+
+Our boot did not set the flag, so this is the expected answer. On a production line, boot with the flag, read the CSR (response: `data_size` + DER), have the CA sign it, and store the cert.
+
+### 10.7 `GET_FMC_ALIAS_ECC384_CSR` (`0x464D4352`, "FMCR") / `GET_FMC_ALIAS_MLDSA87_CSR` (`0x464D4452`, "FMDR")
+
+**Why:** lets an owner's CA certify the FMC Alias key directly. **When:** owner onboarding, when the owner wants its own PKI to issue the device certificate.
+
+```
+req_026:  464d4352 00000004 fffffed8
+resp_026: 00000001 00000335 fffef9fa 00000000 00000329 25038230 ab028230 …
+                   821 B                      809 B    DER "30 82 03 25 …" (little-endian words)
+$ openssl req -in get_fmc_alias_ecc384_csr.pem -verify -noout -subject
+Certificate request self-signature verify OK
+subject=CN=Caliptra 2.1 Ecc384 FMC Alias, serialNumber=CF64C9DDE91AB6A5…
+```
+
+The CSR's public key and subject equal those of the FMC Alias certificate from `GET_FMC_ALIAS_ECC384_CERT`. ML-DSA: 7,831 B, also self-signed and verified.
+
+### 10.8 `GET_ATTESTED_ECC384_CSR` (`0x41454352`, "AECR") / `GET_ATTESTED_MLDSA87_CSR` (`0x414D4352`, "AMCR")
+
+**Why:** a CSR a remote CA can trust came from a genuine Caliptra (§9.4). **When:** remote onboarding (OCP Device Identity Provisioning), every time an owner enrols a device it cannot touch physically. The CA picks the nonce, so an old token cannot be replayed.
+
+| Request | Response |
+|---|---|
+| `key_id` (0 inventory, 1 LDevID, 2 FMC Alias, 3 RT Alias), `nonce` [32] | `data_size` + the CWT/COSE_Sign1 token |
+
+```
+req_028:  41454352 00000028 ffffed64 00000001 783fd685 54ff4bff …   key_id 1, nonce 85d63f78ff4bff54… (bytes)
+resp_028: 00000001 00000257 ffff401c 00000000 0000024b 84d23dd8 01a31e58 …
+                   599 B                      587 B    d8 3d (tag 61) d2 (tag 18) 84 (array of 4)
+COSE signature  (ECDSA P-384 over Sig_structure) with rt_alias_ecc384.pubkey.pem: Verified OK
+payload nonce == request nonce; kid == RT Alias SKI e61ec4c2…
+embedded CSR: CN=Caliptra 2.1 Ecc384 LDevID, 385 B
+```
+
+| key_id | ECC token / CSR | ML-DSA token / CSR | CSR signature |
+|---|---|---|---|
+| 1 LDevID | 587 / 385 B | 12,236 / 7,502 B | **null** (r = s = 0): the LDevID private key is gone at runtime. The EAT signature vouches for it |
+| 2 FMC Alias | 1,011 / 809 B | 12,565 / 7,831 B | self-signed, verifies |
+| 3 RT Alias | 793 / 590 B | 12,348 / 7,613 B | self-signed, verifies |
+| 0 inventory | 231 B, no CSR | 4,763 B | – |
+| 4 | `0x000E0009` | `0x000E0009` | – |
+
+How a CA checks it, step by step (all done by the driver with OpenSSL):
+
+1. Verify the RT Alias certificate chain up to the IDevID it trusts.
+2. Rebuild `["Signature1", protected, h'', payload]` and verify the signature with the RT Alias public key (the `kid` says which key).
+3. Check the nonce is the one it sent.
+4. Read the key attributes (§9.4) to know which DICE layer the key belongs to.
+5. Take the CSR's public key and subject, and issue the certificate.
+
+### 10.9 `FIRMWARE_VERIFY` (`0x46575652`, "FWVR")
+
+**Why:** check an update image **before** committing to it (§9.5). **When:** as soon as a new bundle arrives (from flash, from the network), and again just before `FIRMWARE_LOAD`.
+
+The request is the **raw bundle**: `MBOX_CMD` = FWVR, `MBOX_DLEN` = image size, then the image words. No checksum word.
+
+```
+req_038:  46575652 0003de00 | 324e4d43 0000423c 00000001 …    cmd, dlen 253,440 | image starts "CMN2" marker
+resp_038: 00000001 0000000c fffffcd7 00000000 deadc0de          VERIFY_SUCCESS (190,332 emulator steps)
+resp_039: 00000001 0000000c ffffff2d 00000000 21523f21          VERIFY_FAILURE (vendor ECC signature byte flipped)
+```
+
+All ten tampered bundles (signatures, signed header SVN, TOC, FMC or RT byte, marker, cut short) gave `0x21523F21`. A bundle with 4 KiB of zeros appended passed: the verifier only needs manifest + FMC + RT to fit in `dlen`. A bundle shorter than the manifest fails verification rather than giving a size error. Nothing in `FW_INFO` changed.
+
+### 10.10 `FIRMWARE_LOAD` (`0x46574C44`, "FWLD")
+
+**Why:** install new Caliptra firmware without resetting the SoC (§9.5). **When:** after `FIRMWARE_VERIFY` returned `0xDEADC0DE`, typically in a maintenance window. It is also the only way to recover the runtime without a cold boot.
+
+```
+req_053 bad vendor ECC sig:  46574c44 0003de00 324e4d43 …  → status 3, FW_ERROR_NON_FATAL 000b000c, fatal 0
+         runtime back after 1,102,537 steps; FW_INFO.most_recent_fw_error = 000b000c; PCRs unchanged
+req_055 bad RT digest       → 000b0016 RUNTIME_DIGEST_MISMATCH
+req_057 last 4 KiB cut      → 000b002f IMAGE_LEN_MORE_THAN_BUNDLE_SIZE
+req_060 good bundle         → status 2 (complete) after 4,929,877 steps, then 1,124,977 steps until
+                              CPTRA_FLOW_STATUS bit 31 set; FW_INFO same, PCR1 extended only
+```
+
+On the Nios the full sequence is: lock, write CMD + DLEN + image, EXECUTE, wait for status, clear EXECUTE, then poll `CPTRA_FLOW_STATUS` bit 31 (while servicing TRNG requests) before the next command. Compare `FW_INFO` before and after to confirm the new digests.
+
+### 10.11 `SHUTDOWN` (`0x46505344`, "FPSD")
+
+**Why:** zeroize all secrets (§9.6). **When:** last command before power-off, or on tamper.
+
+```
+req_066:  46505344 00000004 fffffed3 → 00000001 00000008 00000000 00000000   CPTRA_FLOW_STATUS b0000000 → 30000000
+req_067 VERSION / 068 FW_INFO / 069 CAPABILITIES → status 3, FW_ERROR_NON_FATAL = FW_ERROR_FATAL = 000e0008 RUNTIME_SHUTDOWN
+```
+
+The host can detect a shut-down Caliptra without sending anything: `mailbox_flow_done` (bit 31) is clear.
+
+## 11. The full flow
+
+### 11.1 Sequence
+
+```mermaid
+sequenceDiagram
+    participant N as Nios (host)
+    participant C as Caliptra runtime
+    participant R as Caliptra ROM
+    participant CA as Owner CA
+    N->>C: FW_INFO, VERSION, CAPABILITIES
+    C-->>N: digests, versions, RT_BASE
+    N->>C: SET_AUTH_MANIFEST, GET_IMAGE_INFO(0x1001)
+    C-->>N: component 0x10, digest
+    N->>C: SELF_TEST_START
+    Note over C: idle: lock mailbox, KATs, ROM + image check
+    N->>C: (waits on MBOX_LOCK) SELF_TEST_GET_RESULTS
+    C-->>N: pass
+    CA->>N: nonce
+    N->>C: GET_ATTESTED_ECC384_CSR(key 3, nonce)
+    C-->>N: CWT(COSE_Sign1 by RT Alias){nonce, CSR, attributes}
+    N->>CA: token + cert chain
+    CA-->>N: RT Alias certificate
+    N->>C: FIRMWARE_VERIFY(new bundle)
+    C-->>N: 0xDEADC0DE
+    N->>C: FIRMWARE_LOAD(new bundle)
+    C->>R: update reset
+    R-->>N: complete (or failure + code, old runtime resumes)
+    Note over N: poll CPTRA_FLOW_STATUS bit 31
+    N->>C: FW_INFO, QUOTE_PCRS (PCR1 shows the update)
+    N->>C: SHUTDOWN (before power-off)
+```
+
+### 11.2 A typical product flow (adds to §5.3 and §8.2)
+
+1. **Every boot:** `FW_INFO`; compare the runtime and FMC digests with the release list and log them. `CAPABILITIES` to gate optional features. `VERSION` once for the FIPS log.
+2. **SoC boot loader:** `SET_AUTH_MANIFEST`, then per image `GET_IMAGE_INFO` → load → `AUTHORIZE_AND_STASH` (Part 2).
+3. **Daily, or as the FIPS policy says:** `SELF_TEST_START`, carry on, and read `SELF_TEST_GET_RESULTS` later. Treat a fatal error as "Caliptra failed its self-test".
+4. **Factory:** boot with the IDevID-CSR flag, `GET_IDEV_*_CSR`, sign, store and later `POPULATE_IDEV_*_CERT`.
+5. **Owner onboarding:** `GET_ATTESTED_*_CSR` with the CA's nonce (key 3 for a per-firmware identity, key 1 for one that survives updates).
+6. **Firmware update:** `FIRMWARE_VERIFY`; only on `0xDEADC0DE`, `FIRMWARE_LOAD`; wait for `mailbox_flow_done`; `FW_INFO` to confirm. On failure, log the ROM code from `FW_ERROR_NON_FATAL` (then clear it) and keep running the old firmware.
+7. **Power-off or tamper:** `SHUTDOWN`.
+
+### 11.3 Error-code cheat sheet (Part 3)
+
+| Code | Name | Command: cause |
+|---|---|---|
+| `0x000E0005` | `INVALID_CHECKSUM` | any command with a wrong request checksum |
+| `0x000E0008` | `RUNTIME_SHUTDOWN` | any command after `SHUTDOWN` (also in the fatal register) |
+| `0x000E0009` | `MAILBOX_INVALID_PARAMS` | `GET_IMAGE_INFO` bad flags, attested CSR `key_id` > 3 |
+| `0x000E0011` | `SELF_TEST_IN_PROGRESS` | `SELF_TEST_START` before the last result was read |
+| `0x000E0012` | `SELF_TEST_NOT_STARTED` | `SELF_TEST_GET_RESULTS` without a pending test |
+| `0x000E0051` | `GET_IDEV_ID_UNPROVISIONED` | IDevID CSR not generated at this cold boot |
+| `0x000E0061` | `IMAGE_METADATA_NOT_FOUND` | `GET_IMAGE_INFO`: no manifest, unknown FW ID, owner source |
+| `0x000B000C` | `VENDOR_ECC_SIGNATURE_INVALID` | `FIRMWARE_LOAD` (ROM) |
+| `0x000B0016` | `RUNTIME_DIGEST_MISMATCH` | `FIRMWARE_LOAD` (ROM) |
+| `0x000B002F` | `IMAGE_LEN_MORE_THAN_BUNDLE_SIZE` | `FIRMWARE_LOAD` (ROM), image cut short |
+| result `0x21523F21` | verify failure | `FIRMWARE_VERIFY` (status 1, no code!) |
+
+### 11.4 Quirks to remember (Part 3, fw-2.1.4)
+
+1. Self-test IDs are `0x46504C54` / `0x46504C67`, not the "FPST"/"FPGR" of the source comments.
+2. The self-test holds the mailbox lock for millions of cycles. Size the host's lock timeout for it.
+3. `FIRMWARE_VERIFY` reports failure with status 1 and no reason. Only `FIRMWARE_LOAD` gives the ROM code.
+4. `FIRMWARE_VERIFY` accepts trailing bytes and does not give a size error for a too-short image.
+5. `FIRMWARE_VERIFY` and `FIRMWARE_LOAD` have no checksum word: the mailbox data is the image.
+6. A rejected `FIRMWARE_LOAD` is non-fatal: the old runtime resumes. A successful one returns before the runtime is ready: wait for `CPTRA_FLOW_STATUS` bit 31.
+7. `FW_INFO.most_recent_fw_error` keeps the last load error even after a later successful load.
+8. The attested LDevID CSR has a null signature by design. Trust it through the EAT signature.
+9. `CPTRA_BOOT_STATUS` is written only with debug unlocked. Do not use it in product code.
+10. After `SHUTDOWN`, only a cold reset brings Caliptra back.

@@ -6,6 +6,16 @@
 //!   DIR/req_NNN.hex  : cmd, dlen, little-endian dwords      (written by attest_driver.py)
 //!   DIR/resp_NNN.hex : status(1=DATA_READY,2=COMPLETE,3=FAILURE), dlen, dwords, "fwerr XXXXXXXX"
 //!   DIR/resp_NNN.done
+//!   (+ informational lines after "fwerr": "fwfatal XXXXXXXX", "boot XXXXXXXX" = CPTRA_BOOT_STATUS,
+//!    "cycles N" = emulator steps for the command, "lockwait N" = steps spent waiting for the mailbox lock,
+//!    "err ..." = hw-model error text. Older drivers only read up to "fwerr", so they are unaffected.)
+//! Behaviour that mirrors a real SoC / Nios host (added for attest5):
+//!   * after every command the model keeps running for SETTLE_CYCLES (200k) steps, like the real core does
+//!     while the host prepares the next request (lets SELF_TEST_START's background job grab the mailbox);
+//!   * if the mailbox is locked by Caliptra (e.g. the FIPS self-test holds it), the host polls the lock:
+//!     step 100k cycles and retry, up to 2,000M cycles;
+//!   * after FIRMWARE_LOAD ("FWLD", accepted or rejected) the model runs until the runtime is back in its command
+//!     loop (CPTRA_FLOW_STATUS.mailbox_flow_done = 1; update reset -> ROM -> FMC -> runtime), up to 400M cycles.
 //! Build: copy into caliptra-sw/hw-model/examples/ and `cargo run --release -p caliptra-hw-model
 //!        --example attest_emu -- <rom.bin> <bundle.bin> <fuse_image_2x.hex> <dir>`
 use caliptra_api::SocManager;
@@ -71,18 +81,47 @@ fn main() {
         if cmd == 0 { break; }
         let mut data: Vec<u8> = w[2..].iter().flat_map(|x| x.to_le_bytes()).collect();
         data.truncate(dlen);
-        let r = hw.mailbox_execute(cmd, &data);
+        let (mut cycles, mut lockwait) = (0u64, 0u64);
+        let r = loop {
+            match hw.start_mailbox_execute(cmd, &data) {
+                Err(ModelError::UnableToLockMailbox) if lockwait < 2_000_000_000 => {
+                    for _ in 0..100_000 { hw.step(); }
+                    lockwait += 100_000;
+                }
+                Err(e) => break Err(e),
+                Ok(()) => {
+                    while hw.soc_mbox().status().read().status().cmd_busy() && cycles < 2_000_000_000 {
+                        hw.step();
+                        cycles += 1;
+                    }
+                    break hw.finish_mailbox_execute();
+                }
+            }
+        };
         let fwerr = hw.soc_ifc().cptra_fw_error_non_fatal().read();
+        let fwfatal = hw.soc_ifc().cptra_fw_error_fatal().read();
         let mut f = std::fs::File::create(dir.join(format!("resp_{n:03}.hex"))).unwrap();
-        match r {
+        match &r {
             Ok(Some(resp)) => {
                 writeln!(f, "{:08x}\n{:08x}", 1, resp.len()).unwrap();
                 for c in resp.chunks(4) { let mut b = [0u8; 4]; b[..c.len()].copy_from_slice(c); writeln!(f, "{:08x}", u32::from_le_bytes(b)).unwrap(); }
             }
             Ok(None) => writeln!(f, "{:08x}\n{:08x}", 2, 0).unwrap(),
-            Err(e) => { eprintln!("cmd {cmd:08x} failed: {e:?}"); let _ = matches!(e, ModelError::MailboxCmdFailed(_)); writeln!(f, "{:08x}\n{:08x}", 3, 0).unwrap() }
+            Err(e) => { eprintln!("cmd {cmd:08x} failed: {e:?}"); writeln!(f, "{:08x}\n{:08x}", 3, 0).unwrap() }
         }
         writeln!(f, "fwerr {:08x}", fwerr).unwrap();
+        // FIRMWARE_LOAD at runtime = update reset: wait for the runtime to be ready again (ok or rejected image)
+        let mut post = 0u64;
+        if cmd == 0x4657_4C44 {
+            // CPTRA_BOOT_STATUS is only written by firmware when debug is unlocked, so use the runtime's own
+            // "idle, mailbox done" flag (CPTRA_FLOW_STATUS.mailbox_flow_done, set at the top of its command loop).
+            hw.step(); post += 1;
+            while !hw.soc_ifc().cptra_flow_status().read().mailbox_flow_done() && post < 400_000_000 { hw.step(); post += 1; }
+        }
+        for _ in 0..200_000 { hw.step(); }
+        writeln!(f, "fwfatal {:08x}\nboot {:08x}\nflow {:08x}\ncycles {}\nlockwait {}\npostcycles {}", fwfatal,
+                 hw.soc_ifc().cptra_boot_status().read(), u32::from(hw.soc_ifc().cptra_flow_status().read()), cycles, lockwait, post).unwrap();
+        if let Err(e) = &r { writeln!(f, "err {e:?}").unwrap(); }
         drop(f);
         std::fs::write(dir.join(format!("resp_{n:03}.done")), "emu\n").unwrap();
         println!("EMU req {n} cmd {cmd:08x} done");
