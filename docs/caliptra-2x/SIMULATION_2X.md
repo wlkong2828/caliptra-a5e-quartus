@@ -10,7 +10,7 @@
 - **Scope:** Verilator simulation of the **real** 2.x glue RTL (`caliptra2x/rtl_2x/`) around caliptra-rtl v2.1.2 (`49370266`) core-only. It runs the real ROM `rom-2.1.3-1` and the real FW bundle `fw-2.1.4` (FMC + runtime), and boots from cold power-on to `ready_for_runtime`.
 - **Result:** **PASS**: `TB_NIOS2X PASS cyc=36617987 trng=217 (prod, debug locked)`.
 - **Attestation and DPE:** `+test=attest` continues after `ready_for_runtime` with 34 runtime mailbox commands (DICE cert chain, `STASH_MEASUREMENT`, PCR quotes, DPE GetProfile/CertifyKey/GetCertificateChain): **PASS** at cycle 59,280,395, certificates byte-identical to the sw-emulator. See [§8](#8-rom-boot-firmware-load-attestation-and-dpe-in-simulation). What the Nios model covers: [§8.1](#81-what-this-simulation-covers-nios-model). Quick start: [§8.2](#82-quick-start-run-it-yourself).
-- **Crypto exercise:** the same mode with `attest/crypto_driver.py` has Caliptra generate keys, sign and verify with ML-DSA-87 and ECDSA P-384, and verify LMS (31 commands, negative cases included, OpenSSL cross-check). Emulator: **CRYPTO PASS**; RTL run in progress. EdDSA is not supported by Caliptra 2.x. See [§9](#9-crypto-exercise-ml-dsa-87-ecdsa-p-384-and-lms).
+- **Crypto exercise:** the same mode with `attest/crypto_driver.py` has Caliptra generate keys, sign and verify with ML-DSA-87 and ECDSA P-384, and verify LMS (31 commands, negative cases included, OpenSSL cross-check). Emulator: **CRYPTO PASS**; RTL: **CRYPTO PASS** (`TB_NIOS2X PASS cyc=82446678`, outputs match the emulator). EdDSA is not supported by Caliptra 2.x. See [§9](#9-crypto-exercise-ml-dsa-87-ecdsa-p-384-and-lms).
 - **Crypto exercise 2:** `attest/crypto2_driver.py` covers SHA-384/512, SHAKE256, HMAC, AES-256 CBC/CTR/GCM, the SP 800-108 counter KDF, HKDF, ECDH P-384 and ML-KEM-1024 (100 commands, negative cases included, OpenSSL cross-check). Emulator: **CRYPTO2 PASS**; RTL not run yet. See [§10](#10-crypto-exercise-2-aes-sha-hmac-kdf-ecdh-ml-kem).
 - **Attestation exercise 3:** `attest/attest3_driver.py` covers `EXTEND_PCR`, `INCREMENT_PCR_RESET_COUNTER`, `DPE_TAG_TCI`, `DPE_GET_TAGGED_TCI`, `CERTIFY_KEY_EXTENDED_ECC384`/`_MLDSA87` (X.509 and CSR), `CERTIFY_KEY_CHUNKS`, `ADD_SUBJECT_ALT_NAME`, `REALLOCATE_DPE_CONTEXT_LIMITS` and `DISABLE_ATTESTATION` (95 commands, 128 checks, negative cases included, OpenSSL cross-check). Emulator: **ATTEST3 PASS**; RTL not run yet. See [§11](#11-attestation-exercise-3-pcrs-dpe-tagging-certifykey-extended-san-context-limits-disable).
 - **Attestation exercise 4:** `attest/attest4_driver.py` runs an end-to-end use case with `POPULATE_IDEV_ECC384_CERT`/`_MLDSA87_CERT` (vendor CA → IDevID → … → DPE leaf), `VERIFY_AUTH_MANIFEST`, `SET_AUTH_MANIFEST` and `AUTHORIZE_AND_STASH` (a real signed SoC auth manifest, stash into DPE and PCR31, 29 tampered or mis-signed manifests), and `SIGN_WITH_EXPORTED_ECDSA`/`_MLDSA` and `REVOKE_EXPORTED_CDI_HANDLE` (161 commands, 164 checks, OpenSSL cross-check). Emulator: **ATTEST4 PASS**; RTL not run yet. See [§12](#12-attestation-exercise-4-idevid-provisioning-soc-image-authorization-exported-cdi-signing).
@@ -649,7 +649,46 @@ The LMS signature is made on the host. What this test proves on the Caliptra sid
 | Backend | Result | Notes |
 |---|---|---|
 | sw-emulator (`attest_emu`, same ROM, bundle and fuses) | **CRYPTO PASS**: 31 commands, 42 checks, about 25 s | All rejects return the expected error codes; all OpenSSL cross-checks pass |
-| RTL (Verilator, `tb_nios2x_top_fw`) | *running; results and per-command cycle counts will be added here* | |
+| RTL (Verilator, `tb_nios2x_top_fw`) | **CRYPTO PASS**: 31 commands, 42 checks; `TB_NIOS2X PASS cyc=82446678 trng=269 (prod, debug locked)` | `ready_for_runtime` at cycle 36,597,934, then the 31 commands in 41,848,551 cycles. Wall time 104,390 s (about 29 h) on 4 threads. Every status, error code and response length equals the emulator run. The fixed-seed outputs (`mldsa87_fixed_pub.der`, `mldsa87_fixed_sig.bin`, `ecdsa384_fixed_pub.der`, `ecdsa384_fixed_sig.der`) and the LMS files are byte-identical to the emulator's. The random-seed keys and signatures differ, as expected, and all of them verify with OpenSSL. |
+
+**RTL cycles per command** (`crypto_run.log`, cycles from the request to the response at the TB clock):
+
+| # | Command | Result | Cycles |
+|---|---|---|---|
+| 000 | `CM_RANDOM_GENERATE_32` | pass | 24,126 |
+| 001 | `CM_IMPORT_rand` | pass | 29,237 |
+| 002 | `CM_IMPORT_fixed` | pass | 29,033 |
+| 003 | `CM_IMPORT_bad_size` | reject `0x000E005D` | 23,397 |
+| 004 | `CM_MLDSA_PUBLIC_KEY_rand` | pass | 341,738 |
+| 005 | `CM_MLDSA_SIGN_rand` | pass | 608,028 |
+| 006 | `CM_MLDSA_VERIFY_rand_good_msg` | pass | 428,401 |
+| 007 | `CM_MLDSA_VERIFY_rand_flipped_bit_msg` | reject `0xA0050000` | 427,580 |
+| 008 | `MLDSA87_SIG_VERIFY_rand_good_msg` | pass | 157,957 |
+| 009 | `MLDSA87_SIG_VERIFY_rand_flipped_bit_msg` | reject `0x000E006C` | 157,533 |
+| 010 | `CM_MLDSA_PUBLIC_KEY_fixed` | pass | 613,670 |
+| 011 | `CM_MLDSA_SIGN_fixed` | pass | 1,098,657 |
+| 012 | `CM_MLDSA_VERIFY_fixed_good_msg` | pass | 701,555 |
+| 013 | `CM_RANDOM_GENERATE_48` | pass | 24,140 |
+| 014 | `CM_IMPORT_EC_bad_size` | reject `0x000E005D` | 22,964 |
+| 015 | `CM_IMPORT_EC_rand` | pass | 29,283 |
+| 016 | `CM_ECDSA_PUBLIC_KEY_rand` | pass | 2,447,650 |
+| 017 | `CM_ECDSA_SIGN_rand` | pass | 4,151,715 |
+| 018 | `CM_ECDSA_VERIFY_rand_good_msg` | pass | 3,416,570 |
+| 019 | `CM_ECDSA_VERIFY_rand_flipped_bit_msg` | reject `0xA0050000` | 3,415,149 |
+| 020 | `CM_IMPORT_EC_fixed` | pass | 30,101 |
+| 021 | `CM_ECDSA_PUBLIC_KEY_fixed` | pass | 2,447,644 |
+| 022 | `CM_ECDSA_SIGN_fixed` | pass | 4,151,503 |
+| 023 | `CM_ECDSA_VERIFY_fixed_good_msg` | pass | 3,416,161 |
+| 024 | `CM_ECDSA_VERIFY_fixed_flipped_bit_msg` | reject `0xA0050000` | 3,416,172 |
+| 025 | `ECDSA384_SIG_VERIFY_host_OpenSSL_key_good` | pass | 988,384 |
+| 026 | `ECDSA384_SIG_VERIFY_host_OpenSSL_key_flipped_bit_msg` | reject `0x000E0004` | 987,982 |
+| 027 | `ECDSA384_SIG_VERIFY_Caliptra_CMES_sig_rand_key` | pass | 988,588 |
+| 028 | `LMS_SIG_VERIFY_host_key_good` | pass | 2,565,701 |
+| 029 | `LMS_SIG_VERIFY_host_key_flipped_bit_msg` | reject `0x000E0042` | 2,355,385 |
+| 030 | `LMS_SIG_VERIFY_caliptra_sw_KAT_MSG_1_key1_sig1` | pass | 2,352,547 |
+| | **Total, 31 commands** | | **41,848,551** |
+
+The run used `+attest_dir=mldsa_out/rtl` and the logs `mldsa_run.log` (TB) and `crypto_run.log` (driver), instead of the `crypto_out/rtl` and `crypto_rtl.log` names in Step 5. The emulator labels request 027 `..._sig_(rand_key)`. That is a label change only, and the command is the same. Most of the time goes to ECDSA in the PKA (about 2.4–4.2 M cycles per key generation, sign or verify) and to LMS verify (about 2.4–2.6 M). ML-DSA-87 on Adams Bridge takes 0.16–1.1 M cycles.
 
 TEST material only: the seeds, the host ECDSA key and the LMS tree are for simulation and must not be used for real devices.
 
