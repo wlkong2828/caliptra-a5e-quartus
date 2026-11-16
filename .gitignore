@@ -68,3 +68,7 @@ __pycache__/
 caliptra2x/sim_2x/attest3_out/
 caliptra2x/sim_2x/attest3_*.log
 caliptra2x/sim_2x/attest3_*.out
+# attestation exercise 4 (SIMULATION_2X §12) run outputs
+caliptra2x/sim_2x/attest4_out/
+caliptra2x/sim_2x/attest4_*.log
+caliptra2x/sim_2x/attest4_*.out

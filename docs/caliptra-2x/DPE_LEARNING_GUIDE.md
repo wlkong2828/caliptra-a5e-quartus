@@ -1,8 +1,8 @@
 # DPE on Caliptra 2.x: a learner's guide (with real simulation output)
 
-> **What this is.** A teaching document for engineers new to DICE Protection Environment (DPE) on Caliptra 2.x. It explains the concepts first, then walks through the 10 attestation/DPE mailbox commands that our `attest3` simulation exercises. For each command it covers why the command exists, when a real product uses it, its request and response fields, its preconditions and common errors, and a worked example taken from the real `attest3` emulator run.
+> **What this is.** A teaching document for engineers new to DICE Protection Environment (DPE) on Caliptra 2.x. It explains the concepts first, then walks through the 10 attestation/DPE mailbox commands that our `attest3` simulation exercises (Part 1, §1–§5) and the 8 provisioning, image-authorization and exported-CDI commands of `attest4` as one end-to-end use case (Part 2, §6–§8). For each command it covers why the command exists, when a real product uses it, its request and response fields, its preconditions and common errors, and a worked example taken from the real `attest3` emulator run.
 >
-> **Source of truth:** caliptra-sw `fw-2.1.4` (`runtime/src/*.rs`, `api/src/mailbox.rs`) and caliptra-dpe `f2b7121`. The run is `caliptra2x/sim_2x/attest/attest3_driver.py` against the `attest_emu` sw-emulator with our ROM, firmware bundle and fuses: **ATTEST3 PASS**, 95 commands, 128 checks. See [SIMULATION_2X.md §11](SIMULATION_2X.md#11-attestation-exercise-3-pcrs-dpe-tagging-certifykey-extended-san-context-limits-disable) for run steps and the hand-verification commands. Files quoted below are in `caliptra2x/sim_2x/attest3_out/emu/` after a run. That folder is not committed, so re-run it to get them.
+> **Source of truth:** caliptra-sw `fw-2.1.4` (`runtime/src/*.rs`, `api/src/mailbox.rs`) and caliptra-dpe `f2b7121`. The run is `caliptra2x/sim_2x/attest/attest3_driver.py` against the `attest_emu` sw-emulator with our ROM, firmware bundle and fuses: **ATTEST3 PASS**, 95 commands, 128 checks; Part 2: `attest4_driver.py`, **ATTEST4 PASS**, 161 commands, 164 checks. See [SIMULATION_2X.md §11](SIMULATION_2X.md#11-attestation-exercise-3-pcrs-dpe-tagging-certifykey-extended-san-context-limits-disable) for run steps and the hand-verification commands. Files quoted below are in `caliptra2x/sim_2x/attest3_out/emu/` after a run. That folder is not committed, so re-run it to get them.
 >
 > TEST material only: labels, measurements and device-info strings are simulation values.
 
@@ -75,7 +75,7 @@ A **retained** context is useful when one parent must spawn several independent 
 
 ### 2.6 Export-CDI
 
-Some SoC agents run their own DICE layer, for example an OS kernel that issues certificates to its own apps. `DeriveContext` with `EXPORT_CDI` makes a child whose CDI is placed in an **exported CDI slot** inside Caliptra. The caller gets a handle to the slot, never the secret. Caliptra then signs on its behalf with `SIGN_WITH_EXPORTED_ECDSA` or `SIGN_WITH_EXPORTED_MLDSA`, and `REVOKE_EXPORTED_CDI_HANDLE` frees the slot. Our tests do not exercise this path. It is listed in the "not yet simulated" set.
+Some SoC agents run their own DICE layer, for example an OS kernel that issues certificates to its own apps. `DeriveContext` with `EXPORT_CDI` makes a child whose CDI is placed in an **exported CDI slot** inside Caliptra. The caller gets a handle to the slot, never the secret. Caliptra then signs on its behalf with `SIGN_WITH_EXPORTED_ECDSA` or `SIGN_WITH_EXPORTED_MLDSA`, and `REVOKE_EXPORTED_CDI_HANDLE` frees the slot. The `attest4` run exercises this whole path: see §6.4 for the use cases and lifecycle and §7.6–§7.8 for the commands.
 
 ### 2.7 Context limits
 
@@ -492,5 +492,438 @@ On the Nios, `CERTIFY_KEY_EXTENDED_MLDSA87` returns about 8–11 KB, which must 
 
 - Run it: [SIMULATION_2X.md §11.3](SIMULATION_2X.md#113-run-it-step-by-step), and §11.3.1 for every hand check.
 - The boot-time attestation chain, `STASH_MEASUREMENT` and quotes: [SIMULATION_2X.md §8](SIMULATION_2X.md#8-rom-boot-firmware-load-attestation-and-dpe-in-simulation).
-- Not yet simulated: export-CDI (`SIGN_WITH_EXPORTED_*`, `REVOKE_EXPORTED_CDI_HANDLE`), the CSR/certificate population commands, and authorization manifests.
+- IDevID population, authorization manifests and export-CDI: Part 2 below (§6–§8), run steps in [SIMULATION_2X.md §12](SIMULATION_2X.md#12-attestation-exercise-4-idevid-provisioning-soc-image-authorization-exported-cdi-signing).
 - Specs: TCG *DICE Protection Environment* and *DICE Attestation Architecture* (TcbInfo/MultiTcbInfo), DMTF DSP0274 (SPDM, device-info otherName), and the Caliptra runtime README in caliptra-sw.
+
+---
+
+# Part 2: provisioning, image authorization and exported CDIs (`attest4`)
+
+Part 2 covers the 8 commands in the `attest4` run (`caliptra2x/sim_2x/attest/attest4_driver.py`, **ATTEST4 PASS**, 161 commands, 164 checks). See [SIMULATION_2X.md §12](SIMULATION_2X.md#12-attestation-exercise-4-idevid-provisioning-soc-image-authorization-exported-cdi-signing) for the run steps and the hand checks. Files quoted below are in `caliptra2x/sim_2x/attest4_out/emu/` after a run. Fields are u32 little-endian unless stated otherwise. Every request starts with the 4-byte checksum, and every response starts with checksum + FIPS status (8 B).
+
+## 6. Concepts for Part 2
+
+### 6.1 IDevID provisioning: why the vendor CA endorses the device
+
+The **IDevID** (Initial Device Identity) key is derived by the Caliptra ROM from the device's unique secret (UDS) on every boot. The device itself can only prove "I hold this key". It cannot prove "I am a genuine Agilex 5 part made by the vendor". That proof comes from the **vendor's manufacturing CA**: in the factory, the vendor reads the IDevID public key (`GET_IDEV_ECC384_INFO` / `GET_IDEV_MLDSA87_INFO`, or the IDevID CSR) and issues a certificate for it. That certificate is the root of every later attestation:
+
+```
+vendor CA (trust anchor the verifier already has)
+  └─ IDevID cert            issued by the vendor CA in the factory    ← POPULATE_IDEV_*_CERT stores this
+      └─ LDevID cert        issued by the IDevID key (ROM, each boot)
+          └─ FMC Alias      issued by the LDevID key (ROM)
+              └─ RT Alias   issued by the FMC Alias key (FMC)
+                  └─ DPE leaf / exported-CDI cert   issued by RT Alias (runtime, on request)
+```
+
+A verifier that trusts only the vendor CA can check the whole chain down to a DPE leaf and learn both "genuine device" (the top) and "this firmware and these measurements" (the DICE layers). Without the IDevID cert, the chain ends at the LDevID with nothing to anchor it.
+
+Caliptra has no flash to keep the cert. It rebuilds the IDevID cert each boot only if given the TBS and signature (`GET_IDEV_*_CERT`), and DPE's `GetCertificateChain` returns only the certs it holds. `POPULATE_IDEV_*_CERT` hands the factory cert to the runtime once per boot (the SoC keeps it in its own flash), and the runtime **prepends** it to the DPE cert chain. From then on, a host that asks DPE for "the chain" gets the full chain up to the vendor CA in one call.
+
+In the run, the vendor CA is a TEST CA (`attest/testca/`, CN `TEST Mfg CA ECC`). The IDevID cert's subject is the LDevID's issuer name, and its subject key identifier is the LDevID's authority key identifier (`B6:5D:CB:FD:…`), so the chain links by name and by key ID.
+
+### 6.2 The SoC auth manifest: structure, vendor keys and owner keys
+
+Caliptra's own firmware is authorized by the keys hashed into the fuses. The **SoC auth manifest** extends that trust to other SoC images (here, the Nios application and an FPGA bitstream) without new fuses. It is a signed list of "FW ID → expected SHA-384". Caliptra keeps the list and answers "may I run this image?" with `AUTHORIZE_AND_STASH`.
+
+Two parties sign it. The **vendor** (the silicon or module maker) and the **owner** (the customer who deploys the device) each have ECC P-384 and ML-DSA-87 keys. Neither party's manifest keys are in the fuses directly. Instead, they are endorsed by the keys that *are* fuse-anchored: the vendor and owner keys of the Caliptra firmware bundle.
+
+```
+fuses: FUSE_VENDOR_PK_HASH ──► bundle vendor FW key 0 (ECC + ML-DSA) ──endorses──► manifest vendor keys ──sign──► IMC
+       CPTRA_OWNER_PK_HASH ──► bundle owner FW key   (ECC + ML-DSA) ──endorses──► manifest owner keys  ──sign──► IMC
+```
+
+`ATM2` layout (fw-2.1.4, `auth-manifest/types`), offsets from the run's `manifest_m1.bin`:
+
+| Offset | Size | Field | Signed by |
+|---|---|---|---|
+| 0 | 4 | marker `ATM2` (`0x324D5441`) | – |
+| 4 | 4 | preamble size = 24,292 | – |
+| 8 | 4 / 4 / 4 | version (2), SVN, flags (bit 0 `VENDOR_SIGNATURE_REQUIRED`, bit 1 `DEBUG_IMAGE`) | vendor endorsement |
+| 20 | 2688 | manifest vendor keys (ECC 96 B + ML-DSA 2592 B) | vendor endorsement |
+| 2708 / 2804 | 96 / 4628 | vendor endorsement signatures (ECC r‖s, ML-DSA) by **bundle vendor key** over bytes 8–2708 | – |
+| 7432 | 2688 | manifest owner keys | owner endorsement |
+| 10120 / 10216 | 96 / 4628 | owner endorsement signatures by **bundle owner key** over the owner keys | – |
+| 14844 / 14940 | | IMC signatures by the **manifest vendor keys** | – |
+| 19568 / 19664 | | IMC signatures by the **manifest owner keys** | – |
+| 24292 | 4 + 80 × 80 | **IMC** (image metadata collection): `entry_count`, then 80 fixed slots | vendor + owner IMC signatures |
+
+Each 80-byte IMC entry is `fw_id`, `component_id`, `classification`, `flags` (bits 1:0 image source, bit 2 `ignore_auth_check`), load address (8 B), staging address (8 B) and the 48-byte digest. The entry with `fw_id` `0xFFF` is not an image. It binds the manifest to one device: its "digest" holds the 17-byte device UEID, and a manifest for another device is rejected (`0x000E00B4`).
+
+The ECC values are stored in Caliptra's "hardware" byte order: each 4-byte word of r, s, x and y is byte-swapped. ML-DSA values are raw. The driver converts them before handing them to OpenSSL.
+
+**Rules the firmware enforces, in order:** marker, preamble size, SVN (against the SoC-manifest SVN fuses; in Production with `soc_manifest_max_svn` = 0 the SVN must be 0), vendor endorsement (ECC then ML-DSA), the flags, owner endorsement, IMC entry count (1–80), IMC vendor signatures (only if flag bit 0 is set), IMC owner signatures (always), duplicate FW IDs, then the UEID. The first failing check sets the error, which is why a tampered SVN reports an SVN error and not a signature error.
+
+**`VERIFY` vs `SET`:** both run the same checks. `VERIFY_AUTH_MANIFEST` stops there, so the SoC can test a manifest before committing to it. `SET_AUTH_MANIFEST` also replaces the stored IMC. A failed `SET` leaves the old IMC in force.
+
+### 6.3 `AUTHORIZE_AND_STASH` vs `STASH_MEASUREMENT`
+
+Both put a SoC measurement into DPE (a new default context with `tci_type` = the 4-byte ID) and extend PCR31. The difference is **who vouches for the measurement**:
+
+| | `STASH_MEASUREMENT` | `AUTHORIZE_AND_STASH` |
+|---|---|---|
+| Input | any 48 B the SoC sends | FW ID + digest (or an address for Caliptra to hash) |
+| Check | none: Caliptra records what it is told | digest must match the signed manifest entry for that FW ID |
+| Output | DPE status | `IMAGE_AUTHORIZED` / `NOT_AUTHORIZED` / `HASH_MISMATCH`; stash only if authorized |
+| Meaning in a cert | "the SoC reported this" | "the SoC reported this **and** the vendor and owner approved it" |
+| Reserved IDs | FW ID 2 (MCU RT) refused, `0x000E00B0` | may use the reserved ID |
+| PL1 | allowed | only with `SKIP_STASH` (PL1 can ask, but not measure) |
+
+The run shows both: `STASH_MEASUREMENT` accepted an arbitrary digest with type `UNVF` (req 081), while `AUTHORIZE_AND_STASH` refused a bitstream whose digest was not in the manifest (req 067, `0x8BFB95CB`) and stashed nothing.
+
+`SKIP_STASH` turns `AUTHORIZE_AND_STASH` into a pure policy query, which is useful when an image is checked before it is loaded and measured later, or when the caller is PL1.
+
+### 6.4 Exported CDIs: use cases and the revocation lifecycle
+
+A normal DPE context keeps its CDI inside DPE, and the SoC can only ask for certs and `Sign` through DPE commands, one context at a time. An **exported CDI** is for a SoC component that acts as its **own DICE layer or signing service** and needs a long-lived key bound to the measured state, without managing DPE contexts:
+
+- an SPDM responder or TLS endpoint on the Nios that signs every session transcript (the run's scenario)
+- a SoC-side DICE layer that issues certs for its own children: the exported cert is `CA:TRUE` with `keyCertSign` and the TCG ECA extended key usage `2.23.133.5.4.100.12`
+- an attestation key handed to a separate security subsystem
+
+The lifecycle is:
+
+```
+DeriveContext(EXPORT_CDI | CREATE_CERTIFICATE [| RETAIN_PARENT])  ──►  32-byte handle + cert (issuer RT Alias)
+      │ the CDI = f(parent's TCI chain); the handle is random; one slot only
+      ▼
+SIGN_WITH_EXPORTED_ECDSA / _MLDSA (handle, data)   … any number of times …
+      │
+      ▼
+REVOKE_EXPORTED_CDI_HANDLE(handle)  ──►  slot erased; the handle is dead for good; a new export may follow
+```
+
+Key facts from the run:
+
+- **One slot.** A second export while one is active fails (DPE `0x02000007`, `Crypto(DuplicateCdi)`). Revoke first.
+- **The key is a function of the measurements, the handle is not.** Re-exporting from the same context gives the same key (E1 and E2), even with different `DeriveContext` data, but a new random handle. A revoked handle never comes back.
+- **One CDI, two algorithms.** The ECC key uses the label `"Exported ECC"` and the ML-DSA key `"Exported ML-DSA"`. Either sign command accepts a handle from either export.
+- **`RETAIN_PARENT` matters for a default-context host.** Without it, the export consumes the default context, and PL0 cannot certify or stash anything more until reset (DPE `0x81`).
+- **Revocation is local.** It stops Caliptra from signing. A verifier who already holds the exported cert still needs a policy for it, for example short-lived session use or a nonce in every signed message.
+
+---
+
+## 7. The 8 commands
+
+### 7.1 `POPULATE_IDEV_ECC384_CERT` (`0x49444550`, "IDEP")
+
+**Why:** gives the runtime the vendor-signed IDevID cert so that DPE's cert chain reaches the vendor CA (§6.1).
+**When:** early in every boot, before the first attestation. The SoC reads the factory cert from its own flash and sends it once.
+
+| Request | Response |
+|---|---|
+| `cert_size` u32, `cert` [1024] (DER, zero padded) | header only |
+
+**Preconditions:** PL0. Room in the 4096 B ECC chain buffer.
+
+**Worked example (req 024–031, 049):** `GET_IDEV_ECC384_CERT` first proved that Caliptra rebuilds the vendor-CA cert byte for byte (583 B). Then:
+
+```
+req_029.hex: 49444550 0000024f ffff3d76 00000247 43028230 ...
+             cmd      len=591  checksum size=583 cert (30 82 02 43 …, LE words)
+resp_029:    status 1, fwerr 00000000
+GetCertificateChain ECC: before [LDevID, FMC, RT] 2586 B → after [IDevID, LDevID, FMC, RT] 3169 B
+$ cmp idevid_ecc384_vendor_ca.der dpe_ecc_chain_after_0.der && echo "IDevID is chain[0]"
+IDevID is chain[0]
+$ openssl verify -show_chain -CAfile vendor_ca_ecc384.pem -untrusted fullchain_ecc_untrusted.pem leaf_ecc_provisioned.pem
+leaf_ecc_provisioned.pem: OK
+depth=0: CN=DPE Leaf ...
+depth=4: CN=Caliptra 2.1 Ecc384 IDevID, serialNumber=465F2680...
+depth=5: O=TEST ONLY Nios-A5E Mfg, CN=TEST Mfg CA ECC
+```
+
+**Errors:** `cert_size` > 1024 `0x000E0009`; request longer than the struct `0x000E0003`; chain full `0x000E001C`; non-PL0 `0x000E0016`. **Quirk:** there is no "already populated" check. A second call is accepted and the chain then contains the IDevID twice (req 157–159: 5 certs, 3752 B). Send it exactly once per boot.
+
+### 7.2 `POPULATE_IDEV_MLDSA87_CERT` (`0x49444D50`, "IDMP")
+
+**Why / when:** the same for the post-quantum chain. A verifier that requires ML-DSA (CNSA 2.0) checks this chain.
+
+| Request | Response |
+|---|---|
+| `cert_size` u32, `cert` [8192] | header only |
+
+**Worked example (req 030, 033–048, 050):**
+
+```
+req_030.hex: 49444d50 00001d34 fff1efc1 00001d2c 281d8230 ...   size = 7468
+GetCertificateChain ML-DSA: 23,658 B → 31,126 B (read in 2 KiB pieces: 12 → 16 reads)
+openssl verify (vendor_ca_mldsa87.pem … leaf_mldsa_provisioned.pem): OK, depth 0–5
+```
+
+**Errors:** `cert_size` > 8192 `0x000E0009`; chain buffer (32 KiB) full `0x000E001C`. In the run the second ML-DSA populate (31,126 + 7,468 B) gave `0x000E001C`. The buffer, not a guard, stopped it.
+
+### 7.3 `VERIFY_AUTH_MANIFEST` (`0x4154564D`, "ATVM")
+
+**Why:** checks a manifest against the fuses and the signatures without changing anything. It tells the SoC whether a new manifest (for example one shipped with a firmware update) would be accepted before it commits.
+**When:** in an update flow, before `SET`. Or in manufacturing test, to check a manifest against a device's fuses and UEID.
+
+| Request | Response |
+|---|---|
+| `manifest_size` u32, `manifest` [≤ 34 KiB] | header only |
+
+**Preconditions:** PL0. The manifest keys must be endorsed by the bundle keys that match the fuses (§6.2).
+
+**Worked example (req 052, 083–112):**
+
+```
+req_052.hex: 4154564d 000077f0 ffce0432 000077e8 324d5441 00005ee4 00000002 00000000 00000001 ...
+             cmd      len      checksum size     'ATM2'   preamble version  svn=0    flags=1
+             manifest_size = 0x77e8 = 30,696 B
+resp_052:    status 1
+$ openssl dgst -sha384 -verify fw_vendor_ecc_key0.pem -signature m1_vendor_endorse_ecc.sig.der m1_vendor_endorse_ecc.msg
+Verified OK
+$ openssl pkeyutl -verify -pubin -inkey man_owner_mldsa.pem -rawin -in m1_imc_owner_mldsa.msg -sigfile m1_imc_owner_mldsa.sig
+Signature Verified Successfully
+```
+
+After this `VERIFY`, `AUTHORIZE_AND_STASH` for the app still returned `0x21523F21` (req 053): VERIFY stores nothing.
+
+**Errors (all seen in the run):**
+
+| Code | Name | Cause in the run |
+|---|---|---|
+| `0x000E0045` | `INVALID_AUTH_MANIFEST_MARKER` | marker byte flipped |
+| `0x000E0046` | `AUTH_MANIFEST_PREAMBLE_SIZE_MISMATCH` | preamble size field changed |
+| `0x000E004B` | `AUTH_MANIFEST_PREAMBLE_SIZE_LT_MIN` | manifest cut at 24,000 B |
+| `0x000B002C` | `IMAGE_VERIFIER_ERR_FIRMWARE_SVN_GREATER_THAN_MAX_SUPPORTED` | SVN 1 > fuse maximum 0 (tampered or properly re-signed) |
+| `0x000E0047` | `AUTH_MANIFEST_VENDOR_ECC_SIGNATURE_INVALID` | flags, vendor keys, IMC digest, IMC vendor ECC signature, truncated IMC, vendor keys endorsed by the wrong key |
+| `0x000E0065` | `AUTH_MANIFEST_MLDSA_VENDOR_SIG_INVALID` | vendor ML-DSA endorsement or IMC signature |
+| `0x000E0049` | `AUTH_MANIFEST_OWNER_ECC_SIGNATURE_INVALID` | owner key, IMC owner ECC signature, owner keys endorsed by a non-owner key |
+| `0x000E0068` | `AUTH_MANIFEST_MLDSA_OWNER_SIG_INVALID` | owner ML-DSA endorsement or IMC signature |
+| `0x000E004D` | `..._INVALID_ENTRY_COUNT` | entry count 0 or 81; an empty manifest |
+| `0x000E0053` | `..._DUPLICATE_FIRMWARE_ID` | two entries for `0x1001` |
+| `0x000E00B4` | `AUTH_MANIFEST_UEID_MISMATCH` | `0xFFF` entry for another device |
+| `0x000E00B2` | `AUTH_MANIFEST_DEBUG_IMAGE_NOT_ALLOWED` | flags 3 (debug) in passive mode |
+| `0x000E00B3` | `AUTH_MANIFEST_INVALID_FLAGS` | flags 2 (debug without vendor signature) |
+| `0x000E0009` | `MAILBOX_INVALID_PARAMS` | `manifest_size` > 34 KiB or > the bytes sent |
+
+### 7.4 `SET_AUTH_MANIFEST` (`0x41544D4E`, "ATMN")
+
+**Why:** installs the manifest that `AUTHORIZE_AND_STASH` will use. It is kept in Caliptra's persistent data until the next cold reset.
+**When:** once per boot, before the first image is authorized, and again when the image set changes (a firmware update with a new manifest).
+
+| Request | Response |
+|---|---|
+| same as `VERIFY_AUTH_MANIFEST` | header only |
+
+**Worked example (req 054–055, 113–120):** `SET` M1 passed. In passive mode it created no `SOMV`/`SOMO` contexts (the next leaf still had 2 TCB entries). Then the replacement rules:
+
+```
+113 SET tampered M1 (IMC owner ECC sig)   → 000e0049
+114 ATSH app                              → deadc0de   (M1 still in force)
+115 SET M2 (only bitstream rev B)         → pass
+116 ATSH app                              → 21523f21   (M2 replaced M1 entirely)
+117 ATSH bitstream rev A                  → 8bfb95cb
+118 ATSH bitstream rev B                  → deadc0de
+119 SET M1                                → pass       (a manifest can be set again; SVN 0 = 0)
+120 ATSH app                              → deadc0de
+```
+
+**Errors:** the same as `VERIFY` (§7.3), and non-PL0 `0x000E0016`.
+
+### 7.5 `AUTHORIZE_AND_STASH` (`0x41545348`, "ATSH")
+
+**Why:** a secure-boot gate for SoC images. The SoC asks Caliptra whether an image is approved by the vendor and the owner, and in the same step measures it into DPE and PCR31 (§6.3).
+**When:** for every image the Nios loads (its application, an FPGA bitstream, a peripheral firmware), **before** running or configuring it. Stop if the answer is not `0xDEADC0DE`.
+
+| Request | Response |
+|---|---|
+| `fw_id` [4], `measurement` [48], `context` [48] (not used in fw-2.1.4), `svn`, `flags` (bit 0 `SKIP_STASH`, bits 2:1 manifest source: 0 vendor+owner, 1 owner-only), `source` (1 InRequest, 2 LoadAddress, 3 StagingAddress), `image_size` | `auth_req_result` u32 |
+
+`auth_req_result`: `0xDEADC0DE` authorized, `0xC0DEDEAD` authorized by the owner-only collection, `0x21523F21` FW ID not found, `0x8BFB95CB` digest mismatch. The mailbox status is **1 (success) in all of these cases**: the caller must check the result word.
+
+With source 1, `measurement` is the digest. With source 2 or 3, Caliptra reads `image_size` bytes by DMA from the entry's load or staging address and hashes them. The source comes from the request. The image-source bits in the IMC entry's `flags` are not compared in fw-2.1.4 (`authorize_and_stash.rs`).
+
+**Worked example (req 056–061, 077–080):**
+
+```
+req_057.hex: 41545348 00000078 ffffc85f 00001001 dfba144e fd52e3ca ...  svn=1 flags=0 source=1 size=0
+             cmd      len=120  checksum fw_id    D_app = 4e14badf… (LE words)
+resp_057:    00000001 0000000c fffffcd7 00000000 deadc0de       → IMAGE_AUTHORIZED
+PCR31  000000…00 → 17992fd603e364ed219897bc97ff0fc28da379b6d176d7cc2791dca0d1203859d4e417609a902e89566fec746e949808
+       = SHA-384(0^48 || D_app)                              (python check: True)
+leaf_ecc_after_app: MultiTcbInfo gains type 01100000 (fw_id 0x1001 LE), fwid D_app, svn 1
+DPE_TAG_TCI(default,'AUTH') + DPE_GET_TAGGED_TCI: current = D_app, cumulative = 17992fd6… (= PCR31)
+req 077 bitstream (svn 2): PCR31 → d76daf3462308a4280d4bb20487a4030c635a842224094ae13f6530d3dedb344cad085dcb0c7a0482da3918aafc6443c
+$ openssl asn1parse -in leaf_ecc_after_bit.pem | grep -c -i <D_bit>
+1
+```
+
+The negative paths, all returning status 1 with a result word unless a code is shown:
+
+| Req | Request | Result |
+|---|---|---|
+| 051 | app before any manifest | `0x21523F21` |
+| 062 | bitstream, `SKIP_STASH` | `0xDEADC0DE`, PCR31 and DPE unchanged |
+| 067 | bitstream rev B digest | `0x8BFB95CB`, nothing stashed |
+| 068 / 069 | FW ID `0x2000` / `0xFFF` | `0x21523F21` |
+| 071 | `0x1003` (`ignore_auth_check`), arbitrary digest | `0xDEADC0DE` |
+| 072 | `0x1004`, LoadAddress, `image_size` 0 | `0xDEADC0DE` (SHA-384 of zero bytes, no DMA) |
+| 073 | manifest source owner-only (none loaded) | `0x21523F21` |
+| 074 / 075 / 076 | source bits = 2 / image source 0 / short request | `0x000E0009` / `0x000E004E` / `0x000E0003` |
+
+**Errors:** also `0x000E0016` for PL1 without `SKIP_STASH`, and `RUNTIME_AUTH_AND_STASH_MEASUREMENT_DPE_ERROR` if the DPE stash fails (the DPE code then goes to the extended-error register). **Not testable here:** the LoadAddress/StagingAddress DMA with a non-zero size. On the passive-mode emulator it panics the emulator (`LoadAccessFault`), because there is no AXI image behind the address.
+
+### 7.6 `SIGN_WITH_EXPORTED_ECDSA` (`0x53574545`, "SWEE")
+
+**Why:** lets a SoC component sign with a P-384 key bound to its measured state (§6.4), while the key never leaves Caliptra.
+**When:** for each SPDM `CHALLENGE_AUTH` / `MEASUREMENTS` signature or TLS handshake signature made by the component that owns the exported CDI.
+
+| Request | Response |
+|---|---|
+| `exported_cdi_handle` [32], `tbs` [48] (a SHA-384 digest) | `derived_pubkey_x` [48], `_y` [48], `signature_r` [48], `_s` [48] |
+
+**Preconditions:** PL0. A live handle from an `EXPORT_CDI` `DeriveContext`.
+
+**Worked example (req 121–128):**
+
+```
+DeriveContext 0x08 (flags 0x20c00000 = RETAIN_PARENT|EXPORT_CDI|CREATE_CERTIFICATE, type 'EXPC')
+resp_122: handle ffff…ff (no new context), parent 0000…00 (default kept), exported_cdi eacd9bd2c0ca7478…, cert 1212 B
+exported_ecc_1.pem: subject CN=DPE Exported CDI, issuer CN=Caliptra 2.1 Ecc384 Rt Alias, CA:TRUE, EKU 2.23.133.5.4.100.12
+challenge_tbs.bin (152 B): "attest4 SPDM-style challenge | verifier nonce=0600f1f6… | responder=Nios V on A5E | transcript v1"
+req_127.hex: 53574545 00000054 ffffdb40 d29bcdea 7874cac0 ...   handle (LE words) + SHA-384(challenge)
+resp_127: pub = exported cert key, r = 98e9e42a496343e8…, s = 3bc4bb9121aa0784…
+$ openssl verify -partial_chain -CAfile rt_alias_ecc384.pem exported_ecc_1.pem
+exported_ecc_1.pem: OK
+$ openssl dgst -sha384 -verify exported_ecc_1_pub.pem -signature swee_e1.sig.der challenge_tbs.bin
+Verified OK
+```
+
+The second signature over the same digest had the same r and s: the signing is deterministic. The verifier gets the exported cert plus the chain from DPE, which ends at the vendor CA (depth 6 in the run).
+
+**Errors:** unknown or revoked handle `0x000E0057` (`SIGN_WITH_EXPORTED_ECDSA_KEY_DERIVIATION_FAILED`, spelled this way in the source); wrong length `0x000E0009`; non-PL0 `0x000E0016`.
+
+### 7.7 `SIGN_WITH_EXPORTED_MLDSA` (`0x53574D4C`, "SWML")
+
+**Why / when:** the same for ML-DSA-87, for post-quantum SPDM (1.4) or TLS.
+
+| Request | Response |
+|---|---|
+| `exported_cdi_handle` [32], `sign_type` (0 = mu, 1 = raw message), `tbs_size`, `tbs` [1024] | `derived_pubkey` [2592], `signature` [4627] (+ pad) |
+
+With `sign_type` 1, Caliptra signs the message itself (pure ML-DSA, empty context). With `sign_type` 0, the host computes the 64-byte **mu** = SHAKE256(SHAKE256(pk, 64) ‖ 00 00 ‖ message, 64) and sends only that. This lets a message longer than 1024 B be signed, and the result is the same pure ML-DSA signature over the full message.
+
+**Worked example (req 143–151):**
+
+```
+DeriveContext via INVOKE_DPE_MLDSA87 → exported_mldsa_3.pem (issuer CN=Caliptra 2.1 MlDsa87 Rt Alias), handle b5f9b3ad…
+req_144.hex: 53574d4c 0000042c ffffbc1d <handle> 00000001 00000098 <tbs…>   sign_type 1, 152 B
+resp_144: pub (2592 B) = exported cert key, sig 4627 B
+$ openssl pkeyutl -verify -pubin -inkey exported_mldsa_3_pub.pem -rawin -in challenge_tbs.bin -sigfile swml_e3_raw.sig
+Signature Verified Successfully
+req 145 sign_type 0, mu = f0a494266e0cf4ec… (64 B):
+$ openssl pkeyutl -verify -pubin -inkey exported_mldsa_3_pub.pem -rawin -in challenge_tbs.bin -sigfile swml_e3_mu.sig
+Signature Verified Successfully
+```
+
+**Errors:** unknown or revoked handle `0x000E009C`; `sign_type` 2, mu with `tbs_size` ≠ 64, `tbs_size` > 1024: `0x000E0009`; non-PL0 `0x000E0016`.
+
+### 7.8 `REVOKE_EXPORTED_CDI_HANDLE` (`0x52564348`, "RVCH")
+
+**Why:** ends the life of an exported CDI. The secret is erased, the handle stops working, and the single slot is free for a new export.
+**When:** at session end, before handing the component to a new owner or tenant, when the component is restarted or re-measured (its new state needs a new export), or on a security event.
+
+| Request | Response |
+|---|---|
+| `exported_cdi_handle` [32] | header only |
+
+**Worked example (req 133–142):**
+
+```
+133 REVOKE E1                         status 1
+134 SWEE E1 / 135 SWML E1             000e0057 / 000e009c   (the handle is dead)
+136 REVOKE E1 again                   000e0060
+137 REVOKE never-issued handle        000e0060
+138 REVOKE 1 B short                  000e0009
+139 export E2                         pass: new handle, same key as E1 (same TCI chain)
+141 SWEE with the old E1 handle       000e0057   (still dead after re-export)
+142 REVOKE E2                         status 1
+```
+
+**Errors:** unknown or already revoked handle `0x000E0060` (`REVOKE_EXPORTED_CDI_HANDLE_NOT_FOUND`); wrong length `0x000E0009`; non-PL0 `0x000E0016`.
+
+---
+
+## 8. The full use case
+
+### 8.1 Sequence
+
+```mermaid
+sequenceDiagram
+    participant F as Factory (vendor CA, TEST)
+    participant N as Nios V host (PL0)
+    participant C as Caliptra RT (DPE)
+    participant V as Remote verifier
+    Note over F,C: Phase 1 - provisioning (factory once, then every boot)
+    N->>C: GET_IDEV_ECC384_INFO / _MLDSA87_INFO
+    C-->>N: IDevID public keys
+    N->>F: IDevID public keys
+    F-->>N: IDevID certs signed by the vendor CA (kept in SoC flash)
+    N->>C: POPULATE_IDEV_ECC384_CERT / POPULATE_IDEV_MLDSA87_CERT
+    C->>C: prepend to the DPE chain: [IDevID, LDevID, FMC, RT]
+    Note over N,C: Phase 2 - image authorization (every boot)
+    N->>C: VERIFY_AUTH_MANIFEST(M1)
+    C->>C: fuses -> bundle keys -> manifest keys -> IMC, SVN, UEID
+    N->>C: SET_AUTH_MANIFEST(M1)
+    N->>C: AUTHORIZE_AND_STASH(0x1001, SHA-384(app), svn 1)
+    C->>C: IMC match -> DPE child type 0x1001, PCR31 extend
+    C-->>N: 0xDEADC0DE (run the app)
+    N->>C: AUTHORIZE_AND_STASH(0x1002, SHA-384(bitstream), svn 2)
+    C-->>N: 0xDEADC0DE (configure the FPGA)
+    Note over N,V: Phase 3 - attestation with an exported CDI (runtime)
+    N->>C: INVOKE_DPE DeriveContext(EXPORT_CDI|CREATE_CERTIFICATE|RETAIN_PARENT)
+    C-->>N: exported CDI handle + cert (issuer RT Alias, TCBs = app + bitstream)
+    V->>N: challenge (nonce)
+    N->>C: SIGN_WITH_EXPORTED_ECDSA(handle, SHA-384(transcript))
+    C-->>N: pubkey + r,s
+    N->>C: SIGN_WITH_EXPORTED_MLDSA(handle, transcript)
+    C-->>N: pubkey + ML-DSA signature
+    N->>C: INVOKE_DPE GetCertificateChain
+    N-->>V: signatures + exported cert + chain (IDevID .. RT Alias)
+    V->>V: vendor CA -> ... -> exported cert, check TCBs, verify signatures
+    N->>C: REVOKE_EXPORTED_CDI_HANDLE(handle) (session end)
+```
+
+What the verifier learns from one exported cert plus its chain: the device is genuine (vendor CA → IDevID), Caliptra's ROM, FMC and runtime are the expected ones (LDevID → FMC → RT Alias), and the Nios application and bitstream are the vendor- and owner-authorized ones (their digests are TCB entries in the exported cert: `RMTR, VICC, 0x1001, 0x1002, UNVF` in the run). It also learns that the signer holds the key bound to exactly that state.
+
+### 8.2 A typical product flow (adds to §5.3)
+
+1. **Factory:** read the IDevID public keys (or CSRs), have the vendor CA issue the certs, and store them with the device. Store the device UEID in the owner's manifest tooling.
+2. **Each boot, before anything else:** `POPULATE_IDEV_ECC384_CERT` and `_MLDSA87_CERT` (once each).
+3. **Each boot:** `SET_AUTH_MANIFEST` with the stored manifest (check the status). In an update flow, `VERIFY_AUTH_MANIFEST` the new manifest first.
+4. **Before each image is used:** `AUTHORIZE_AND_STASH` with the image's digest. Continue only on `0xDEADC0DE`. Stash the images in the order they run, with their SVNs.
+5. **Before serving attestation:** export one CDI with `RETAIN_PARENT` and cache the exported cert and the chain.
+6. **Per challenge:** `SIGN_WITH_EXPORTED_*`. **At the end of the session, or on any re-measurement:** `REVOKE_EXPORTED_CDI_HANDLE`, then export again.
+
+### 8.3 Error-code cheat sheet (Part 2)
+
+| Code | Name | Command: cause |
+|---|---|---|
+| `0x000E0003` | `INSUFFICIENT_MEMORY` | POPULATE request too long, ATSH request too short |
+| `0x000E0009` | `MAILBOX_INVALID_PARAMS` | sizes over the limits, bad `sign_type`/mu size, short SWEE/RVCH, ATSH source bits = 2 |
+| `0x000E0016` | `INCORRECT_PAUSER_PRIVILEGE_LEVEL` | PL1 calling any of the 8 (ATSH only without `SKIP_STASH`); from the source, not testable here |
+| `0x000E001C` | `IDEV_CERT_POPULATION_FAILED` | DPE chain buffer full |
+| `0x000E0045`–`4D`, `53`, `65`, `68`, `B2`–`B4` | `AUTH_MANIFEST_*` | see §7.3 |
+| `0x000B002C` | `FIRMWARE_SVN_GREATER_THAN_MAX_SUPPORTED` | manifest SVN above the fuse maximum |
+| `0x000E004E` | `AUTH_AND_STASH_UNSUPPORTED_IMAGE_SOURCE` | image source 0 |
+| `0x000E00B0` | `STASH_MEASUREMENT_RESERVED_FW_ID` | `STASH_MEASUREMENT` with FW ID 2 |
+| `0x000E0057` / `0x000E009C` | `SIGN_WITH_EXPORTED_{ECDSA,MLDSA}_KEY_DERIVIATION_FAILED` | unknown or revoked handle |
+| `0x000E0060` | `REVOKE_EXPORTED_CDI_HANDLE_NOT_FOUND` | unknown or already revoked handle |
+| DPE `0x3` | `InvalidArgument` | export without `CREATE_CERTIFICATE`, or with `CHANGE_LOCALITY` |
+| DPE `0x81` | `InvalidLocality` | no context left at PL0 (after an export without `RETAIN_PARENT`) |
+| DPE `0x02000007` | `Crypto(DuplicateCdi)` | second export while one is active |
+| result `0x21523F21` / `0x8BFB95CB` | not authorized / hash mismatch | ATSH (status 1!) |
+
+### 8.4 Quirks to remember (Part 2, fw-2.1.4)
+
+1. `POPULATE_IDEV_*` has no "already populated" guard. A second ECC populate duplicates the IDevID in the chain.
+2. The DPE leaf's `tcg-dice-Ueid` holds the CertifyKey label. Read the device UEID from the FMC or RT Alias cert.
+3. The IMC signature covers all 80 slots: always send the full 30,696 B manifest.
+4. A changed SVN fails with an SVN error (`0x000B002C`) before any signature check.
+5. `AUTHORIZE_AND_STASH` reports denials with status 1. Always check the result word.
+6. LoadAddress with `image_size` 0 is authorized without DMA. A non-zero size crashes the passive-mode emulator.
+7. The export `DeriveContext` data is not measured. The exported key depends only on the parent's TCI chain.
+8. One exported CDI serves both algorithms, and either sign command accepts either handle.
+9. An export without `RETAIN_PARENT` removes the PL0 default context until reset.
+10. The `context` field of `AUTHORIZE_AND_STASH` is not used by fw-2.1.4.

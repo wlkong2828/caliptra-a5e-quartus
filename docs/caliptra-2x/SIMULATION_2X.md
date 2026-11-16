@@ -13,6 +13,7 @@
 - **Crypto exercise:** the same mode with `attest/crypto_driver.py` has Caliptra generate keys, sign and verify with ML-DSA-87 and ECDSA P-384, and verify LMS (31 commands, negative cases included, OpenSSL cross-check). Emulator: **CRYPTO PASS**; RTL run in progress. EdDSA is not supported by Caliptra 2.x. See [§9](#9-crypto-exercise-ml-dsa-87-ecdsa-p-384-and-lms).
 - **Crypto exercise 2:** `attest/crypto2_driver.py` covers SHA-384/512, SHAKE256, HMAC, AES-256 CBC/CTR/GCM, the SP 800-108 counter KDF, HKDF, ECDH P-384 and ML-KEM-1024 (100 commands, negative cases included, OpenSSL cross-check). Emulator: **CRYPTO2 PASS**; RTL not run yet. See [§10](#10-crypto-exercise-2-aes-sha-hmac-kdf-ecdh-ml-kem).
 - **Attestation exercise 3:** `attest/attest3_driver.py` covers `EXTEND_PCR`, `INCREMENT_PCR_RESET_COUNTER`, `DPE_TAG_TCI`, `DPE_GET_TAGGED_TCI`, `CERTIFY_KEY_EXTENDED_ECC384`/`_MLDSA87` (X.509 and CSR), `CERTIFY_KEY_CHUNKS`, `ADD_SUBJECT_ALT_NAME`, `REALLOCATE_DPE_CONTEXT_LIMITS` and `DISABLE_ATTESTATION` (95 commands, 128 checks, negative cases included, OpenSSL cross-check). Emulator: **ATTEST3 PASS**; RTL not run yet. See [§11](#11-attestation-exercise-3-pcrs-dpe-tagging-certifykey-extended-san-context-limits-disable).
+- **Attestation exercise 4:** `attest/attest4_driver.py` runs an end-to-end use case with `POPULATE_IDEV_ECC384_CERT`/`_MLDSA87_CERT` (vendor CA → IDevID → … → DPE leaf), `VERIFY_AUTH_MANIFEST`, `SET_AUTH_MANIFEST` and `AUTHORIZE_AND_STASH` (a real signed SoC auth manifest, stash into DPE and PCR31, 29 tampered or mis-signed manifests), and `SIGN_WITH_EXPORTED_ECDSA`/`_MLDSA` and `REVOKE_EXPORTED_CDI_HANDLE` (161 commands, 164 checks, OpenSSL cross-check). Emulator: **ATTEST4 PASS**; RTL not run yet. See [§12](#12-attestation-exercise-4-idevid-provisioning-soc-image-authorization-exported-cdi-signing).
 - **Related:** [NIOS_CALIPTRA_2X_INTEGRATION.md](NIOS_CALIPTRA_2X_INTEGRATION.md) (design), [FIRMWARE_AND_KEYS_2X.md](FIRMWARE_AND_KEYS_2X.md) (ROM, bundle, fuse image). The raw record is in `caliptra2x/sim_2x/BOOT_NIOS2X.md` and `caliptra2x/sim_2x/nios2x_top_fw_run.log`.
 
 ---
@@ -1032,3 +1033,237 @@ The other expected results print `OK`, `Verified OK`, `Signature Verified Succes
 | RTL (Verilator, `tb_nios2x_top_fw`) | *not run yet* | Same command stream. Per-command cycle counts will be added here. |
 
 TEST material only: the labels, measurements and the DMTF device-info string are simulation values.
+
+## 12. Attestation exercise 4: IDevID provisioning, SoC image authorization, exported-CDI signing
+
+This is a fourth host script for the same `+test=attest` run, `attest/attest4_driver.py`. It tests the last 8 attestation-related runtime commands as **one end-to-end attestation use case**, in the order a real product would use them:
+
+1. **Provisioning (factory).** The vendor's manufacturing CA (a TEST CA) certifies the IDevID keys. The SoC hands both certs to Caliptra with `POPULATE_IDEV_ECC384_CERT` / `POPULATE_IDEV_MLDSA87_CERT`, and a verifier checks the full chain with OpenSSL: vendor CA → IDevID → LDevID → FMC Alias → RT Alias → DPE leaf.
+2. **Image authorization (every boot).** A real SoC auth manifest (`ATM2`, built with the caliptra-sw `caliptra-auth-man-gen` crate and signed with the vendor and owner ECC P-384 and ML-DSA-87 keys) goes through `VERIFY_AUTH_MANIFEST` and `SET_AUTH_MANIFEST`. The Nios then asks `AUTHORIZE_AND_STASH` to approve its application image and an FPGA bitstream before using them. An approved image is measured into DPE and PCR31.
+3. **Exported CDI (runtime).** DPE `DeriveContext` with `EXPORT_CDI | CREATE_CERTIFICATE` gives the Nios an exported-CDI handle plus a cert chaining to RT Alias. The Nios signs a challenge with `SIGN_WITH_EXPORTED_ECDSA` / `SIGN_WITH_EXPORTED_MLDSA`, a verifier checks the signatures, and the handle is then destroyed with `REVOKE_EXPORTED_CDI_HANDLE`.
+
+Every result is checked on the host with OpenSSL or Python, and every negative case must be rejected with the exact error code. The host side needs `openssl` 3.5 or newer, Python 3 (no pip packages) and, once, a Rust build of the small manifest generator in §12.3. The concepts and a per-command walk-through are in [DPE_LEARNING_GUIDE.md](DPE_LEARNING_GUIDE.md) §6–§8.
+
+### 12.1 What each command does (fw-2.1.4)
+
+| Command (ID) | What it does | Rules found in the source and the run |
+|---|---|---|
+| `POPULATE_IDEV_ECC384_CERT` (`IDEP`, `0x49444550`) | Stores the vendor-signed IDevID ECC cert by **prepending** it to the DPE ECC cert chain, so `GetCertificateChain` returns `[IDevID, LDevID, FMC Alias, RT Alias]` | PL0 only. `cert_size` > 1024 gives `0x000E0009`. A request longer than the struct gives `0x000E0003`. No "already populated" guard (quirk 1). |
+| `POPULATE_IDEV_MLDSA87_CERT` (`IDMP`, `0x49444D50`) | The same for the ML-DSA-87 cert and the ML-DSA chain | PL0 only. `cert_size` > 8192 gives `0x000E0009`. If the chain would exceed 32 KiB: `0x000E001C` (`IDEV_CERT_POPULATION_FAILED`). |
+| `VERIFY_AUTH_MANIFEST` (`ATVM`, `0x4154564D`) | Runs every check of `SET_AUTH_MANIFEST` but stores nothing | `manifest_size` > 34 KiB or > the data sent gives `0x000E0009`. Check order: marker, preamble size, SVN, vendor-signed data, flags, owner keys, IMC entry count, IMC signatures, duplicate FW IDs, UEID. |
+| `SET_AUTH_MANIFEST` (`ATMN`, `0x41544D4E`) | Verifies the manifest and replaces the stored image metadata collection (IMC) | A rejected `SET` keeps the previous manifest. In passive mode it creates no `SOMV`/`SOMO` DPE contexts (`UpdateExisting`). |
+| `AUTHORIZE_AND_STASH` (`ATSH`, `0x41545348`) | Looks the FW ID up in the stored IMC and compares the image digest. If it is authorized and `SKIP_STASH` is clear, it stashes the digest: new DPE default context (`tci_type` = FW ID) and PCR31 extend | Result word: `0xDEADC0DE` authorized, `0x21523F21` not authorized, `0x8BFB95CB` hash mismatch (status is 1 in all three cases). Flags bit 0 `SKIP_STASH`, bits 2:1 manifest source (0 vendor+owner, 1 owner-only, other `0x000E0009`). Image source 1 InRequest, 2 LoadAddress, 3 StagingAddress, 0 `0x000E004E`. Short request `0x000E0003`. |
+| `SIGN_WITH_EXPORTED_ECDSA` (`SWEE`, `0x53574545`) | Derives a P-384 key from the exported CDI (label `"Exported ECC"`) and signs a 48-byte digest. Returns the public key and r,s. | Unknown or revoked handle `0x000E0057`. Wrong length `0x000E0009`. Deterministic: the same digest gives the same r,s. |
+| `SIGN_WITH_EXPORTED_MLDSA` (`SWML`, `0x53574D4C`) | Derives an ML-DSA-87 key from the exported CDI (label `"Exported ML-DSA"`) and signs up to 1024 B raw (`sign_type` 1) or a 64-byte mu (`sign_type` 0) | Unknown or revoked handle `0x000E009C`. `sign_type` 2, mu with size ≠ 64, size > 1024: `0x000E0009`. |
+| `REVOKE_EXPORTED_CDI_HANDLE` (`RVCH`, `0x52564348`) | Erases the exported CDI and frees the single exported-CDI slot | Unknown or already revoked handle `0x000E0060`. Wrong length `0x000E0009`. |
+
+The DPE side of the export is `DeriveContext` through `INVOKE_DPE_ECC384` / `_MLDSA87` with flags `EXPORT_CDI` (bit 23) + `CREATE_CERTIFICATE` (bit 22), optionally `RETAIN_PARENT` (bit 29). Without `CREATE_CERTIFICATE`, or with `CHANGE_LOCALITY`, DPE returns `InvalidArgument` (`0x3`). A second export while one is active returns the DPE crypto error `0x02000007`.
+
+**The test keys and fuses.** The manifest is signed with the caliptra-sw default test keys. The bundle's vendor FW key 0 (ECC and ML-DSA) endorses the manifest vendor keys (`VENDOR_*_KEY_1`), and the bundle's owner key endorses the manifest owner keys (the same owner key pair). The driver first checks that `FUSE_VENDOR_PK_HASH`, `CPTRA_OWNER_PK_HASH` and the PQC type (1 = ML-DSA) match the bundle, so the manifest must be accepted on these fuses. The fuse image has `soc_manifest_max_svn` 0 in Production, so the manifest SVN must be 0.
+
+**Manifest M1** (30,696 B: 24,292 B preamble + 4 + 80 × 80 B IMC, version 2, SVN 0, flags 1 = `VENDOR_SIGNATURE_REQUIRED`):
+
+| FW ID | Component | Image | IMC flags | Digest |
+|---|---|---|---|---|
+| `0x1001` | `0x10` | Nios application `nios_app_v1.bin` | `0x1` (InRequest) | `D_app` = `4e14badfcae352fd…` |
+| `0x1002` | `0x20` | FPGA bitstream `bitstream_revA.rbf` | `0x1` | `D_bit` = `67accad42ceeb004…` |
+| `0x1003` | `0x30` | a component with `ignore_auth_check` | `0x5` (InRequest + bit 2) | zero, any digest accepted |
+| `0x1004` | `0x40` | a LoadAddress test entry | `0x2` (LoadAddress) | SHA-384("") = `38b060a751ac9638…` |
+| `0xFFF` | `0xFFFFFFFF` | device binding: the UEID read from the RT Alias cert | 0 | 17 zero bytes (emulator fuses) |
+
+IMC entry layout (80 B): `fw_id`, `component_id`, `classification`, `flags` (bits 1:0 image source, bit 2 `ignore_auth_check`, bits 14:8 exec bit), load address (8 B), staging address (8 B), digest (48 B).
+
+**Firmware quirks found (fw-2.1.4):**
+
+1. **POPULATE has no guard.** A second `POPULATE_IDEV_ECC384_CERT` is accepted, and the chain then carries the IDevID twice (5 certs, 3752 B). The ML-DSA one is refused only because 31,126 B + 7,468 B exceeds the 32 KiB chain buffer (`0x000E001C`).
+2. **The DPE leaf's `tcg-dice-Ueid` is not the device UEID.** DPE puts the 48-byte CertifyKey label there. The device UEID (type byte + 4 serial-number fuse words) is in the FMC/RT Alias certs. The manifest's `0xFFF` entry must use that one.
+3. **The IMC signature covers all 80 slots.** The manifest must be sent at its full 30,696 B even with 5 used entries. Truncating it to the used entries gives `0x000E0047`, which looks like a key problem.
+4. **The SVN is checked before any signature.** Changing the SVN field (signed data) gives `0x000B002C` (an image-verifier code: SVN greater than the fuse maximum), not a signature error.
+5. **`0xFFF` and unknown IDs are just "not authorized".** `AUTHORIZE_AND_STASH` with FW ID `0xFFF` returns `0x21523F21`, like an unknown ID.
+6. **LoadAddress with `image_size` 0 is authorized without DMA.** The firmware hashes zero bytes, so an entry with SHA-384("") passes. A non-zero size starts an AXI DMA. On the sw-emulator in passive mode this **panics the emulator** (`dma.rs:454 LoadAccessFault`), so the DMA image sources cannot be tested here (see §12.4).
+7. **The export `data` is not measured.** The `DeriveContext` input data is not part of the exported CDI and does not appear in the exported cert. Two exports with different data give the same key (the CDI depends only on the parent's TCI chain); only the 32-byte handle is random.
+8. **One exported CDI serves both algorithms.** `SIGN_WITH_EXPORTED_MLDSA` accepts an ECC-exported handle and the reverse. The derived keys equal the keys in the other algorithm's export cert.
+9. **Export without `RETAIN_PARENT` removes the default context.** Afterwards `CertifyKey` returns DPE `0x81` (InvalidLocality), and `STASH_MEASUREMENT` returns status 1 with `dpe_result` 0x81, so PL0 cannot measure anything more until reset. The exported CDI itself still works.
+10. **Error names.** A revoked or unknown handle in `SIGN_WITH_EXPORTED_*` reports `..._KEY_DERIVIATION_FAILED` (`0x000E0057` / `0x000E009C`, spelled this way in the source), not "handle not found".
+
+Not testable here (documented from the source only): the PL1 rejections (the emulator and TB have one AXI user, which is PL0), the `SOMV`/`SOMO` contexts (subsystem mode), `DEBUG_IMAGE` manifests (needs subsystem mode + `SS_DEBUG_INTENT`; passive gives `0x000E00B2`) and the DMA image sources.
+
+### 12.2 Command sequence (161 commands + 1 probe)
+
+Besides the 8 commands, the driver uses `FW_INFO`, the LDevID/FMC/RT Alias cert getters, `GET_IDEV_*_INFO`/`GET_IDEV_*_CERT`, `QUOTE_PCRS_ECC384`, `DPE_TAG_TCI`/`DPE_GET_TAGGED_TCI`, `STASH_MEASUREMENT` (as a contrast) and DPE `GetCertificateChain`, `CertifyKey` and `DeriveContext` through `INVOKE_DPE_*`.
+
+| # | Command | Expect |
+|---|---|---|
+| 000–008 | `FW_INFO`; LDevID, FMC and RT Alias certs (ECC, ML-DSA); `GET_IDEV_ECC384_INFO`, `_MLDSA87_INFO` | `pl0_pauser` = 1; IDevID public keys |
+| 009–023 | quote; DPE `GetCertificateChain` ECC (2 × 2 KiB) and ML-DSA (12 × 2 KiB) | chain before = `[LDevID, FMC, RT]`, 2586 B / 23,658 B |
+| 024–025 | `GET_IDEV_ECC384_CERT` / `_MLDSA87_CERT` with the TBS and signature of the vendor-CA cert | Caliptra rebuilds the vendor-CA cert byte for byte (583 B / 7468 B); OpenSSL: vendor CA → IDevID → LDevID |
+| 026–028 | `POPULATE` ECC `cert_size` 1025; ECC request too long; ML-DSA `cert_size` 8193 | `0x000E0009`, `0x000E0003`, `0x000E0009` |
+| 029–030 | `POPULATE_IDEV_ECC384_CERT` (583 B), `POPULATE_IDEV_MLDSA87_CERT` (7468 B) | pass |
+| 031–048 | `GetCertificateChain` ECC and ML-DSA again | `[IDevID, LDevID, FMC, RT]`, 3169 B / 31,126 B |
+| 049–050 | `CertifyKey` ECC and ML-DSA | `openssl verify` vendor CA → IDevID → LDevID → FMC → RT → leaf, depth 6, both algorithms |
+| 051–055 | `AUTHORIZE_AND_STASH` app before any manifest; `VERIFY` M1; `AUTHORIZE_AND_STASH` app; `SET` M1; `CertifyKey` | `0x21523F21`; pass; still `0x21523F21` (VERIFY stores nothing); pass; no new TCB entries (passive) |
+| 056–061 | quote; `AUTHORIZE_AND_STASH` app, `D_app`, SVN 1; quote; `CertifyKey`; tag the default context `AUTH`; get it | `0xDEADC0DE`; PCR31 = SHA-384(0⁴⁸ ‖ D_app) = `17992fd6…`, other PCRs unchanged; leaf has a TCB entry type `0x1001` (LE), fwid D_app, SVN 1; `AUTH` current = D_app, cumulative = PCR31 |
+| 062–066 | bitstream `D_bit` with `SKIP_STASH`; quote; get `AUTH`; `CertifyKey` ×2 | `0xDEADC0DE`; PCR31 unchanged, `AUTH` still the default context |
+| 067–070 | bitstream rev B digest; FW ID `0x2000`; FW ID `0xFFF`; quote | `0x8BFB95CB`, `0x21523F21`, `0x21523F21`; PCRs unchanged |
+| 071–076 | `0x1003` arbitrary digest; `0x1004` LoadAddress size 0; owner-only source; source bits = 2; image source 0; short | `0xDEADC0DE`, `0xDEADC0DE`, `0x21523F21`, `0x000E0009`, `0x000E004E`, `0x000E0003` |
+| 077–080 | bitstream `D_bit`, SVN 2 (stash); quote; `CertifyKey` ECC, ML-DSA | `0xDEADC0DE`; PCR31 = SHA-384(17992fd6… ‖ D_bit) = `d76daf34…`; both leaves list `0x1001` and `0x1002` and verify |
+| 081–082 | `STASH_MEASUREMENT` arbitrary digest (`UNVF`); `STASH_MEASUREMENT` FW ID 2 | accepted without any check (the contrast); `0x000E00B0` (reserved for `AUTHORIZE_AND_STASH`) |
+| 083–102 | `VERIFY` with 18 tampered copies of M1 and 2 bad `manifest_size` values | codes in the table below |
+| 103–112 | `VERIFY` with manifests re-signed by the generator: SVN 1, wrong vendor key, wrong owner key, wrong UEID, duplicate FW ID, empty, flags 3, flags 2, flags 0, flags 0 + broken owner signature | `0x000B002C`, `0x000E0047`, `0x000E0049`, `0x000E00B4`, `0x000E0053`, `0x000E004D`, `0x000E00B2`, `0x000E00B3`, pass, `0x000E0049` |
+| 113–120 | `SET` a tampered M1; app; `SET` M2 (bitstream rev B only); app, rev A, rev B; `SET` M1; app | `0x000E0049`; still `0xDEADC0DE` (M1 kept); pass; `0x21523F21`, `0x8BFB95CB`, `0xDEADC0DE`; pass; `0xDEADC0DE` |
+| 121–126 | `CertifyKey`; export E1 (ECC, `RETAIN_PARENT`); `CertifyKey`; export while active; export without `CREATE_CERTIFICATE`; export with `CHANGE_LOCALITY` | handle all-FF, parent = default, 32-B CDI handle, cert chains to RT Alias and to the vendor CA (depth 6); TCB list = the default chain; default context kept; DPE `0x02000007`, `0x3`, `0x3` |
+| 127–132 | `SWEE` E1 over SHA-384(challenge) ×2; `SWML` with the E1 handle; `SWEE` 1 B short; `SWEE`/`SWML` never-exported handle | returned key = cert key, `openssl` verifies, same r,s twice; ML-DSA verifies; `0x000E0009`; `0x000E0057` / `0x000E009C` |
+| 133–138 | `REVOKE` E1; `SWEE`/`SWML` E1; `REVOKE` E1 again; `REVOKE` unknown; `REVOKE` short | pass; `0x000E0057` / `0x000E009C`; `0x000E0060`, `0x000E0060`, `0x000E0009` |
+| 139–142 | export E2 (different data); `SWEE` E2; `SWEE` old E1; `REVOKE` E2 | new handle, **same key** as E1; verifies; `0x000E0057`; pass |
+| 143–151 | export E3 via `INVOKE_DPE_MLDSA87`; `SWML` raw, mu; `sign_type` 2; mu size 63; size 1025; `SWEE` with E3; `REVOKE` E3; `SWML` E3 | cert chains (depth 6); raw and mu both verify as pure ML-DSA over the challenge; `0x000E0009` ×3; ECC key = E1 key; pass; `0x000E009C` |
+| 152–156 | export without `RETAIN_PARENT`; `CertifyKey`; `SWEE` E4; `REVOKE` E4; `STASH_MEASUREMENT` | pass; DPE `0x81`; verifies; pass; `dpe_result` 0x81 |
+| 157–160 | `POPULATE_IDEV_ECC384_CERT` again; `GetCertificateChain`; `POPULATE_IDEV_MLDSA87_CERT` again | accepted, chain has IDevID twice (3752 B); `0x000E001C` |
+| (161) | `AUTHORIZE_AND_STASH` `0x1004` LoadAddress, size 4096 | **probe only, not a check.** Sent by default on the emulator (`ATTEST4_DMA_PROBE=1` to send it on the RTL). The emulator panics (quirk 6). |
+
+**Tampered manifests (`VERIFY_AUTH_MANIFEST`, M1 = 30,696 B, one byte changed unless stated):**
+
+| Change | Error |
+|---|---|
+| marker `ATM2` | `0x000E0045` `INVALID_AUTH_MANIFEST_MARKER` |
+| preamble size field | `0x000E0046` `AUTH_MANIFEST_PREAMBLE_SIZE_MISMATCH` |
+| cut at 24,000 B (inside the preamble) | `0x000E004B` `AUTH_MANIFEST_PREAMBLE_SIZE_LT_MIN` |
+| SVN field 0 → 1 | `0x000B002C` `FIRMWARE_SVN_GREATER_THAN_MAX_SUPPORTED` |
+| flags 1 → 5; vendor ECC key; vendor ML-DSA key; IMC digest; IMC vendor ECC signature zeroed; IMC truncated to 5 entries | `0x000E0047` `AUTH_MANIFEST_VENDOR_ECC_SIGNATURE_INVALID` |
+| vendor ML-DSA endorsement signature; IMC vendor ML-DSA signature | `0x000E0065` `AUTH_MANIFEST_MLDSA_VENDOR_SIG_INVALID` |
+| owner ECC key; IMC owner ECC signature | `0x000E0049` `AUTH_MANIFEST_OWNER_ECC_SIGNATURE_INVALID` |
+| owner ML-DSA endorsement signature; IMC owner ML-DSA signature | `0x000E0068` `AUTH_MANIFEST_MLDSA_OWNER_SIG_INVALID` |
+| IMC entry count 81; entry count 0 | `0x000E004D` `..._INVALID_ENTRY_COUNT` |
+| `manifest_size` 34 KiB + 1; `manifest_size` > data sent | `0x000E0009` `MAILBOX_INVALID_PARAMS` |
+
+The vendor ECC endorsement covers the vendor ML-DSA key too, so changing that key fails on ECC first (`0x47`). With flags 0 the vendor IMC signatures may be zero, but the owner IMC signatures are always checked.
+
+### 12.3 Run it, step by step
+
+It reuses the `attest_emu` build from §9.3 Step 3 and the prerequisites from §9.3 Step 1. The manifest generator is new and needs a one-time build in the same caliptra-sw checkout:
+
+```bash
+cd $REPO/caliptra2x/sim_2x
+cp attest/emu/attest4_manifest.rs $CALIPTRA_SW/auth-manifest/app/examples/
+(cd $CALIPTRA_SW && cargo build --release -p caliptra-auth-manifest-app --example attest4_manifest)
+```
+
+The driver finds it at `$CALIPTRA_SW/target/release/examples/attest4_manifest`, or at `$ATTEST4_MANIFEST_TOOL`. It uses only the caliptra-sw default **test** keys. The IDevID certs come from `attest/testca/` (the cached certs match the repo's fuse image; the CA private keys are never committed, see §8).
+
+**On the emulator (about 29 s for the checks, 59 s including the 30 s probe timeout)**
+
+```bash
+cd $REPO/caliptra2x/sim_2x
+rm -rf attest4_out/emu && mkdir -p attest4_out/emu
+nice -n 19 $CALIPTRA_SW/target/release/examples/attest_emu ../fw_2x/caliptra-rom.bin \
+    ../fw_2x/caliptra-fw-bundle.bin ../fw_2x/fuse_image_2x.hex attest4_out/emu &
+CALIPTRA_SW=$CALIPTRA_SW python3 attest/attest4_driver.py attest4_out/emu | tee attest4_emu.log
+```
+
+Each check prints a `STEP ... PASS` line. At the end the driver prints the per-command table, the per-group count (`info 8/8, keys 5/5, prov 22/22, authz 40/40, tamper 38/38, export 18/18, revoke 12/12, mldsa 14/14, lifecycle 5/5, quirks 2/2`) and finally `ATTEST4 PASS`. The exit code is 0 on pass and 1 on fail. The last thing the emulator prints is the `LoadAccessFault` panic from the DMA probe. That is expected, and the emulator exits by itself. `POPULATE` and the export without `RETAIN_PARENT` change the device state, so start a fresh emulator for each run.
+
+**On the RTL (optional, several hours)**
+
+```bash
+cd $REPO/caliptra2x/sim_2x
+rm -rf attest4_out/rtl && mkdir -p attest4_out/rtl
+LOG=attest4_rtl.log nohup setsid nice ./run_nios2x_top_fw.sh +test=attest +attest_dir=attest4_out/rtl \
+    +max_cycles=4000000000 > attest4_rtl.out 2>&1 &
+CALIPTRA_SW=$CALIPTRA_SW nohup setsid python3 attest/attest4_driver.py attest4_out/rtl attest4_rtl.log \
+    > attest4_out/rtl_driver.log 2>&1 &
+
+grep -E 'MILESTONE|STEP|ATTEST4|PASS|FAIL|TIMEOUT' attest4_out/rtl_driver.log attest4_rtl.log
+```
+
+On the RTL the DMA probe is not sent unless `ATTEST4_DMA_PROBE=1`. The driver waits up to 72 h per response (`CRYPTO_TIMEOUT_H`). The manifest commands carry 30,700 B and the ML-DSA chain reads are 2 KiB each, so expect this run to be longer than §11.
+
+Outputs in the run folder (gitignored with `attest4_*.log`): `attest4_summary.json` (every command, status, error code, check, the fuse comparison, the digests and PCR31 values, the tamper table, the per-group counts), the host-checkable files listed below, and the raw `req_*.hex`/`resp_*.hex` files.
+
+### 12.3.1 Verify the output files yourself
+
+The driver already runs these checks. To repeat them by hand, `cd attest4_out/emu` (or `rtl`). They were run as written on the emulator output (OpenSSL 3.5.7).
+
+| File | What it is |
+|---|---|
+| `vendor_ca_{ecc384,mldsa87}.pem` | TEST manufacturing CA (trust anchor) |
+| `idevid_*_vendor_ca.{pem,der}`, `ldevid_*`, `fmc_alias_*`, `rt_alias_*` | the device chain |
+| `dpe_{ecc,mldsa}_chain_{before,after,double}_N.der` | DPE `GetCertificateChain` output, split into certs |
+| `fullchain_{ecc,mldsa}_untrusted.pem`, `leaf_*_provisioned.pem` | intermediates and the DPE leaf right after `POPULATE` |
+| `manifest_m1.bin`, `manifest_m2.bin`, `manifest_*.bin` | the good and the bad (re-signed) manifests |
+| `nios_app_v1.bin`, `bitstream_revA.rbf`, `bitstream_revB.rbf` | the "images" whose digests are in the manifests |
+| `fw_{vendor,owner}_*.pem`, `man_{vendor,owner}_*.pem` | bundle (fuse-anchored) keys and manifest keys, as public-key PEM |
+| `m1_*_endorse_*.{msg,sig*}`, `m1_imc_*.{msg,sig*}` | each signed region of M1 and its signature (ECC as DER) |
+| `pcr31_{before,after}_app.bin`, `leaf_*_after_{app,bit}.pem` | PCR31 around the stash and the leaves showing the stashed TCBs |
+| `exported_{ecc_1,ecc_2,mldsa_3}.pem`, `exported_*_pub.pem`, `exported_*_handle.bin` | export certs, their public keys, the 32-byte handles |
+| `challenge_tbs.bin`, `swee_e1.sig.der`, `swml_e3_{raw,mu}.sig` | the challenge and the signatures over it |
+
+**Provisioning: the full chain from the vendor CA**
+
+```bash
+openssl verify -show_chain -CAfile vendor_ca_ecc384.pem -untrusted fullchain_ecc_untrusted.pem leaf_ecc_provisioned.pem
+openssl verify -show_chain -CAfile vendor_ca_mldsa87.pem -untrusted fullchain_mldsa_untrusted.pem leaf_mldsa_provisioned.pem
+cmp idevid_ecc384_vendor_ca.der dpe_ecc_chain_after_0.der && cmp idevid_mldsa87_vendor_ca.der dpe_mldsa_chain_after_0.der && echo "IDevID is chain[0]"
+```
+
+Each `verify` prints `OK` and a chain of depth 0–5 ending at `TEST Mfg CA ECC` (ML-DSA: `CA`).
+
+**The manifest: structure, digests and the four signing steps**
+
+```bash
+python3 - <<'PY'
+import struct
+m = open("manifest_m1.bin", "rb").read()
+mark, psz, ver, svn, flags = struct.unpack_from("<4sIIII", m)
+n = struct.unpack_from("<I", m, psz)[0]
+print(mark, len(m), "preamble", psz, "version", ver, "svn", svn, "flags", flags, "entries", n)
+for i in range(n):
+    e = m[psz + 4 + 80 * i: psz + 84 + 80 * i]
+    fw_id, comp, cls, flg = struct.unpack_from("<IIII", e)
+    print(" fw_id 0x%04x component 0x%x flags 0x%x digest %s" % (fw_id, comp, flg, e[32:80].hex()[:32]))
+PY
+openssl dgst -sha384 nios_app_v1.bin bitstream_revA.rbf
+openssl dgst -sha384 -verify fw_vendor_ecc_key0.pem -signature m1_vendor_endorse_ecc.sig.der m1_vendor_endorse_ecc.msg
+openssl pkeyutl -verify -pubin -inkey fw_owner_mldsa.pem -rawin -in m1_owner_endorse_mldsa.msg -sigfile m1_owner_endorse_mldsa.sig
+openssl dgst -sha384 -verify man_vendor_ecc.pem -signature m1_imc_vendor_ecc.sig.der m1_imc_vendor_ecc.msg
+openssl pkeyutl -verify -pubin -inkey man_owner_mldsa.pem -rawin -in m1_imc_owner_mldsa.msg -sigfile m1_imc_owner_mldsa.sig
+```
+
+The dump prints `b'ATM2' 30696 preamble 24292 version 2 svn 0 flags 1 entries 5`, and the digests of `0x1001`/`0x1002` match `openssl dgst`. The four signature checks print `Verified OK` or `Signature Verified Successfully`. The other four `m1_*` pairs verify the same way.
+
+**The stash: PCR31 and the DPE leaf**
+
+```bash
+python3 -c "import hashlib;b=open('pcr31_before_app.bin','rb').read();d=hashlib.sha384(open('nios_app_v1.bin','rb').read()).digest();print(hashlib.sha384(b+d).digest()==open('pcr31_after_app.bin','rb').read())"
+openssl asn1parse -in leaf_ecc_after_bit.pem | grep -c -i "$(openssl dgst -sha384 -r bitstream_revA.rbf | cut -c1-96)"
+```
+
+The first prints `True`, the second `1` (the bitstream digest is a fwid in the leaf's MultiTcbInfo).
+
+**The exported CDI: certs and signatures**
+
+```bash
+openssl verify -partial_chain -CAfile rt_alias_ecc384.pem exported_ecc_1.pem
+openssl verify -partial_chain -CAfile rt_alias_mldsa87.pem exported_mldsa_3.pem
+openssl dgst -sha384 -verify exported_ecc_1_pub.pem -signature swee_e1.sig.der challenge_tbs.bin
+openssl pkeyutl -verify -pubin -inkey exported_mldsa_3_pub.pem -rawin -in challenge_tbs.bin -sigfile swml_e3_raw.sig
+openssl pkeyutl -verify -pubin -inkey exported_mldsa_3_pub.pem -rawin -in challenge_tbs.bin -sigfile swml_e3_mu.sig
+```
+
+**Revocation: the log**
+
+```bash
+python3 -c "
+import json
+for e in json.load(open('attest4_summary.json'))['log']:
+    if 'REVOKE' in e['name'] or 'SIGN_WITH' in e['name']: print('%03d %-46s status=%d fwerr=%s' % (e['n'], e['name'], e['status'], e['fw_err_non_fatal']))"
+```
+
+It lists each sign and revoke with status 1 (pass) or 3 and the codes from §12.2.
+
+### 12.4 Results
+
+| Backend | Result | Notes |
+|---|---|---|
+| sw-emulator (`attest_emu`, same ROM, bundle and fuses) | **ATTEST4 PASS**: 161 commands, 164 checks, about 29 s (58.7 s with the 30 s DMA-probe timeout) | info 8/8, keys 5/5, prov 22/22, authz 40/40, tamper 38/38, export 18/18, revoke 12/12, mldsa 14/14, lifecycle 5/5, quirks 2/2. All 8 commands work as the source describes. Every reject returned the expected code. The ten quirks are listed in §12.1. The LoadAddress DMA probe (not a check) crashed the emulator with `LoadAccessFault`, so the DMA image sources remain untested. |
+| RTL (Verilator, `tb_nios2x_top_fw`) | *not run yet* | Same command stream, without the DMA probe. Per-command cycle counts will be added here. |
+
+TEST material only: the manufacturing CA, the manifest keys (caliptra-sw default test keys), the images and the challenge are simulation values.
