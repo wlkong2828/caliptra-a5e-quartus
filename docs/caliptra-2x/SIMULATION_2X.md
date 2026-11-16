@@ -11,7 +11,7 @@
 - **Result:** **PASS**: `TB_NIOS2X PASS cyc=36617987 trng=217 (prod, debug locked)`.
 - **Attestation and DPE:** `+test=attest` continues after `ready_for_runtime` with 34 runtime mailbox commands (DICE cert chain, `STASH_MEASUREMENT`, PCR quotes, DPE GetProfile/CertifyKey/GetCertificateChain): **PASS** at cycle 59,280,395, certificates byte-identical to the sw-emulator. See [§8](#8-rom-boot-firmware-load-attestation-and-dpe-in-simulation). What the Nios model covers: [§8.1](#81-what-this-simulation-covers-nios-model). Quick start: [§8.2](#82-quick-start-run-it-yourself).
 - **Crypto exercise:** the same mode with `attest/crypto_driver.py` has Caliptra generate keys, sign and verify with ML-DSA-87 and ECDSA P-384, and verify LMS (31 commands, negative cases included, OpenSSL cross-check). Emulator: **CRYPTO PASS**; RTL: **CRYPTO PASS** (`TB_NIOS2X PASS cyc=82446678`, outputs match the emulator). EdDSA is not supported by Caliptra 2.x. See [§9](#9-crypto-exercise-ml-dsa-87-ecdsa-p-384-and-lms).
-- **Crypto exercise 2:** `attest/crypto2_driver.py` covers SHA-384/512, SHAKE256, HMAC, AES-256 CBC/CTR/GCM, the SP 800-108 counter KDF, HKDF, ECDH P-384 and ML-KEM-1024 (100 commands, negative cases included, OpenSSL cross-check). Emulator: **CRYPTO2 PASS**; RTL not run yet. See [§10](#10-crypto-exercise-2-aes-sha-hmac-kdf-ecdh-ml-kem).
+- **Crypto exercise 2:** `attest/crypto2_driver.py` covers SHA-384/512, SHAKE256, HMAC, AES-256 CBC/CTR/GCM, the SP 800-108 counter KDF, HKDF, ECDH P-384 and ML-KEM-1024 (100 commands, negative cases included, OpenSSL cross-check). Emulator: **CRYPTO2 PASS**; RTL: **CRYPTO2 PASS** (100 commands, 76 checks, 10.06 M cycles for the commands, 12.6 h wall). Cycles per command in §10.4. See [§10](#10-crypto-exercise-2-aes-sha-hmac-kdf-ecdh-ml-kem).
 - **Attestation exercise 3:** `attest/attest3_driver.py` covers `EXTEND_PCR`, `INCREMENT_PCR_RESET_COUNTER`, `DPE_TAG_TCI`, `DPE_GET_TAGGED_TCI`, `CERTIFY_KEY_EXTENDED_ECC384`/`_MLDSA87` (X.509 and CSR), `CERTIFY_KEY_CHUNKS`, `ADD_SUBJECT_ALT_NAME`, `REALLOCATE_DPE_CONTEXT_LIMITS` and `DISABLE_ATTESTATION` (95 commands, 128 checks, negative cases included, OpenSSL cross-check). Emulator: **ATTEST3 PASS**; RTL not run yet. See [§11](#11-attestation-exercise-3-pcrs-dpe-tagging-certifykey-extended-san-context-limits-disable).
 - **Attestation exercise 4:** `attest/attest4_driver.py` runs an end-to-end use case with `POPULATE_IDEV_ECC384_CERT`/`_MLDSA87_CERT` (vendor CA → IDevID → … → DPE leaf), `VERIFY_AUTH_MANIFEST`, `SET_AUTH_MANIFEST` and `AUTHORIZE_AND_STASH` (a real signed SoC auth manifest, stash into DPE and PCR31, 29 tampered or mis-signed manifests), and `SIGN_WITH_EXPORTED_ECDSA`/`_MLDSA` and `REVOKE_EXPORTED_CDI_HANDLE` (161 commands, 164 checks, OpenSSL cross-check). Emulator: **ATTEST4 PASS**; RTL not run yet. See [§12](#12-attestation-exercise-4-idevid-provisioning-soc-image-authorization-exported-cdi-signing).
 - **Exercise 5:** `attest/attest5_driver.py` covers the housekeeping commands (`VERSION`, `CAPABILITIES`, `GET_IMAGE_INFO`, `SELF_TEST_START`/`_GET_RESULTS`, `SHUTDOWN`), the CSR commands (`GET_IDEV_*_CSR`, `GET_FMC_ALIAS_*_CSR`, `GET_ATTESTED_*_CSR`), `FIRMWARE_VERIFY` (the real bundle and 11 tampered or wrong-size variants) and runtime `FIRMWARE_LOAD` (impactless update: 3 rejected images, then the real one), in product order (70 commands, 95 checks, OpenSSL cross-check). Emulator: **ATTEST5 PASS**; RTL not run yet. Needs a one-time rebuild of `attest_emu`. See [§13](#13-exercise-5-housekeeping-csrs-firmware_verify-and-runtime-firmware_load).
@@ -888,7 +888,130 @@ The negative cases inside Caliptra (rejected commands, `tag_verified=0`, the ML-
 | Backend | Result | Notes |
 |---|---|---|
 | sw-emulator (`attest_emu`, same ROM, bundle and fuses) | **CRYPTO2 PASS**: 100 commands, 76 checks, about 12 s including boot | misc 8/8, sha 6/6, hmac 9/9, aes 8/8, gcm 6/6, kdf 23/23, ecdh 7/7, mlkem 9/9. Every reject returned the expected code. `CM_RANDOM_STIR` is rejected (external TRNG). One-shot `CM_SHA` is not dispatched. HMAC-SHA384 with a 64 B key uses the first 48 B (quirk, §10.1). |
-| RTL (Verilator, `tb_nios2x_top_fw`) | *not run yet* | Same command stream. Per-command cycle counts will be added here. |
+| RTL (Verilator, `tb_nios2x_top_fw`) | **CRYPTO2 PASS**: 100 commands, 76 checks; `TB_NIOS2X PASS cyc=54975778 trng=260 (prod, debug locked)` | misc 8/8, sha 6/6, hmac 9/9, aes 8/8, gcm 6/6, kdf 23/23, ecdh 7/7, mlkem 9/9. `ready_for_runtime` at cycle 36,597,934; the first request is sent at that cycle, the last at 54,913,244, and the 100 commands themselves take 10,057,299 cycles (the rest is idle clock while the host script runs OpenSSL between requests). Wall time 45,403 s (about 12.6 h; start Sun 2026-11-15 21:34:56 CST, end Mon 2026-11-16 10:11:39 CST). Every command, status, response length and error code equals the emulator run, except the `fwerr` word of two successful commands (see below). Deterministic outputs are byte-identical to the emulator's; random-seeded ones differ, as expected, and all verify with OpenSSL. |
+
+**RTL cycles per command** (`crypto2_rtl.log`/`crypto2_summary.json`, cycles from the request to the response at the TB clock):
+
+| # | Command | Result | Cycles |
+|---|---|---|---|
+| 000 | `CM_STATUS_start` | pass | 23,111 |
+| 001 | `CM_RANDOM_STIR_48` | reject `0x00100003` | 26,043 |
+| 002 | `CM_RANDOM_GENERATE_64` | pass | 24,342 |
+| 003 | `CM_SHA_INIT_sha384` | pass | 28,067 |
+| 004 | `CM_SHA_UPDATE_sha384_0` | pass | 38,240 |
+| 005 | `CM_SHA_UPDATE_sha384_1` | pass | 32,846 |
+| 006 | `CM_SHA_UPDATE_sha384_2` | pass | 134,277 |
+| 007 | `CM_SHA_FINAL_sha384` | pass | 33,795 |
+| 008 | `CM_SHA_INIT_sha512` | pass | 28,271 |
+| 009 | `CM_SHA_UPDATE_sha512_0` | pass | 37,833 |
+| 010 | `CM_SHA_UPDATE_sha512_1` | pass | 32,234 |
+| 011 | `CM_SHA_UPDATE_sha512_2` | pass | 133,867 |
+| 012 | `CM_SHA_FINAL_sha512` | pass | 33,612 |
+| 013 | `CM_SHA_INIT_empty` | pass | 27,852 |
+| 014 | `CM_SHA_FINAL_empty` | pass | 31,227 |
+| 015 | `CM_SHA_INIT_bad_alg` | reject `0x000E0009` | 25,982 |
+| 016 | `CM_SHA_oneshot` | reject `0x000E0002` | 22,536 |
+| 017 | `CM_SHAKE256_INIT` | pass | 29,611 |
+| 018 | `CM_SHAKE256_UPDATE` | pass | 35,293 |
+| 019 | `CM_SHAKE256_FINAL` | pass | 30,855 |
+| 020 | `CM_IMPORT_HMAC48` | pass | 30,077 |
+| 021 | `CM_IMPORT_HMAC64` | pass | 29,898 |
+| 022 | `CM_IMPORT_HMAC_bad_size` | reject `0x000E005D` | 23,168 |
+| 023 | `CM_HMAC_key48_SHA384` | pass | 41,598 |
+| 024 | `CM_HMAC_key64_SHA512` | pass | 42,612 |
+| 025 | `CM_HMAC_key64_SHA384` | pass | 42,596 |
+| 026 | `CM_HMAC_key64_SHA512_flipped` | pass | 42,408 |
+| 027 | `CM_HMAC_key48_vs_key64` | pass | 42,190 |
+| 028 | `CM_HMAC_key48_SHA512_bad` | reject `0xA0055024` | 37,692 |
+| 029 | `CM_IMPORT_AES` | pass | 29,259 |
+| 030 | `CM_AES_ENCRYPT_INIT_CBC` | pass | 44,465 |
+| 031 | `CM_AES_ENCRYPT_UPDATE_CBC` | pass | 44,324 |
+| 032 | `CM_AES_DECRYPT_INIT_CBC` | pass | 43,656 |
+| 033 | `CM_AES_DECRYPT_UPDATE_CBC` | pass | 44,981 |
+| 034 | `CM_AES_ENCRYPT_INIT_CTR` | pass | 43,578 |
+| 035 | `CM_AES_ENCRYPT_UPDATE_CTR` | pass | 45,345 |
+| 036 | `CM_AES_DECRYPT_INIT_CTR` | pass | 44,279 |
+| 037 | `CM_AES_DECRYPT_UPDATE_CTR` | pass | 44,701 |
+| 038 | `CM_AES_CBC_unaligned` | reject `0x000E0009` | 28,238 |
+| 039 | `CM_AES_with_HMAC_key` | reject `0x000E005D` | 33,560 |
+| 040 | `CM_IMPORT_AES_bad_size` | reject `0x000E005D` | 22,962 |
+| 041 | `CM_AES_GCM_ENCRYPT_INIT` | pass | 42,431 |
+| 042 | `CM_AES_GCM_ENCRYPT_UPDATE` | pass | 42,357 |
+| 043 | `CM_AES_GCM_ENCRYPT_FINAL` | pass | 36,707 |
+| 044 | `CM_AES_GCM_DECRYPT_INIT_caliptra_ct` | pass | 42,299 |
+| 045 | `CM_AES_GCM_DECRYPT_UPDATE_caliptra_ct` | pass | 41,691 |
+| 046 | `CM_AES_GCM_DECRYPT_FINAL_caliptra_ct` | pass | 37,570 |
+| 047 | `CM_AES_GCM_DECRYPT_INIT_host_ct` | pass | 42,504 |
+| 048 | `CM_AES_GCM_DECRYPT_UPDATE_host_ct` | pass | 41,894 |
+| 049 | `CM_AES_GCM_DECRYPT_FINAL_host_ct` | pass | 37,773 |
+| 050 | `CM_AES_GCM_DECRYPT_INIT_tampered_tag` | pass | 42,911 |
+| 051 | `CM_AES_GCM_DECRYPT_UPDATE_tampered_tag` | pass | 41,488 |
+| 052 | `CM_AES_GCM_DECRYPT_FINAL_tampered_tag` | pass | 37,367 |
+| 053 | `CM_AES_GCM_DECRYPT_INIT_tampered_aad` | pass | 42,300 |
+| 054 | `CM_AES_GCM_DECRYPT_UPDATE_tampered_aad` | pass | 41,898 |
+| 055 | `CM_AES_GCM_DECRYPT_FINAL_tampered_aad` | pass | 37,162 |
+| 056 | `CM_IMPORT_KDF48` | pass | 29,465 |
+| 057 | `CM_IMPORT_KDF64` | pass | 29,899 |
+| 058 | `CM_HMAC_KDF_COUNTER_SHA384_hmac48` | pass | 43,462 |
+| 059 | `CM_HMAC_kdfc384_out` | pass | 42,599 |
+| 060 | `CM_HMAC_KDF_COUNTER_SHA384_aes32` | pass | 43,872 |
+| 061 | `CM_AES_ENCRYPT_INIT_KDF_counterSHA384_AES_key` | pass | 43,763 |
+| 062 | `CM_HMAC_KDF_COUNTER_bad` | reject `0x000E0009` | 27,617 |
+| 063 | `CM_HMAC_KDF_COUNTER_SHA512_hmac64` | pass | 43,903 |
+| 064 | `CM_HMAC_kdfc512_out` | pass | 42,413 |
+| 065 | `CM_IMPORT_HKDF_salt48` | pass | 29,670 |
+| 066 | `CM_IMPORT_HKDF_ikm48` | pass | 29,465 |
+| 067 | `CM_HKDF_EXTRACT_SHA384` | pass | 47,273 |
+| 068 | `CM_HMAC_hkdf_prk384` | pass | 41,983 |
+| 069 | `CM_HKDF_EXPAND_SHA384_hmac48` | pass | 43,674 |
+| 070 | `CM_HMAC_hkdf_okm384` | pass | 42,183 |
+| 071 | `CM_HKDF_EXPAND_SHA384_aes32` | pass | 43,466 |
+| 072 | `CM_AES_ENCRYPT_INIT_HKDF_ExpandSHA384_AES_key` | pass | 43,353 |
+| 073 | `CM_IMPORT_HKDF_salt64` | pass | 30,101 |
+| 074 | `CM_IMPORT_HKDF_ikm64` | pass | 30,103 |
+| 075 | `CM_HKDF_EXTRACT_SHA512` | pass | 47,475 |
+| 076 | `CM_HKDF_EXPAND_SHA512_hmac64` | pass | 43,874 |
+| 077 | `CM_HMAC_hkdf_okm512` | pass | 42,616 |
+| 078 | `CM_HKDF_EXTRACT_aes_salt` | reject `0x000E0009` | 36,558 |
+| 079 | `CM_ECDH_GENERATE` | pass | 4,599,269 |
+| 080 | `CM_ECDH_FINISH_HMAC` | pass | 752,372 |
+| 081 | `CM_HMAC_ecdh_secret` | pass | 41,981 |
+| 082 | `CM_ECDH_FINISH_AES` | pass | 751,351 |
+| 083 | `CM_AES_ENCRYPT_INIT_ECDH_secret32_as_AES_key` | pass | 42,944 |
+| 084 | `CM_ECDH_FINISH_bad_point` | reject `0x00050011` | 30,263 |
+| 085 | `CM_IMPORT_MLKEM` | pass | 30,305 |
+| 086 | `CM_IMPORT_MLKEM_bad_size` | reject `0x000E005D` | 23,373 |
+| 087 | `CM_MLKEM_KEY_GEN` | pass | 131,026 |
+| 088 | `CM_MLKEM_DECAPSULATE_host_ct` | pass | 82,337 |
+| 089 | `CM_AES_ENCRYPT_INIT_ML_KEM_decap_secret_OpenSSL_encap_as_AES_key` | pass | 43,755 |
+| 090 | `CM_MLKEM_DECAPSULATE_tampered` | pass | 82,336 |
+| 091 | `CM_AES_ENCRYPT_INIT_mlkem_tampered` | pass | 43,350 |
+| 092 | `CM_MLKEM_ENCAPSULATE_host_ek` | pass | 87,520 |
+| 093 | `CM_AES_ENCRYPT_INIT_ML_KEM_encap_secret_OpenSSL_decap_as_AES_key` | pass | 43,763 |
+| 094 | `CM_STATUS_before_delete` | pass | 22,499 |
+| 095 | `CM_DELETE_AES` | pass | 29,210 |
+| 096 | `CM_STATUS_after_delete` | pass | 22,907 |
+| 097 | `CM_AES_after_delete` | reject `0x000E0009` | 33,107 |
+| 098 | `CM_CLEAR` | pass | 22,512 |
+| 099 | `CM_STATUS_after_clear` | pass | 22,499 |
+| | **Total, 100 commands** | | **10,057,299** |
+
+**Highlights**
+
+- **Cost of a mailbox command:** the floor is about 22,500 cycles (`CM_STATUS`, `CM_CLEAR`), which is the mailbox hand-shake and the firmware dispatch. Imports and deletes cost about 29,000 cycles.
+- **SHA and HMAC:** an init or final is 27,800 to 34,000 cycles, and an update that crosses several blocks (3,284 bytes in total) is about 134,000 cycles. HMAC-SHA384 or HMAC-SHA512 takes about 42,000 cycles. The KDF counter, HKDF extract and expand take 43,000 to 47,000 cycles, so the key derivation is as cheap as an HMAC.
+- **AES:** CBC and CTR steps take 43,600 to 45,300 cycles. AES-GCM init, update and final take 36,700 to 42,900 cycles each, and a whole GCM message (init, update, final) takes about 120,000 cycles.
+- **ECDH P-384** is the most expensive command in this test: `CM_ECDH_GENERATE` takes 4,599,269 cycles (key generation in the PKA), and each `CM_ECDH_FINISH` takes about 751,000 to 752,000 cycles. It is in the same range as the ECDSA sign of §9.4 (4.15 M).
+- **ML-KEM-1024** is cheap: `CM_MLKEM_KEY_GEN` takes 131,026 cycles, `CM_MLKEM_DECAPSULATE` about 82,300 and `CM_MLKEM_ENCAPSULATE` 87,520. That is 35 to 56 times cheaper than a P-384 ECDH generate.
+- **Rejected commands** return fast: 22,500 to 37,700 cycles (the invalid ECDH point takes 30,263).
+- If the design ran at 100 MHz (an assumption, not a measured clock), the 100 commands would take about 0.1 s in total; the slowest single command is the ECDH generate, at about 46 ms.
+
+**Comparison with the emulator run** (`crypto2_out/emu`, the run of §10.4 above, compared with a script over `crypto2_summary.json` and the files):
+
+- **Command stream, status and length:** all 100 commands have the same command ID, request length, status and response length on RTL and in the emulator. 98 have the same `fwerr` word too, and every reject has the same error code (including `0x000E0009`, `0x000E005D`, `0xA0055024` and `0x00050011` for the invalid ECDH point). The step results, the 76 checks, are all PASS in both runs.
+- **Two `fwerr` differences, both on successful commands:** `CM_AES_GCM_ENCRYPT_INIT` (041) and `CM_MLKEM_KEY_GEN` (087) return status 1 on RTL with `fwerr` = `0x000E005D`, and `0` in the emulator. Both follow a rejected import with the same code (040 and 086). The status is success and the response data is valid and passes the checks, so this is a stale error word left in the RTL response file. A host should read the error word only when the status is not 1.
+- **Byte-identical to the emulator:** the inputs (`aes_key.bin`, `aes_pt.bin`, `gcm_aad.bin`, `gcm_pt.bin`, the HMAC, KDF and HKDF keys and salts, `mlkem_seed.bin`), the SHA-384, SHA-512 and SHAKE256 digests, `hmac_sha384_caliptra.bin`, `hmac_sha512_caliptra.bin`, `mlkem_caliptra_ek.der` (the ML-KEM key generation from the fixed seed) and the responses of all the deterministic and negative commands: SHA, HMAC, import rejects, the GCM final with the tampered tag or AAD, the KDF and HKDF HMAC outputs, the ECDH bad point, `CM_DELETE`, `CM_CLEAR` and `CM_STATUS`.
+- **Different, as expected (random seed or key per run):** `CM_RANDOM_GENERATE`, the generated IVs and ciphertexts of AES CBC, CTR and GCM, the GCM tag, the ECDH keys and secrets (a new host key each run), the ML-KEM host key, ciphertexts and secrets, and the AES ciphertexts made with the derived keys. On RTL these all verify with OpenSSL (the 76 checks).
 
 TEST material only: all keys, seeds and the host ECDH and ML-KEM keys are for simulation and must not be used for real devices.
 
